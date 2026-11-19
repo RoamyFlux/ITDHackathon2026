@@ -35,6 +35,14 @@ Abre `index.html` en el navegador (celular o computadora), crea tu cuenta y puls
 - **Filtros:** por estado (Urgentes, Atención, Bien surtidos), por **categoría** y con el buscador; se pueden combinar.
 - **Llegadas:** se registran en **paquetes** o en **piezas sueltas**.
 
+## Rendimiento
+EarlyStock está pensada para tiendas grandes también:
+- Las ventas se resumen una sola vez por lectura (no por cada producto) y el estado de cada producto se calcula una vez por dibujo.
+- El inventario se muestra de 60 en 60 (en tarjetas se cargan solos al bajar; en tabla con "Mostrar más").
+- El panel de alertas muestra los 8 más urgentes de cada grupo y la lista de compras 15 renglones (copiar, WhatsApp e imprimir incluyen todo).
+- Los datos se leen en páginas de 1000 filas (límite de Supabase), así no se pierde información con muchos productos o ventas.
+- Con 1000 productos y 6000 ventas, escribir en el buscador pasó de ~1 s a ~0.06 s por tecla.
+
 ## Importar tus productos desde Excel
 1. En **Herramientas → Importar Excel** (o en la bienvenida, o con Ctrl+K → "Importar").
 2. Arrastra o elige tu archivo **.xlsx, .xls o .csv**. ¿No tienes uno? Pulsa **Descargar plantilla**, llénala y súbela.
