@@ -59,7 +59,17 @@ create index if not exists movimientos_user_idx  on public.movimientos (user_id,
 create index if not exists movimientos_prod_idx  on public.movimientos (producto_id);
 
 -- ---------------------------------------------------------------------
--- 4) SEGURIDAD (RLS = Row Level Security)
+-- 4) PERMISOS DE ACCESO (GRANT)
+--    Los proyectos nuevos de Supabase ya NO dan acceso automático a las tablas nuevas.
+--    Sin estas líneas la página recibe "permission denied" aunque el usuario haya iniciado sesión.
+--    Solo se le da acceso a "authenticated" (usuarios con sesión); "anon" (sin sesión) queda sin acceso.
+--    Estos permisos no abren nada por sí solos: las reglas RLS de abajo siguen limitando cada usuario a sus filas.
+-- ---------------------------------------------------------------------
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.productos, public.lotes, public.movimientos to authenticated;
+
+-- ---------------------------------------------------------------------
+-- 5) SEGURIDAD (RLS = Row Level Security)
 --    Con RLS activado, cada usuario SOLO puede ver y modificar sus propias filas,
 --    aunque alguien conozca la URL y la anon key (que son públicas).
 --    No hay política para usuarios sin sesión (anon): no pueden leer ni escribir nada.

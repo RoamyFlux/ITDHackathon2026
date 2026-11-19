@@ -369,7 +369,9 @@ async function guardar(fn){
   setOcupado(true);
   try{ await fn(); await cargarTodo(); }
   catch(e){
-    avisar('No se pudo guardar: ' + (e && e.message ? e.message : 'revisa tu conexión'));
+    const msg = e && e.message ? e.message : 'revisa tu conexión';
+    // "permission denied" = faltan los GRANT de supabase/schema.sql (paso 4 del archivo): hay que volver a ejecutarlo en el SQL Editor.
+    avisar('No se pudo guardar: ' + msg + (/permission denied/i.test(msg) ? ' — Ejecuta de nuevo supabase/schema.sql en Supabase (incluye los permisos).' : ''));
     try{ await cargarTodo(); }catch(_){}
   }
   render(); setOcupado(false);
