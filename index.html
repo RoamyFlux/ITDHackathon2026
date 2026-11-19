@@ -556,6 +556,92 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
 :root[data-density="compact"] .alertas,:root[data-density="compact"] .compras,:root[data-density="compact"] .herr,:root[data-density="compact"] .ventas{padding:14px}
 
 /* =====================================================================
+ * 16i) VISTA DE TABLA DEL INVENTARIO
+ * .tabla-wrap = contenedor con scroll propio: en celular la tabla se desliza de lado SIN mover la página.
+ * Encabezados fijos arriba (position:sticky) y la primera columna (producto) fija a la izquierda.
+ * Cada encabezado es un botón que ordena la tabla (▲ ascendente / ▼ descendente).
+ * La franja de color a la izquierda de cada fila es su estado (rojo / ámbar / verde).
+ * ===================================================================== */
+.vista{grid-auto-columns:auto;padding:3px}
+.vista button{padding:6px 12px;font-size:.8rem}
+.tabla-wrap{overflow:auto;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);max-height:72vh}
+.tabla{width:100%;border-collapse:separate;border-spacing:0;font-size:.86rem;min-width:1080px}
+.tabla th{position:sticky;top:0;z-index:2;background:var(--surface-2);text-align:left;padding:0;white-space:nowrap;border-bottom:1px solid var(--line)}
+.tabla th .th-txt,.tabla th button.orden{display:flex;align-items:center;gap:5px;width:100%;padding:12px;font:800 .7rem var(--font);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.tabla th button.orden{background:transparent;box-shadow:none;border:0;border-radius:0;justify-content:flex-start}
+.tabla th button.orden:hover{color:var(--text);transform:none;box-shadow:none}
+.tabla th[aria-sort] button.orden{color:var(--brand-text)}
+.tabla th.num button.orden,.tabla th.num .th-txt{justify-content:flex-end}
+.tabla td{padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle;background:var(--surface);transition:background .15s}
+.tabla tbody tr:hover td{background:var(--surface-2)}
+.tabla .num{text-align:right;font-variant-numeric:tabular-nums}
+.tabla td:first-child,.tabla th:first-child{position:sticky;left:0;z-index:1}
+.tabla th:first-child{z-index:3}
+.tabla tbody tr.crit td:first-child{box-shadow:inset 4px 0 0 var(--crit)}
+.tabla tbody tr.low td:first-child{box-shadow:inset 4px 0 0 var(--low)}
+.tabla tbody tr.ok td:first-child{box-shadow:inset 4px 0 0 var(--ok)}
+.tabla .nom{display:flex;align-items:center;gap:9px;font-weight:700;max-width:230px;overflow:hidden;text-overflow:ellipsis}
+.tabla td small{color:var(--muted)}
+.tabla .badge + .badge{margin-left:4px}
+.tabla .cad-celda.crit{color:var(--crit);font-weight:700} .tabla .cad-celda.low{color:var(--low);font-weight:700}
+.tabla .ventas-celda{display:inline-flex;align-items:center;gap:10px}
+.tabla .ventas-celda .spark{margin:0;width:70px}
+.tabla .acc{display:inline-flex;gap:4px}
+.tabla tfoot td{position:sticky;bottom:0;background:var(--surface-2);font-weight:800;border-top:1px solid var(--line);border-bottom:0}
+.tabla tr.resaltar td{animation:resaltarFila 1.6s var(--ease)}
+.anim .tabla tbody tr{animation:subir .45s var(--ease) both;animation-delay:calc(var(--i,0) * 35ms)}
+@keyframes resaltarFila{0%,100%{background:var(--surface)}25%{background:var(--brand-soft)}}
+
+/* =====================================================================
+ * 16j) IMPORTAR DESDE EXCEL (ventana por pasos)
+ * .pasos-imp = barra de progreso 1-2-3 (Archivo, Columnas, Revisar).
+ * .soltar    = zona para arrastrar el archivo (cambia de color cuando el archivo está encima).
+ * .mapeo     = qué columna del Excel corresponde a cada dato de EarlyStock (las detectadas solas se marcan en verde).
+ * .tabla.mini = vista previa de cómo quedarán los productos antes de guardar.
+ * ===================================================================== */
+#dlgImport{width:min(820px,95vw)}
+.pasos-imp{display:flex;gap:8px;list-style:none;padding:0;margin:0 0 18px;counter-reset:pi}
+.pasos-imp li{flex:1;display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;color:var(--muted);padding-bottom:9px;border-bottom:3px solid var(--line);transition:border-color .3s,color .3s}
+.pasos-imp li::before{counter-increment:pi;content:counter(pi);width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-size:.72rem}
+.pasos-imp li.hecho{border-color:color-mix(in srgb,var(--brand) 45%,var(--line));color:var(--text)}
+.pasos-imp li.activo{border-color:var(--brand);color:var(--text)}
+.pasos-imp li.activo::before,.pasos-imp li.hecho::before{background:var(--grad);color:#fff}
+.soltar{display:grid;justify-items:center;gap:6px;text-align:center;padding:34px 18px;margin:0 0 14px;border:2px dashed color-mix(in srgb,var(--brand) 35%,var(--line));
+  border-radius:18px;background:var(--brand-soft);color:var(--text);cursor:pointer;transition:border-color .2s,transform .2s,background .2s}
+.soltar .ic{width:36px;height:36px;color:var(--brand)}
+.soltar b{font-size:1.02rem}
+.soltar span{font-weight:500;color:var(--muted)}
+.soltar:hover,.soltar.encima{border-color:var(--brand);transform:scale(1.01)}
+.soltar.cargando{opacity:.6;pointer-events:none}
+.imp-ayuda{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);margin-bottom:12px}
+.imp-ayuda b{display:block;font-size:.88rem} .imp-ayuda span{font-size:.8rem;color:var(--muted)}
+.imp-archivo{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--surface-2);margin-bottom:14px}
+.imp-archivo .ico-xls{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--grad);color:#fff}
+.imp-archivo b{display:block;word-break:break-all} .imp-archivo small{display:block}
+.mapeo{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px}
+.mapeo label{margin-bottom:10px}
+.mapeo label.req > span::after{content:" *";color:var(--crit)}
+.mapeo select.detectado{border-color:color-mix(in srgb,var(--ok) 55%,var(--line));background:color-mix(in srgb,var(--ok) 6%,var(--surface))}
+.imp-resumen{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.imp-modo{margin-bottom:14px}
+#impPaso3 .tabla-wrap{max-height:330px}
+.tabla.mini{min-width:860px;font-size:.8rem}
+.tabla.mini td{padding:7px 10px}
+.tabla.mini tr.omitir td{opacity:.65}
+.tabla.mini .err{color:var(--crit);font-weight:700;white-space:normal;min-width:150px;max-width:220px}
+.tabla .nom .dot::after{display:none}   /* en la tabla, sin latido (se vería recortado) */
+
+/* =====================================================================
+ * 16k) GUÍA PARA INSTALAR LA APP (dentro de Configuración)
+ * Muestra los pasos según el dispositivo (Android, iPhone o computadora).
+ * ===================================================================== */
+.guia-instalar .pasos{margin:6px 0 0}
+.guia-instalar .pasos li{color:var(--text)}
+.guia-instalar .ic-inline{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;background:var(--surface-2);vertical-align:middle;margin:0 2px}
+.guia-instalar .ic-inline .ic{width:14px;height:14px}
+.guia-instalar .nota{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--brand-soft);color:var(--brand-text);font-weight:600;font-size:.86rem}
+
+/* =====================================================================
  * 17) PANTALLAS MEDIANAS Y CELULARES
  * < 1000px: una sola columna. .col-main y .col-side usan display:contents para que sus secciones
  *           se acomoden sueltas y se ordenen con "order": saludo, alertas, resumen, inventario, compras, herramientas.
@@ -580,6 +666,10 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
   .cmd-abrir{min-width:0}
   .cmd-abrir .txt-cmd,.cmd-abrir .teclas{display:none}
   .swatches{grid-template-columns:repeat(2,1fr)}
+  .tabla-wrap{max-height:none}
+  .mapeo{grid-template-columns:1fr}
+  .imp-ayuda{flex-direction:column;align-items:flex-start}
+  .sec-tit{flex-wrap:wrap}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .stat{padding:12px}
   .stat:last-child{grid-column:1 / -1}
@@ -692,6 +782,16 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 21v-5h5"/></symbol>
   <symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/></symbol>
   <symbol id="i-motion" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 10v10"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M12 11v8"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M8 9l4-4 4 4"/><path d="M16 15l-4 4-4-4"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></symbol>
+  <symbol id="i-dn" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></symbol>
 </svg>
 
@@ -809,7 +909,13 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
     <div class="col-main">
       <!-- INVENTARIO: buscador, filtros por estado (chips) y la lista de tarjetas de producto (#lista). -->
       <section id="inventario" aria-label="Inventario">
-        <div class="sec-tit"><h2><svg class="ic"><use href="#i-box"/></svg>Inventario</h2></div>
+        <!-- Título + selector de vista: "Tarjetas" o "Tabla" (se recuerda en la configuración). -->
+        <div class="sec-tit"><h2><svg class="ic"><use href="#i-box"/></svg>Inventario</h2>
+          <div class="seg vista" role="group" aria-label="Ver inventario como">
+            <button type="button" data-pref="vista" data-val="tarjetas"><svg class="ic sm"><use href="#i-grid"/></svg>Tarjetas</button>
+            <button type="button" data-pref="vista" data-val="tabla"><svg class="ic sm"><use href="#i-table"/></svg>Tabla</button>
+          </div>
+        </div>
         <div class="buscar"><svg class="ic"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Buscar producto o categoría" aria-label="Buscar producto"></div>
         <div class="chips" id="chips" role="group" aria-label="Filtrar por estado"></div>
         <div class="list" id="lista"></div>
@@ -837,12 +943,13 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
         </div>
       </section>
 
-      <!-- HERRAMIENTAS: cargar un ejemplo, exportar a CSV (Excel) o borrar todo. -->
+      <!-- HERRAMIENTAS: importar desde Excel, exportar a Excel, cargar un ejemplo o borrar todo. -->
       <section id="herramientas" class="card herr noprint">
         <div class="sec-tit"><h2><svg class="ic"><use href="#i-sliders"/></svg>Herramientas</h2></div>
         <div class="acciones">
-          <button class="sec sm" id="btnDemo"><svg class="ic sm"><use href="#i-spark"/></svg>Cargar ejemplo</button>
-          <button class="sec sm" id="btnCSV"><svg class="ic sm"><use href="#i-download"/></svg>Exportar CSV</button>
+          <button class="sm" id="btnImportar"><svg class="ic sm"><use href="#i-upload"/></svg>Importar Excel</button>
+          <button class="sec sm" id="btnCSV"><svg class="ic sm"><use href="#i-download"/></svg>Exportar Excel</button>
+          <button class="sec sm" id="btnDemo" style="grid-column:1 / -1"><svg class="ic sm"><use href="#i-spark"/></svg>Cargar tienda de ejemplo</button>
           <button class="peligro sm" id="btnReset"><svg class="ic sm"><use href="#i-trash"/></svg>Borrar todo el inventario</button>
         </div>
       </section>
@@ -1001,9 +1108,11 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
         <button type="button" data-pref="diasAviso" data-val="15">15 días</button>
       </div>
     </div>
-    <div class="ajuste" id="ajusteInstalar" hidden>
-      <h3>Instalar EarlyStock</h3><p>Ábrela como una app desde tu pantalla de inicio o escritorio.</p>
-      <button type="button" id="btnInstalar"><svg class="ic sm"><use href="#i-download"/></svg>Instalar app</button>
+    <!-- INSTALAR: botón de un clic (si el navegador lo permite) + pasos según el dispositivo (los arma pintarGuiaInstalar). -->
+    <div class="ajuste guia-instalar" id="ajusteInstalar">
+      <h3>Instalar EarlyStock como app</h3><p>Tenla en tu pantalla de inicio o escritorio, se abre sin barra del navegador.</p>
+      <button type="button" id="btnInstalar" hidden><svg class="ic sm"><use href="#i-download"/></svg>Instalar app</button>
+      <div id="guiaInstalar"></div>
     </div>
     <div class="dlg-acciones" style="justify-content:space-between">
       <button type="button" class="ghost" id="btnRestablecer"><svg class="ic sm"><use href="#i-refresh"/></svg>Restablecer</button>
@@ -1025,6 +1134,54 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
   </div>
   <ul class="cmd-lista" id="cmdLista" role="listbox"></ul>
   <div class="cmd-pie"><span><kbd>↑</kbd><kbd>↓</kbd> moverse</span><span><kbd>Enter</kbd> elegir</span><span><kbd>Esc</kbd> cerrar</span></div>
+</dialog>
+
+<!--
+     VENTANA: IMPORTAR DESDE EXCEL (3 pasos)
+       1) Archivo: arrastrar o elegir un .xlsx/.xls/.csv, o descargar la plantilla.
+       2) Columnas: EarlyStock adivina qué columna es cada dato; se puede corregir con los selectores.
+       3) Revisar: vista previa, qué se agrega/actualiza/omite, y el botón para importar.
+-->
+<dialog id="dlgImport" aria-labelledby="impTitulo">
+  <form method="dialog" id="formImport">
+    <div class="dlg-cab">
+      <span class="ico-dlg"><svg class="ic"><use href="#i-upload"/></svg></span>
+      <h2 id="impTitulo">Importar desde Excel<small>Trae tus productos sin capturarlos uno por uno.</small></h2>
+      <button type="button" class="ghost icono" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <ol class="pasos-imp" id="impPasos"><li>Archivo</li><li>Columnas</li><li>Revisar</li></ol>
+    <div id="impPaso1">
+      <label class="soltar" id="zonaSoltar">
+        <svg class="ic"><use href="#i-file"/></svg>
+        <b>Arrastra aquí tu archivo de Excel</b>
+        <span>o toca para elegirlo · .xlsx, .xls o .csv</span>
+        <input type="file" id="archivoExcel" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
+      </label>
+      <div class="imp-ayuda">
+        <div><b>¿Empiezas de cero o no sabes cómo acomodar tu archivo?</b><span>Descarga la plantilla, llénala en Excel y súbela aquí.</span></div>
+        <button type="button" class="sec sm" id="btnPlantilla"><svg class="ic sm"><use href="#i-download"/></svg>Descargar plantilla</button>
+      </div>
+      <p class="hint">Reconocemos columnas como Producto, Categoría, Paquetes o Cajas, Piezas por paquete, Existencia o Stock, Sueltas, Mínimo, Objetivo, Costo, Precio y Caducidad.</p>
+    </div>
+    <div id="impPaso2" hidden>
+      <div class="imp-archivo" id="impArchivo"></div>
+      <label id="impHojaLbl">Hoja del libro <select id="impHoja"></select></label>
+      <p class="hint" id="impDetectadas"></p>
+      <div class="mapeo" id="impMapeo"></div>
+    </div>
+    <div id="impPaso3" hidden>
+      <div class="imp-resumen" id="impResumen"></div>
+      <div class="seg imp-modo" id="impModo" role="group" aria-label="Qué hacer con productos que ya existen">
+        <button type="button" data-modo="actualizar">Actualizar los que ya tengo y agregar nuevos</button>
+        <button type="button" data-modo="agregar">Agregar todos como nuevos</button>
+      </div>
+      <div class="tabla-wrap"><table class="tabla mini" id="impPrevia"></table></div>
+    </div>
+    <div class="dlg-acciones" style="justify-content:space-between">
+      <button type="button" class="ghost" id="impAtras"></button>
+      <button type="button" id="impSig"></button>
+    </div>
+  </form>
 </dialog>
 
 <!-- VENTANA: ATAJOS DE TECLADO (se abre con la tecla "?"). -->
@@ -1330,7 +1487,8 @@ function render(){
         <li>Registra lo que vendes con "Vendí" y lo que te llega con "Llegó".</li>
         <li>EarlyStock te avisará aquí antes de que algo se acabe o caduque.</li>
       </ol>
-      <button type="button" data-accion="demo">${ico('spark','sm')}Probar con una tienda de ejemplo</button></div>`;
+      <button type="button" data-accion="importar">${ico('upload','sm')}Importar mis productos desde Excel</button>
+      <button type="button" class="sec" data-accion="demo" style="margin-top:8px">${ico('spark','sm')}Probar con una tienda de ejemplo</button></div>`;
   } else {
     let h='';
     if(crit.length) h+=`<div class="grupo crit"><h3><span class="dot crit"></span>Se acaba o se acabó</h3><ul>${crit.map(p=>fila(p, detalleStock(p))).join('')}</ul></div>`;
@@ -1385,6 +1543,8 @@ function render(){
     L.innerHTML = '<div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>';
   } else if(!vis.length){
     L.innerHTML = `<div class="card vacio-lista">${ico(prods.length?'search':'box')}<div>${prods.length?'Nada coincide con tu búsqueda o filtro.':'Aún no tienes productos. Agrega el primero con "Nuevo producto".'}</div></div>`;
+  } else if(prefs.vista==='tabla'){
+    L.innerHTML = tablaHTML(vis);          // vista de tabla (ver más abajo)
   } else {
     L.innerHTML = vis.map((p,k)=>{
       const e = estadoTotal(p), es = estado(p), ec = estadoCad(p);
@@ -1395,7 +1555,7 @@ function render(){
       const obj = p.objetivo*p.porPaquete, pct = obj>0 ? Math.min(100, totalPiezas(p)/obj*100) : 0, pctMin = obj>0 ? Math.min(100, p.minimo/p.objetivo*100) : 0;
       const nivel = obj>0 ? `<div class="nivel ${es}" title="Nivel de stock respecto a lo que quieres tener (la rayita es tu mínimo)"><i style="width:${pct.toFixed(1)}%"></i><u style="left:${pctMin.toFixed(1)}%"></u></div>` : '';
       const dias = diasCorto(p);
-      return `<article class="card prod ${e}" data-id="${p.id}" style="--i:${Math.min(k,10)}">
+      return `<article class="card prod ${e}" data-fila="${p.id}" style="--i:${Math.min(k,10)}">
         <div>
           <div class="prod-top"><h3>${esc(p.nombre)}</h3><span class="badge ${es}">${ETIQ[es]}</span>${ec!=='ok'?`<span class="badge cad ${ec}">${ico('clock','sm')}${ec==='crit'?'Caducado':'Por caducar'}</span>`:''}</div>
           <div class="prod-meta"><span>${ico('tag','sm')}${esc(p.categoria||'Sin categoría')}</span><span>${ico('bell','sm')}Aviso con ${fmt(p.minimo)} paq. (${fmt(p.minimo*p.porPaquete)} pzas)</span></div>
@@ -1451,6 +1611,57 @@ function spark(pid){
   const pts = v.map((n,i)=>`${(i*w/6).toFixed(1)},${(h-3-(n/max)*(h-6)).toFixed(1)}`).join(' ');
   return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="Ventas de 7 días: ${v.join(', ')}"><title>Ventas de los últimos 7 días</title><polygon points="0,${h} ${pts} ${w},${h}"/><polyline points="${pts}"/></svg>`;
 }
+/* ---- VISTA DE TABLA ----
+ * COLS = columnas ordenables. Para cada una: k (clave), t (título), num (alineada a la derecha)
+ * y v(p) = valor con el que se ordena ese producto.
+ * ordenTabla = columna y sentido actuales (1 = ascendente, -1 = descendente). Por defecto: estado (urgentes primero). */
+let ordenTabla = {col:'estado', dir:1};
+const COLS = [
+  {k:'nombre', t:'Producto', v:p=>p.nombre.toLowerCase()},
+  {k:'categoria', t:'Categoría', v:p=>(p.categoria||'').toLowerCase()},
+  {k:'estado', t:'Estado', v:p=>({crit:0,low:1,ok:2})[estadoTotal(p)]},
+  {k:'paquetes', t:'Paquetes', num:1, v:p=>p.paquetes},
+  {k:'porPaquete', t:'Pzas/paq', num:1, v:p=>p.porPaquete},
+  {k:'sueltas', t:'Sueltas', num:1, v:p=>p.sueltas},
+  {k:'total', t:'Total pzas', num:1, v:p=>totalPiezas(p)},
+  {k:'minimo', t:'Mínimo', num:1, v:p=>p.minimo*p.porPaquete},
+  {k:'dias', t:'Alcanza', num:1, v:p=>diasRestantes(p) ?? Infinity},
+  {k:'cad', t:'Próx. caducidad', v:p=>(lotesDe(p)[0]||{}).cad || '9999-12-31'},
+  {k:'ventas', t:'Ventas 7 días', num:1, v:p=>ventasPorDia(p.id).reduce((a,b)=>a+b,0)}
+];
+// Arma la tabla completa: encabezados (botones para ordenar), una fila por producto y una fila de totales.
+// Los botones de cada fila usan los mismos data-a que las tarjetas, así los maneja el mismo código de clics.
+function tablaHTML(vis){
+  const c = COLS.find(x=>x.k===ordenTabla.col) || COLS[2];
+  const filas = [...vis].sort((a,b)=>{ const va=c.v(a), vb=c.v(b); return (va<vb?-1:va>vb?1:0)*ordenTabla.dir || a.nombre.localeCompare(b.nombre); });
+  const th = COLS.map(col=>{
+    const act = col.k===ordenTabla.col;
+    return `<th class="${col.num?'num':''}" ${act?`aria-sort="${ordenTabla.dir>0?'ascending':'descending'}"`:''}><button type="button" class="orden" data-orden="${col.k}" title="Ordenar por ${col.t}">${col.t}${ico(act?(ordenTabla.dir>0?'up':'dn'):'sort','sm')}</button></th>`;
+  }).join('') + '<th class="num"><span class="th-txt">Acciones</span></th>';
+  const tr = filas.map((p,k)=>{
+    const e = estadoTotal(p), es = estado(p), ec = estadoCad(p), l = lotesDe(p)[0], d = l ? diasA(l.cad) : null;
+    const v7 = ventasPorDia(p.id).reduce((a,b)=>a+b,0);
+    return `<tr class="${e}" data-fila="${p.id}" style="--i:${Math.min(k,14)}">
+      <td><span class="nom" title="${esc(p.nombre)}"><span class="dot ${e}"></span>${esc(p.nombre)}</span></td>
+      <td>${esc(p.categoria||'—')}</td>
+      <td><span class="badge ${es}">${ETIQ[es]}</span>${ec!=='ok'?`<span class="badge cad ${ec}">${ico('clock','sm')}${ec==='crit'?'Caducado':'Por caducar'}</span>`:''}</td>
+      <td class="num">${p.paquetes}</td><td class="num">${p.porPaquete}</td><td class="num">${p.sueltas}</td>
+      <td class="num"><b>${totalPiezas(p)}</b></td>
+      <td class="num">${fmt(p.minimo)} paq. <small>(${fmt(p.minimo*p.porPaquete)})</small></td>
+      <td class="num">${diasCorto(p) || '—'}</td>
+      <td>${l ? `<span class="cad-celda ${d<0?'crit':d<=DIAS_AVISO?'low':''}">${fechaCorta(l.cad)} <small>· ${cadTxt(d)}</small></span>` : '—'}</td>
+      <td class="num"><span class="ventas-celda">${spark(p.id)}<b>${v7}</b></span></td>
+      <td class="num"><span class="acc">
+        <button class="sm icono" data-a="sale" data-id="${p.id}" aria-label="Vendí ${esc(p.nombre)}" title="Vendí">${ico('minus','sm')}</button>
+        <button class="sm sec icono" data-a="buy" data-id="${p.id}" aria-label="Llegó ${esc(p.nombre)}" title="Llegó mercancía">${ico('truck','sm')}</button>
+        <button class="sm ghost icono" data-a="edit" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ico('edit','sm')}</button>
+        <button class="sm ghost icono" data-a="del" data-id="${p.id}" aria-label="Eliminar ${esc(p.nombre)}" title="Eliminar">${ico('trash','sm')}</button>
+      </span></td></tr>`;
+  }).join('');
+  const totPz = filas.reduce((a,p)=>a+totalPiezas(p),0), valor = filas.reduce((a,p)=>a+(p.costo||0)*totalPiezas(p),0);
+  return `<div class="tabla-wrap"><table class="tabla" aria-label="Inventario en tabla"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody>
+    <tfoot><tr><td>${filas.length} producto${filas.length===1?'':'s'}</td><td colspan="5"></td><td class="num">${totPz} pzas</td><td colspan="3"></td><td class="num" colspan="2">Valor ${money(valor)}</td></tr></tfoot></table></div>`;
+}
 // formatear(valor, formato): 'money' -> $1,234.00 · 'pct' -> 72% · 'int' -> 12
 function formatear(n, f){ return f==='money' ? money(n) : f==='pct' ? Math.round(n)+'%' : String(Math.round(n)); }
 // ¿Se permiten animaciones? (opción de Configuración y preferencia del sistema)
@@ -1480,8 +1691,9 @@ function comprasTexto(){
 // Baja hasta la tarjeta de un producto y la resalta un momento (se usa desde el panel de alertas).
 function irAProducto(id){
   // Si un filtro o una búsqueda la esconde, se quitan para que aparezca.
-  if(!document.querySelector(`.prod[data-id="${id}"]`)){ filtroEstado=''; $('q').value=''; render(); }
-  const el = document.querySelector(`.prod[data-id="${id}"]`); if(!el) return;
+  // (data-fila es el id del producto en la tarjeta o en la fila de la tabla)
+  if(!document.querySelector(`#lista [data-fila="${id}"]`)){ filtroEstado=''; $('q').value=''; render(); }
+  const el = document.querySelector(`#lista [data-fila="${id}"]`); if(!el) return;
   el.scrollIntoView({behavior:'smooth', block:'center'});
   el.classList.remove('resaltar'); void el.offsetWidth; el.classList.add('resaltar');
 }
@@ -1615,11 +1827,18 @@ $('lista').addEventListener('click',e=>{
       .then(ok=>{ if(ok) guardar(async()=>{ chk(await sb.from('productos').delete().eq('id', p.id)); }, 'Producto eliminado'); });
   }
 });
-// Panel de alertas: renglón -> ir al producto; botón de bienvenida -> cargar ejemplo.
+// Encabezados de la tabla: tocar una columna la ordena; tocarla otra vez invierte el orden.
+$('lista').addEventListener('click', e=>{
+  const o = e.target.closest('[data-orden]'); if(!o) return;
+  ordenTabla = ordenTabla.col===o.dataset.orden ? {col:o.dataset.orden, dir:-ordenTabla.dir} : {col:o.dataset.orden, dir:1};
+  render();
+});
+// Panel de alertas: renglón -> ir al producto; botón de bienvenida -> cargar ejemplo o importar Excel.
 $('alertas').addEventListener('click', e=>{
   const ir = e.target.closest('[data-ir]');
   if(ir) irAProducto(ir.dataset.ir);
   if(e.target.closest('[data-accion="demo"]')) $('btnDemo').click();
+  if(e.target.closest('[data-accion="importar"]')) abrirImport();
 });
 // Chips de filtro y buscador: cambian lo que se muestra y vuelven a dibujar.
 $('chips').addEventListener('click', e=>{
@@ -1641,15 +1860,18 @@ $('btnPrint').onclick = ()=>window.print();
 /* =====================================================================
  * L) HERRAMIENTAS: exportar CSV, borrar todo y cargar el ejemplo
  * ===================================================================== */
-// CSV que abre Excel. El carácter especial del inicio (BOM) hace que se vean bien los acentos.
-$('btnCSV').onclick = ()=>{
+// Exportar: genera un archivo de Excel (.xlsx) con el mismo formato que la plantilla de importación
+// (así se puede editar en Excel y volver a importar). Si no se puede cargar el lector de Excel, descarga CSV.
+$('btnCSV').onclick = ()=>exportarExcel();
+// CSV que abre Excel (respaldo sin internet). El carácter especial del inicio (BOM) hace que se vean bien los acentos.
+function exportarCSV(){
   const rows = [['Producto','Categoria','Paquetes','Piezas por paquete','Sueltas','Total piezas','Minimo (paq)','Objetivo (paq)','Estado','Proxima caducidad']]
     .concat(state.productos.map(p=>[p.nombre,p.categoria||'',p.paquetes,p.porPaquete,p.sueltas,totalPiezas(p),p.minimo,p.objetivo,ETIQ[estado(p)],(lotesDe(p)[0]||{}).cad||'']));
   const csv = '﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   a.download = 'earlystock-inventario.csv'; a.click(); URL.revokeObjectURL(a.href);
-};
+}
 // Borra todos los productos del usuario (y por cascada lotes y movimientos). delete() exige un filtro:
 // "created_at >= 1970" coincide con todas sus filas (las reglas RLS ya limitan a las suyas).
 const borrarTodo = async () => chk(await sb.from('productos').delete().gte('created_at','1970-01-01'));
@@ -1826,7 +2048,7 @@ $('btnSalir').onclick = async ()=>{ dlgPerfil.close(); if(sb) await sb.auth.sign
  * El script del <head> ya aplicó lo guardado antes de dibujar; aquí se manejan los cambios.
  * ===================================================================== */
 const KEY_PREFS = 'earlystock.prefs';
-const PREFS_DEF = {tema:'auto', acento:'vice', densidad:'comoda', movimiento:'on', diasAviso:7};
+const PREFS_DEF = {tema:'auto', acento:'vice', densidad:'comoda', movimiento:'on', diasAviso:7, vista:'tarjetas'};
 function leerPrefsLocal(){ try{ return {...PREFS_DEF, ...(JSON.parse(localStorage.getItem(KEY_PREFS)) || {})}; }catch(e){ return {...PREFS_DEF}; } }
 let prefs = leerPrefsLocal();
 // Aplica unas preferencias: atributos data-* en <html> (el CSS cambia solo), días de aviso y botones.
@@ -1852,9 +2074,9 @@ function cambiarPref(k, v){
     if(r.error) avisar('No se pudo guardar la configuración en tu cuenta: ' + r.error.message);
   }, 700);
 }
-// Marca en la ventana qué opción está elegida (aria-pressed="true").
+// Marca qué opción está elegida (aria-pressed="true") en Configuración y en el selector Tarjetas/Tabla.
 function pintarConfig(){
-  document.querySelectorAll('#dlgConfig [data-pref]').forEach(b=>{
+  document.querySelectorAll('[data-pref]').forEach(b=>{
     b.setAttribute('aria-pressed', String(String(prefs[b.dataset.pref]) === b.dataset.val));
   });
 }
@@ -1866,11 +2088,14 @@ function actualizarBotonTema(){
   b.innerHTML = ico(esOscuro() ? 'sun' : 'moon');
   b.title = esOscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
 }
-function abrirConfig(){ pintarConfig(); $('dlgConfig').showModal(); }
+function abrirConfig(){ pintarConfig(); pintarGuiaInstalar(); $('dlgConfig').showModal(); }
 $('btnConfig').onclick = abrirConfig;
 $('btnTema').onclick = ()=>cambiarPref('tema', esOscuro() ? 'light' : 'dark');
-$('dlgConfig').addEventListener('click', e=>{
-  const b = e.target.closest('[data-pref]'); if(b) cambiarPref(b.dataset.pref, b.dataset.val);
+// Cualquier botón con data-pref (en Configuración o el selector de vista) cambia esa preferencia.
+document.addEventListener('click', e=>{
+  const b = e.target.closest('[data-pref]'); if(!b) return;
+  if(b.dataset.pref==='vista') animar = true;      // al cambiar de vista, la lista entra con animación
+  cambiarPref(b.dataset.pref, b.dataset.val);
 });
 $('btnRestablecer').onclick = ()=>{ Object.entries(PREFS_DEF).forEach(([k,v])=>prefs[k]=v); cambiarPref('tema', PREFS_DEF.tema); avisar('Configuración restablecida', 'ok'); };
 // Si el dispositivo cambia entre claro/oscuro y el tema está en "Automático", se actualiza el botón.
@@ -1891,7 +2116,11 @@ function comandos(){
     {g:'Acciones', i:'chat', t:'Enviar lista de compras por WhatsApp', f:()=>$('btnWA').click()},
     {g:'Acciones', i:'copy', t:'Copiar lista de compras', f:()=>$('btnCopiar').click()},
     {g:'Acciones', i:'chart', t:'Ver ventas de la semana', f:()=>$('ventas').scrollIntoView({behavior:'smooth', block:'center'})},
-    {g:'Acciones', i:'download', t:'Exportar inventario a CSV', f:()=>$('btnCSV').click()},
+    {g:'Acciones', i:'upload', t:'Importar productos desde Excel', f:()=>abrirImport()},
+    {g:'Acciones', i:'download', t:'Exportar inventario a Excel', f:()=>exportarExcel()},
+    {g:'Acciones', i:'file', t:'Descargar plantilla de Excel', f:()=>descargarPlantilla()},
+    {g:'Apariencia', i:'table', t:'Ver inventario como tabla', f:()=>{ animar=true; cambiarPref('vista','tabla'); }},
+    {g:'Apariencia', i:'grid', t:'Ver inventario como tarjetas', f:()=>{ animar=true; cambiarPref('vista','tarjetas'); }},
     {g:'Acciones', i:'spark', t:'Cargar tienda de ejemplo', f:()=>$('btnDemo').click()},
     {g:'Apariencia', i:'sun', t:'Tema claro', f:()=>cambiarPref('tema','light')},
     {g:'Apariencia', i:'moon', t:'Tema oscuro', f:()=>cambiarPref('tema','dark')},
@@ -1903,6 +2132,7 @@ function comandos(){
     {g:'Apariencia', i:'gear', t:'Abrir configuración', f:abrirConfig},
     {g:'Cuenta', i:'user', t:'Mi perfil', f:()=>$('btnPerfil').click()},
     {g:'Cuenta', i:'keyboard', t:'Atajos de teclado', k:'?', f:()=>$('dlgAyuda').showModal()},
+    {g:'Cuenta', i:'phone', t:'Cómo instalar la app', f:()=>{ abrirConfig(); setTimeout(()=>$('ajusteInstalar').scrollIntoView({behavior:'smooth'}), 150); }},
     {g:'Cuenta', i:'logout', t:'Cerrar sesión', f:()=>$('btnSalir').click()}
   ];
   state.productos.forEach(p=>lista.push(
@@ -2003,16 +2233,347 @@ document.addEventListener('pointerdown', e=>{
  * Solo funciona cuando la página se abre desde un servidor (http/https), no como archivo suelto.
  * ===================================================================== */
 let eventoInstalar = null;
-addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); eventoInstalar = e; $('ajusteInstalar').hidden = false; });
+// El navegador avisa (beforeinstallprompt) cuando se puede instalar con un clic: se guarda ese evento y se muestra el botón.
+addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); eventoInstalar = e; pintarGuiaInstalar(); });
+addEventListener('appinstalled', ()=>{ eventoInstalar = null; pintarGuiaInstalar(); avisar('EarlyStock se instaló en tu dispositivo', 'ok'); });
 $('btnInstalar').onclick = async ()=>{
   if(!eventoInstalar) return;
   eventoInstalar.prompt();
   const r = await eventoInstalar.userChoice;
-  eventoInstalar = null; $('ajusteInstalar').hidden = true;
+  eventoInstalar = null; pintarGuiaInstalar();
   if(r.outcome==='accepted') avisar('EarlyStock se instaló en tu dispositivo', 'ok');
 };
+// Pasos para instalar según el dispositivo:
+//   - Ya abierta como app (display-mode: standalone) -> solo un aviso.
+//   - Abierta como archivo (file://) -> primero hay que publicarla en internet (GitHub Pages).
+//   - iPhone/iPad -> Safari: Compartir -> "Agregar a inicio".   Android -> Chrome: menú ⋮ -> "Instalar app".
+//   - Computadora -> Chrome o Edge: ícono de instalar en la barra de direcciones o menú ⋮.
+function pintarGuiaInstalar(){
+  const g = $('guiaInstalar'); if(!g) return;
+  const ua = navigator.userAgent;
+  const instalada = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints > 1);
+  const android = /Android/.test(ua);
+  const ic = n => `<span class="ic-inline">${ico(n)}</span>`;
+  $('btnInstalar').hidden = !eventoInstalar || instalada;
+  let pasos;
+  if(instalada) return g.innerHTML = `<div class="nota">${ico('check')}Ya estás usando EarlyStock como app instalada.</div>`;
+  if(location.protocol==='file:') return g.innerHTML = `<div class="nota">${ico('alert')}Para instalarla, primero publícala en internet (por ejemplo con GitHub Pages; los pasos están en el README) y ábrela desde esa dirección.</div>`;
+  if(ios) pasos = [`Abre esta página en <b>Safari</b>.`, `Toca el botón <b>Compartir</b> ${ic('share')} (abajo o arriba de la pantalla).`, `Elige <b>"Agregar a inicio"</b> (desliza la lista si no lo ves).`, `Toca <b>"Agregar"</b>: el ícono de EarlyStock aparecerá en tu pantalla de inicio.`];
+  else if(android) pasos = [`Abre esta página en <b>Chrome</b>.`, `Toca el menú ${ic('more')} (arriba a la derecha).`, `Elige <b>"Instalar app"</b> o <b>"Agregar a la pantalla principal"</b>.`, `Confirma con <b>"Instalar"</b>: la encontrarás junto a tus otras apps.`];
+  else pasos = [`Abre esta página en <b>Chrome</b> o <b>Edge</b>.`, `Haz clic en el ícono de instalar ${ic('download')} a la derecha de la barra de direcciones (o menú ${ic('more')} → <b>"Instalar EarlyStock"</b>).`, `Confirma con <b>"Instalar"</b>: se abrirá en su propia ventana y quedará en tu escritorio o menú de inicio.`];
+  g.innerHTML = (eventoInstalar ? `<p>Tu navegador permite instalarla con un clic (botón de arriba) o así:</p>` : '') + `<ol class="pasos">${pasos.map(x=>`<li><span>${x}</span></li>`).join('')}</ol>`;
+}
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+/* =====================================================================
+ * U) IMPORTAR Y EXPORTAR EXCEL
+ * Usa la librería SheetJS (lee y escribe .xlsx, .xls y .csv en el navegador). Se descarga SOLO cuando
+ * se necesita (al abrir el importador o exportar), así no hace más lenta la app.
+ * ===================================================================== */
+const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+let promXLSX = null;
+// Carga la librería una sola vez (si falla, se puede reintentar).
+function cargarXLSX(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(!promXLSX) promXLSX = new Promise((res, rej)=>{
+    const sc = document.createElement('script');
+    sc.src = XLSX_URL;
+    sc.onload = ()=>res(window.XLSX);
+    sc.onerror = ()=>{ promXLSX = null; rej(new Error('No se pudo cargar el lector de Excel. Revisa tu conexión a internet.')); };
+    document.head.appendChild(sc);
+  });
+  return promXLSX;
+}
+
+/* ---- Columnas que entiende EarlyStock y sus sinónimos ----
+ * Para adivinar qué columna del Excel es cada dato se comparan los encabezados (sin acentos ni mayúsculas)
+ * con estas listas. "req" = obligatorio (sin nombre no se puede importar un producto). */
+const CAMPOS = [
+  {k:'nombre', t:'Producto', req:true, sin:['producto','productos','nombre','nombre del producto','articulo','articulos','descripcion','item','mercancia']},
+  {k:'categoria', t:'Categoría', sin:['categoria','categorias','tipo','departamento','depto','dpto','familia','linea','seccion','rubro','clasificacion']},
+  {k:'paquetes', t:'Paquetes (cajas)', sin:['paquetes','paquete','cajas','caja','bultos','paq','paqs','fardos','packs','no de cajas','num cajas']},
+  {k:'porPaquete', t:'Piezas por paquete', sin:['piezas por paquete','pzas por paquete','pzas/paq','contenido','unidades por caja','unidades por paquete','piezas por caja','por paquete','por caja','presentacion']},
+  {k:'sueltas', t:'Piezas sueltas', sin:['sueltas','piezas sueltas','unidades sueltas','sueltos']},
+  {k:'total', t:'Existencia total (piezas)', sin:['existencia','existencias','stock','cantidad','cant','inventario','total','total piezas','unidades','piezas','pzas','disponible','en tienda']},
+  {k:'minimo', t:'Mínimo (paquetes)', sin:['minimo','stock minimo','min','punto de reorden','reorden']},
+  {k:'objetivo', t:'Objetivo (paquetes)', sin:['objetivo','maximo','stock maximo','max','ideal','quiero tener']},
+  {k:'costo', t:'Costo por pieza', sin:['costo','costo unitario','precio compra','precio de compra','costo por pieza']},
+  {k:'precio', t:'Precio de venta', sin:['precio','precio venta','precio de venta','pv','precio publico']},
+  {k:'cad', t:'Caducidad', sin:['caducidad','caduca','vencimiento','vence','fecha de caducidad','fecha caducidad','expira','expiracion']}
+];
+// Encabezado "limpio": sin acentos, en minúsculas y sin signos. "Mínimo (paquetes)" -> "minimo paquetes".
+const limpiarEnc = h => norm(String(h ?? '')).replace(/[^a-z0-9/ ]+/g,' ').replace(/\s+/g,' ').trim();
+// Adivina las columnas: puntúa cada par (dato, columna): igual = 3, empieza con = 2, contiene la palabra = 1
+// (+ un poco por sinónimos más largos, que son más específicos). Luego asigna de mayor a menor puntaje
+// sin repetir columnas. Así "Piezas por paquete" va a "porPaquete" y no a "Paquetes".
+function detectarColumnas(enc){
+  const pares = [];
+  enc.forEach((h,ci)=>{
+    const e = limpiarEnc(h); if(!e) return;
+    CAMPOS.forEach(c=>c.sin.forEach(sn=>{
+      let pts = 0;
+      if(e===sn) pts = 3; else if(e.startsWith(sn+' ')) pts = 2; else if((' '+e+' ').includes(' '+sn+' ')) pts = 1;
+      if(pts) pares.push({k:c.k, ci, pts: pts + sn.length/100});
+    }));
+  });
+  pares.sort((a,b)=>b.pts-a.pts);
+  const mapa = {}, usadas = new Set();
+  pares.forEach(x=>{ if(mapa[x.k]==null && !usadas.has(x.ci)){ mapa[x.k] = x.ci; usadas.add(x.ci); } });
+  return mapa;
+}
+// Convierte una celda a número: acepta "$1,250.50", "1,5" (coma decimal) o números de Excel.
+// Devuelve null si está vacía y NaN si es texto que no es número.
+function numero(v){
+  if(v===null || v===undefined || v==='') return null;
+  if(typeof v==='number') return isFinite(v) ? v : NaN;
+  let t = String(v).trim().replace(/[$\s]/g,'');
+  if(t==='') return null;
+  t = /^-?\d+,\d{1,2}$/.test(t) ? t.replace(',', '.') : t.replace(/,/g,'');
+  const n = Number(t);
+  return isFinite(n) ? n : NaN;
+}
+// Convierte una fecha de Excel a "AAAA-MM-DD". Acepta el número de serie de Excel, "dd/mm/aaaa",
+// "dd-mm-aa" y "aaaa-mm-dd". Devuelve null si está vacía y undefined si no se reconoce.
+function parseFecha(v){
+  if(v===null || v===undefined || v==='') return null;
+  const dos = n => String(n).padStart(2,'0');
+  const valida = (y,m,d)=>{ const f = new Date(y, m-1, d); return f.getFullYear()===y && f.getMonth()===m-1 && f.getDate()===d ? `${y}-${dos(m)}-${dos(d)}` : undefined; };
+  if(typeof v==='number'){ const d = XLSX.SSF.parse_date_code(v); return d && d.y>1900 ? valida(d.y, d.m, d.d) : undefined; }
+  if(v instanceof Date) return fechaISO(v.getTime());
+  const t = String(v).trim(); let m;
+  if((m = t.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/))) return valida(+m[1], +m[2], +m[3]);
+  if((m = t.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/))){ let y = +m[3]; if(y<100) y += 2000; return valida(y, +m[2], +m[1]); }
+  return undefined;
+}
+
+/* ---- Estado del importador ----
+ * wb = libro de Excel leído · hoja = hoja elegida · enc = encabezados · filas = renglones con datos
+ * mapa = {dato: número de columna} · modo = 'actualizar' | 'agregar' · res = resultado por renglón */
+let imp = {};
+const dlgImport = $('dlgImport');
+function abrirImport(){
+  imp = {modo:'actualizar', paso:1};
+  irPaso(1);
+  dlgImport.showModal();
+  cargarXLSX().catch(()=>{});      // se empieza a descargar la librería mientras eligen el archivo
+}
+// Muestra el paso n (1, 2 o 3), marca la barra de progreso y ajusta los botones de abajo.
+function irPaso(n){
+  imp.paso = n;
+  [1,2,3].forEach(i=>{ $('impPaso'+i).hidden = i!==n; });
+  $('impPasos').querySelectorAll('li').forEach((li,i)=>{ li.classList.toggle('activo', i+1===n); li.classList.toggle('hecho', i+1<n); });
+  const atras = $('impAtras'), sig = $('impSig');
+  atras.hidden = n===1; sig.hidden = n===1;
+  atras.innerHTML = n===2 ? `${ico('file','sm')}Elegir otro archivo` : 'Atrás';
+  if(n===2){ sig.textContent = 'Revisar'; sig.disabled = imp.mapa.nombre==null; }
+  if(n===3){
+    const cuantos = imp.res.filter(x=>x.accion!=='omitir').length;
+    sig.innerHTML = `${ico('upload','sm')}Importar ${cuantos} producto${cuantos===1?'':'s'}`; sig.disabled = !cuantos;
+  }
+}
+// Lee el archivo elegido. Los .csv se leen como texto (UTF-8 y, si salen símbolos raros, como Windows-1252,
+// que es como Excel guarda en Windows). raw:true evita que "05/12/2026" se lea como fecha en formato de EE. UU.
+async function leerArchivo(f){
+  if(!f) return;
+  if(f.size > 10*1024*1024) return avisar('El archivo pesa más de 10 MB.');
+  const z = $('zonaSoltar'); z.classList.add('cargando');
+  try{
+    const X = await cargarXLSX();
+    const csv = /\.csv$/i.test(f.name) || f.type==='text/csv';
+    if(csv){
+      const buf = await f.arrayBuffer();
+      let txt = new TextDecoder('utf-8').decode(buf);
+      if(txt.includes('\ufffd')) txt = new TextDecoder('windows-1252').decode(buf);
+      imp.wb = X.read(txt, {type:'string', raw:true});
+    } else {
+      imp.wb = X.read(await f.arrayBuffer(), {type:'array'});
+    }
+    imp.archivo = f.name;
+    // Se elige la primera hoja que tenga datos.
+    imp.hoja = imp.wb.SheetNames.find(h=>X.utils.sheet_to_json(imp.wb.Sheets[h], {header:1}).length > 1) || imp.wb.SheetNames[0];
+    analizarHoja();
+    pintarPaso2(); irPaso(2);
+  }catch(e){ avisar('No se pudo leer el archivo: ' + ((e && e.message) || 'formato no válido')); }
+  z.classList.remove('cargando');
+}
+// Lee la hoja elegida: busca la fila de encabezados (la primera, dentro de las 10 primeras, con 2 o más celdas
+// llenas; así se saltan títulos como "Inventario de mi tienda"), toma los renglones con datos y adivina columnas.
+function analizarHoja(){
+  const aoa = XLSX.utils.sheet_to_json(imp.wb.Sheets[imp.hoja], {header:1, raw:true, defval:''});
+  let ie = aoa.slice(0,10).findIndex(r=>r.filter(c=>String(c).trim()!=='').length >= 2);
+  if(ie<0) ie = 0;
+  imp.enc = (aoa[ie]||[]).map(h=>String(h).trim());
+  imp.filas = aoa.slice(ie+1).filter(r=>r.some(c=>String(c).trim()!==''));
+  imp.mapa = detectarColumnas(imp.enc);
+}
+// Paso 2: datos del archivo, selector de hoja y un selector de columna por cada dato de EarlyStock.
+function pintarPaso2(){
+  $('impArchivo').innerHTML = `<span class="ico-xls">${ico('file')}</span><div><b>${esc(imp.archivo)}</b><small>${imp.filas.length} renglón${imp.filas.length===1?'':'es'} con datos · hoja "${esc(imp.hoja)}"</small></div>`;
+  const hojas = imp.wb.SheetNames;
+  $('impHojaLbl').hidden = hojas.length < 2;
+  $('impHoja').innerHTML = hojas.map(h=>`<option ${h===imp.hoja?'selected':''}>${esc(h)}</option>`).join('');
+  const col = ci => `Columna ${XLSX.utils.encode_col(ci)}${imp.enc[ci]?`: ${imp.enc[ci]}`:''}`;
+  $('impMapeo').innerHTML = CAMPOS.map(c=>`<label class="${c.req?'req':''}"><span>${c.t}</span>
+      <select data-campo="${c.k}" class="${imp.mapa[c.k]!=null?'detectado':''}">
+        <option value="">— No usar —</option>
+        ${imp.enc.map((h,ci)=>`<option value="${ci}" ${imp.mapa[c.k]===ci?'selected':''}>${esc(col(ci))}</option>`).join('')}
+      </select></label>`).join('');
+  const n = Object.keys(imp.mapa).length;
+  $('impDetectadas').innerHTML = `Detectamos <b>${n} de ${CAMPOS.length}</b> datos automáticamente (en verde). Revisa y corrige si hace falta. Si solo tienes la <b>existencia total</b>, la repartimos en paquetes y sueltas.`;
+}
+// Convierte un renglón del Excel: nombre, categoría, números (n) y fecha de caducidad, con la lista de errores.
+function convertirFila(fila){
+  const g = k => imp.mapa[k]==null ? '' : fila[imp.mapa[k]];
+  const tiene = k => imp.mapa[k]!=null && String(g(k)).trim()!=='';
+  const errores = [];
+  const nombre = String(g('nombre') ?? '').trim().slice(0,60);
+  if(!nombre) errores.push('Sin nombre de producto');
+  const n = {};
+  ['paquetes','porPaquete','sueltas','total','minimo','objetivo','costo','precio'].forEach(k=>{
+    if(!tiene(k)) return;
+    const v = numero(g(k));
+    if(Number.isNaN(v)) errores.push(`"${String(g(k)).slice(0,20)}" no es un número`);
+    else if(v<0) errores.push('Tiene un número negativo');
+    else n[k] = v;
+  });
+  let cad = null;
+  if(tiene('cad')){ cad = parseFecha(g('cad')); if(cad===undefined){ errores.push(`Fecha "${String(g('cad')).slice(0,20)}" no reconocida`); cad = null; } }
+  const categoria = tiene('categoria') ? String(g('categoria')).trim().slice(0,30) : null;
+  return {nombre, categoria, n, cad, errores};
+}
+// Reparte el stock en paquetes + sueltas. Si el archivo solo trae la existencia total, la divide:
+// ej. 63 piezas con 12 por paquete -> 5 paquetes y 3 sueltas.
+function stockDe(n, ppBase){
+  const pp = Math.max(1, Math.floor(n.porPaquete ?? ppBase ?? 1));
+  let paq = n.paquetes, suel = n.sueltas;
+  if(paq==null && suel==null && n.total!=null){ const t = Math.floor(n.total); paq = Math.floor(t/pp); suel = t - paq*pp; }
+  return {porPaquete:pp, paquetes:Math.floor(paq||0), sueltas:Math.floor(suel||0)};
+}
+const traeCantidad = n => ['paquetes','sueltas','total'].some(k=>n[k]!=null);
+// Producto NUEVO: lo que trae el archivo + valores por defecto (avisar con 1 paquete, tener 4).
+function productoNuevo(x){
+  return {nombre:x.nombre, categoria:x.categoria||'', ...stockDe(x.n, 1),
+          minimo:x.n.minimo ?? 1, objetivo:x.n.objetivo ?? 4, costo:x.n.costo ?? null, precio:x.n.precio ?? null};
+}
+// Producto que YA EXISTE: solo se cambia lo que trae el archivo; lo demás se queda igual.
+function cambiosPara(x, p){
+  const c = {};
+  if(x.categoria!=null) c.categoria = x.categoria;
+  if(traeCantidad(x.n)) Object.assign(c, stockDe(x.n, p.porPaquete));
+  else if(x.n.porPaquete!=null) c.porPaquete = Math.max(1, Math.floor(x.n.porPaquete));
+  ['minimo','objetivo','costo','precio'].forEach(k=>{ if(x.n[k]!=null) c[k] = x.n[k]; });
+  return c;
+}
+// Decide qué pasa con cada renglón: "nuevo", "actualizar" (mismo nombre que uno existente, en modo actualizar)
+// u "omitir" (tiene errores o el nombre se repite dentro del mismo archivo).
+function calcularImport(){
+  const existentes = new Map(state.productos.map(p=>[norm(p.nombre.trim()), p]));
+  const vistos = new Set();
+  imp.res = imp.filas.map(f=>{
+    const x = convertirFila(f), clave = norm(x.nombre);
+    if(x.nombre && vistos.has(clave)) x.errores.push('Nombre repetido en el archivo');
+    vistos.add(clave);
+    const p = existentes.get(clave);
+    x.accion = x.errores.length ? 'omitir' : (imp.modo==='actualizar' && p) ? 'actualizar' : 'nuevo';
+    x.p = p;
+    x.vista = x.accion==='actualizar' ? {...p, ...cambiosPara(x,p)} : productoNuevo(x);
+    return x;
+  });
+}
+// Paso 3: resumen, modo y vista previa (hasta 200 renglones).
+function pintarPrevia(){
+  const c = a => imp.res.filter(x=>x.accion===a).length;
+  $('impResumen').innerHTML = `<span class="badge ok">${c('nuevo')} nuevo${c('nuevo')===1?'':'s'}</span>
+    <span class="badge low">${c('actualizar')} por actualizar</span>
+    <span class="badge crit">${c('omitir')} omitido${c('omitir')===1?'':'s'}</span>`;
+  $('impModo').querySelectorAll('[data-modo]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.modo===imp.modo)));
+  const etq = {nuevo:['ok','Nuevo'], actualizar:['low','Actualizar'], omitir:['crit','Omitir']};
+  $('impPrevia').innerHTML = `<thead><tr>${['','Producto','Observaciones','Categoría','Paquetes','Pzas/paq','Sueltas','Total','Mín.','Obj.','Costo','Precio','Caducidad'].map((t,i)=>`<th class="${i>=4&&i<=11?'num':''}"><span class="th-txt">${t}</span></th>`).join('')}</tr></thead>
+    <tbody>${imp.res.slice(0,200).map(x=>{ const v = x.vista; return `<tr class="${x.accion}">
+      <td><span class="badge ${etq[x.accion][0]}">${etq[x.accion][1]}</span></td>
+      <td><b>${esc(x.nombre||'—')}</b></td><td class="err">${esc(x.errores.join(' · '))}</td><td>${esc(v.categoria||'—')}</td>
+      <td class="num">${v.paquetes}</td><td class="num">${v.porPaquete}</td><td class="num">${v.sueltas}</td><td class="num"><b>${totalPiezas(v)}</b></td>
+      <td class="num">${fmt(v.minimo)}</td><td class="num">${fmt(v.objetivo)}</td>
+      <td class="num">${v.costo!=null?money(v.costo):'—'}</td><td class="num">${v.precio!=null?money(v.precio):'—'}</td>
+      <td>${x.cad?fechaCorta(x.cad):'—'}</td></tr>`; }).join('')}</tbody>`;
+  irPaso(3);
+}
+// Guarda en Supabase: nuevos en bloques de 200 (con su lote de caducidad si la trae) y luego actualizaciones.
+// En una actualización con fecha de caducidad, los lotes de ese producto se reemplazan por uno con todo su stock.
+function ejecutarImport(){
+  const nuevos = imp.res.filter(x=>x.accion==='nuevo'), act = imp.res.filter(x=>x.accion==='actualizar');
+  const omit = imp.res.length - nuevos.length - act.length;
+  dlgImport.close();
+  guardar(async()=>{
+    for(let i=0; i<nuevos.length; i+=200){
+      const bloque = nuevos.slice(i, i+200);
+      const creados = chk(await sb.from('productos').insert(bloque.map(x=>aDB(x.vista))).select()).data;
+      const idDe = new Map(creados.map(r=>[r.nombre, r.id]));
+      const lotes = bloque.filter(x=>x.cad && totalPiezas(x.vista)>0 && idDe.has(x.vista.nombre))
+                          .map(x=>({producto_id:idDe.get(x.vista.nombre), piezas:totalPiezas(x.vista), caducidad:x.cad}));
+      if(lotes.length) chk(await sb.from('lotes').insert(lotes));
+    }
+    for(const x of act){
+      const p = state.productos.find(q=>q.id===x.p.id); if(!p) continue;
+      const antes = fotoLotes(p);
+      Object.assign(p, cambiosPara(x, p));
+      chk(await sb.from('productos').update(aDB(p)).eq('id', p.id));
+      if(x.cad){
+        chk(await sb.from('lotes').delete().eq('producto_id', p.id));
+        if(totalPiezas(p)>0) chk(await sb.from('lotes').insert({producto_id:p.id, piezas:totalPiezas(p), caducidad:x.cad}));
+      } else { ajustarLotes(p); await sincronizarLotes(antes, p); }
+    }
+  }, `Importación lista: ${nuevos.length} nuevo${nuevos.length===1?'':'s'}, ${act.length} actualizado${act.length===1?'':'s'}${omit?`, ${omit} omitido${omit===1?'':'s'}`:''}`, true);
+}
+// Eventos del importador: elegir/soltar archivo, cambiar hoja o columnas, modo, Atrás y Siguiente.
+$('btnImportar').onclick = abrirImport;
+$('archivoExcel').onchange = e=>{ leerArchivo(e.target.files[0]); e.target.value=''; };
+const zona = $('zonaSoltar');
+['dragenter','dragover'].forEach(ev=>zona.addEventListener(ev, e=>{ e.preventDefault(); zona.classList.add('encima'); }));
+['dragleave','drop'].forEach(ev=>zona.addEventListener(ev, e=>{ e.preventDefault(); zona.classList.remove('encima'); }));
+zona.addEventListener('drop', e=>leerArchivo(e.dataTransfer.files[0]));
+$('impHoja').onchange = e=>{ imp.hoja = e.target.value; analizarHoja(); pintarPaso2(); irPaso(2); };
+$('impMapeo').addEventListener('change', e=>{
+  const s = e.target.closest('[data-campo]'); if(!s) return;
+  if(s.value===''){ delete imp.mapa[s.dataset.campo]; s.classList.remove('detectado'); }
+  else imp.mapa[s.dataset.campo] = +s.value;
+  $('impSig').disabled = imp.mapa.nombre==null;
+});
+$('impModo').addEventListener('click', e=>{ const b = e.target.closest('[data-modo]'); if(!b) return; imp.modo = b.dataset.modo; calcularImport(); pintarPrevia(); });
+$('impAtras').onclick = ()=>irPaso(imp.paso-1);
+$('impSig').onclick = ()=>{ if(imp.paso===2){ calcularImport(); pintarPrevia(); } else if(imp.paso===3) ejecutarImport(); };
+
+/* ---- Plantilla y exportación ----
+ * Ambas usan los mismos encabezados, así lo exportado se puede volver a importar. */
+const ENC_PLANTILLA = ['Producto','Categoría','Paquetes','Piezas por paquete','Piezas sueltas','Mínimo (paquetes)','Objetivo (paquetes)','Costo por pieza','Precio de venta','Caducidad (dd/mm/aaaa)'];
+const ANCHOS = [28,14,10,18,14,18,19,15,15,22,12,14];
+const ddmmaaaa = iso => iso ? iso.split('-').reverse().join('/') : '';
+// Crea un libro de Excel con una hoja "Inventario" y lo descarga.
+function descargarLibro(nombreArchivo, filas){
+  const ws = XLSX.utils.aoa_to_sheet(filas);
+  ws['!cols'] = filas[0].map((_,i)=>({wch:ANCHOS[i]||14}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+  XLSX.writeFile(wb, nombreArchivo);
+}
+async function descargarPlantilla(){
+  try{ await cargarXLSX(); }catch(e){ return avisar(e.message); }
+  descargarLibro('plantilla-earlystock.xlsx', [ENC_PLANTILLA,
+    ['Refresco 600 ml','Bebidas',2,12,3,1.5,5,11,16,''],
+    ['Leche 1 L','Lácteos',3,12,0,2,4,19,25,'15/12/2026']]);
+  avisar('Plantilla descargada: llénala y súbela aquí mismo', 'ok');
+}
+$('btnPlantilla').onclick = descargarPlantilla;
+async function exportarExcel(){
+  try{ await cargarXLSX(); }
+  catch(e){ exportarCSV(); return avisar('No se pudo cargar Excel; se descargó en formato CSV.', 'ok'); }
+  descargarLibro('earlystock-inventario.xlsx', [[...ENC_PLANTILLA,'Total piezas','Estado']].concat(state.productos.map(p=>[
+    p.nombre, p.categoria||'', p.paquetes, p.porPaquete, p.sueltas, p.minimo, p.objetivo,
+    p.costo ?? '', p.precio ?? '', ddmmaaaa((lotesDe(p)[0]||{}).cad), totalPiezas(p), ETIQ[estado(p)]])));
+  avisar('Inventario exportado a Excel', 'ok');
 }
 
 /* =====================================================================
