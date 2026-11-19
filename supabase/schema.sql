@@ -39,14 +39,14 @@ create table if not exists public.lotes (
 );
 
 -- ---------------------------------------------------------------------
--- 3) MOVIMIENTOS: historial de ventas (salida) y llegadas (entrada).
+-- 3) MOVIMIENTOS: historial de ventas (salida), llegadas (entrada) y mermas (merma = retirado por caducidad).
 --    Sirve para calcular cuántas piezas se venden por día y cuántos días alcanza el stock.
 -- ---------------------------------------------------------------------
 create table if not exists public.movimientos (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
   producto_id uuid not null references public.productos(id) on delete cascade,
-  tipo        text not null check (tipo in ('entrada', 'salida')),
+  tipo        text not null check (tipo in ('entrada', 'salida', 'merma')),
   piezas      integer not null check (piezas > 0),
   created_at  timestamptz not null default now()
 );
@@ -137,3 +137,11 @@ drop policy if exists "avatars: borrar propias" on storage.objects;
 create policy "avatars: borrar propias" on storage.objects
   for delete to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- ---------------------------------------------------------------------
+-- 7) ACTUALIZACIONES PARA BASES YA CREADAS
+--    Si las tablas ya existían, "create table if not exists" no las cambia. Aquí se actualiza lo necesario:
+--    - movimientos.tipo ahora acepta 'merma' (piezas retiradas por caducidad).
+-- ---------------------------------------------------------------------
+alter table public.movimientos drop constraint if exists movimientos_tipo_check;
+alter table public.movimientos add constraint movimientos_tipo_check check (tipo in ('entrada', 'salida', 'merma'));

@@ -17,6 +17,9 @@ EarlyStock es una página web (un solo `index.html`) que avisa al dueño de un n
 - **Lista de compras** en paquetes: copiar, enviar por WhatsApp o imprimir.
 - **Perfil:** nombre del negocio y **foto de perfil** (se guarda en Supabase Storage).
 - Filtros por estado, buscador, exportar a CSV y tienda de ejemplo para la demo.
+- **Retirar caducados (merma):** botón "Retirar" en cada lote vencido o "Retirar caducados" en el panel de alertas; quita esas piezas del inventario y las registra como merma (se ve en la tarjeta de ventas con su costo).
+- **Deshacer:** después de una venta, llegada o retiro aparece "Deshacer" durante unos segundos.
+- **Contraseña:** "¿Olvidaste tu contraseña?" en el inicio de sesión (llega un correo con enlace) y "Cambiar contraseña" en Mi perfil.
 - **Configuración** (engrane del encabezado): tema claro, oscuro o automático; 4 colores de acento (Vice, Neón, Ocaso, Lila); densidad cómoda o compacta; animaciones completas o reducidas; y días de aviso de caducidad (3, 7 o 15). Se guarda en el dispositivo y en la cuenta.
 - **Salud del inventario:** anillo con el % de productos bien surtidos, números animados y gráfica de **ventas de 7 días** con promedio y producto más vendido; cada producto trae su mini gráfica.
 - **Paleta de comandos (Ctrl + K)** para buscar productos y hacer cualquier acción desde el teclado, más atajos: `N` nuevo producto, `/` buscar, `?` ver atajos.
@@ -67,7 +70,7 @@ La app instalada usa la misma cuenta y los mismos datos que la página. Cuando s
 
 ## Conectar con Supabase (una sola vez)
 1. Crea una cuenta y un proyecto en [supabase.com](https://supabase.com).
-2. En **SQL Editor** → *New query*: pega todo `supabase/schema.sql` y pulsa **Run**. Crea las tablas `productos`, `lotes` y `movimientos`, sus permisos, la seguridad por usuario (RLS) y el espacio `avatars` para las fotos de perfil. Se puede volver a ejecutar sin problema: **hay que volver a correrlo** si ya tenían el proyecto, para que funcionen las fotos.
+2. En **SQL Editor** → *New query*: pega todo `supabase/schema.sql` y pulsa **Run**. (**Vuelve a ejecutarlo** si ya lo tenías: ahora agrega el tipo de movimiento *merma* para retirar caducados.) Crea las tablas `productos`, `lotes` y `movimientos`, sus permisos, la seguridad por usuario (RLS) y el espacio `avatars` para las fotos de perfil. Se puede volver a ejecutar sin problema: **hay que volver a correrlo** si ya tenían el proyecto, para que funcionen las fotos.
 3. En **Authentication → Providers → Email**, para la demo desactiva **Confirm email**.
 4. En **Project Settings → API** copia el **Project URL** y la **publishable key** y pégalos en `SUPABASE_URL` y `SUPABASE_ANON_KEY` al inicio del `<script>` de `index.html`.
 
