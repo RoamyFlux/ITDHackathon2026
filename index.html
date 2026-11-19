@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StockAlerta – Inventario para tu negocio</title>
+<style>
+:root{
+  --bg:#f4f6f8; --card:#fff; --text:#1c2733; --muted:#5d6b7a; --line:#e1e6eb;
+  --brand:#0b6e4f; --brand-d:#084f39;
+  --ok:#1b7f3b; --ok-bg:#e4f5e8;
+  --low:#8a5a00; --low-bg:#fff2cc;
+  --crit:#b3261e; --crit-bg:#fde4e2;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#10161c; --card:#1a232c; --text:#e8eef3; --muted:#9aa9b8; --line:#2b3743;
+    --brand:#2fb386; --brand-d:#1f8a66;
+    --ok:#6fd68b; --ok-bg:#16301f; --low:#f0c24b; --low-bg:#3a2f10; --crit:#ff8b83; --crit-bg:#3d1b19;}
+}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
+header{background:var(--brand);color:#fff;padding:18px 16px}
+header h1{margin:0;font-size:1.4rem}
+header p{margin:4px 0 0;opacity:.92;font-size:.95rem}
+main{max-width:1000px;margin:0 auto;padding:16px}
+section{margin-bottom:22px}
+h2{font-size:1.1rem;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat b{display:block;font-size:1.6rem}
+.stat span{color:var(--muted);font-size:.85rem}
+button,.btn{font:inherit;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;background:var(--brand);color:#fff;font-weight:600}
+button:hover{background:var(--brand-d)}
+button.sec{background:transparent;color:var(--text);border:1px solid var(--line)}
+button.sec:hover{background:var(--line)}
+button.danger{background:var(--crit);color:#fff}
+button.sm{padding:6px 10px;font-size:.9rem}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.bar input,.bar select{flex:1 1 150px}
+input,select{font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);width:100%}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:10px}
+label input,label select{margin-top:4px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:-6px;margin-bottom:10px}
+.banner{border-radius:12px;padding:14px;font-weight:600;margin-bottom:10px}
+.banner.crit{background:var(--crit-bg);color:var(--crit);border:1px solid var(--crit)}
+.banner.low{background:var(--low-bg);color:var(--low);border:1px solid var(--low)}
+.banner.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)}
+.banner ul{margin:6px 0 0;padding-left:20px;font-weight:500}
+.prod{display:grid;gap:8px;grid-template-columns:1fr auto;align-items:center;border-left:6px solid var(--line)}
+.prod.ok{border-left-color:var(--ok)} .prod.low{border-left-color:var(--low)} .prod.crit{border-left-color:var(--crit)}
+.prod h3{margin:0;font-size:1.05rem}
+.prod small{color:var(--muted)}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:700}
+.badge.ok{background:var(--ok-bg);color:var(--ok)} .badge.low{background:var(--low-bg);color:var(--low)} .badge.crit{background:var(--crit-bg);color:var(--crit)}
+.eq{font-size:.95rem;margin-top:4px}
+.eq b{font-size:1.15rem}
+.actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.list{display:grid;gap:10px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+dialog{border:0;border-radius:14px;padding:18px;width:min(520px,94vw);background:var(--card);color:var(--text)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h2{margin-top:0}
+.empty{text-align:center;padding:26px;color:var(--muted)}
+.foot{color:var(--muted);font-size:.8rem;text-align:center;padding:10px 0 30px}
+@media (max-width:520px){
+  .prod{grid-template-columns:1fr}.actions{justify-content:flex-start}
+  .row3{grid-template-columns:1fr 1fr}
+}
+@media print{header,#inventario,#resumen,#alertas,.noprint,.foot{display:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>📦 StockAlerta</h1>
+  <p>¿Cómo puede un negocio pequeño saber que se le está acabando? <b>Con avisos claros antes de quedarse sin producto.</b></p>
+</header>
+
+<main>
+  <section id="alertas" aria-live="polite"></section>
+
+  <section id="resumen">
+    <div class="grid" id="stats"></div>
+  </section>
+
+  <section id="inventario">
+    <h2>Inventario</h2>
+    <div class="bar">
+      <input id="q" type="search" placeholder="Buscar producto…" aria-label="Buscar producto">
+      <select id="fEstado" aria-label="Filtrar por estado">
+        <option value="">Todos los estados</option>
+        <option value="crit">🔴 Críticos / agotados</option>
+        <option value="low">🟡 Por acabarse</option>
+        <option value="ok">🟢 Bien surtidos</option>
+      </select>
+      <button id="btnNuevo">+ Producto</button>
+    </div>
+    <div class="list" id="lista"></div>
+  </section>
+
+  <section id="compras">
+    <h2>🛒 Lista de compras sugerida</h2>
+    <div class="card" id="comprasBox"></div>
+    <div class="bar noprint" style="margin-top:10px">
+      <button class="sec" id="btnCopiar">Copiar</button>
+      <button class="sec" id="btnWA">Enviar por WhatsApp</button>
+      <button class="sec" id="btnPrint">Imprimir</button>
+    </div>
+  </section>
+
+  <section class="noprint">
+    <h2>Herramientas</h2>
+    <div class="bar">
+      <button class="sec" id="btnDemo">Cargar ejemplo (tiendita)</button>
+      <button class="sec" id="btnCSV">Exportar CSV</button>
+      <button class="sec" id="btnReset">Borrar todo</button>
+    </div>
+  </section>
+  <p class="foot">Hackathon ITD 2026 · Comercio y emprendimiento local · Tus datos se guardan solo en este dispositivo.</p>
+</main>
+
+<!-- Formulario de producto -->
+<dialog id="dlgProd">
+  <form method="dialog" id="formProd">
+    <h2 id="dlgTitulo">Nuevo producto</h2>
+    <label>Nombre
+      <input name="nombre" required maxlength="60" placeholder="Ej. Refresco 600 ml">
+    </label>
+    <label>Categoría (opcional)
+      <input name="categoria" maxlength="30" placeholder="Ej. Bebidas">
+    </label>
+    <div class="row3">
+      <label>Paquetes en stock <input name="paquetes" type="number" min="0" step="1" value="0" required></label>
+      <label>Piezas por paquete <input name="porPaquete" type="number" min="1" step="1" value="1" required></label>
+      <label>Piezas sueltas <input name="sueltas" type="number" min="0" step="1" value="0" required></label>
+    </div>
+    <div class="banner ok" id="prevTotal" style="font-weight:600">Total: 0 piezas</div>
+    <p class="hint">No cuentes pieza por pieza: escribe cuántos paquetes tienes y cuántas piezas trae cada uno. Si no vendes por paquete, deja "1".</p>
+    <div class="row2">
+      <label>Avisarme cuando queden (paquetes) <input name="minimo" type="number" min="0" step="0.5" value="1" required></label>
+      <label>Quiero tener (paquetes) <input name="objetivo" type="number" min="0" step="0.5" value="4" required></label>
+    </div>
+    <div class="row2">
+      <label>Costo por pieza (opcional) <input name="costo" type="number" min="0" step="0.01"></label>
+      <label>Precio de venta (opcional) <input name="precio" type="number" min="0" step="0.01"></label>
+    </div>
+    <div class="bar" style="justify-content:flex-end">
+      <button type="button" class="sec" id="cancelProd">Cancelar</button>
+      <button type="submit">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Movimiento -->
+<dialog id="dlgMov">
+  <form method="dialog" id="formMov">
+    <h2 id="movTitulo"></h2>
+    <label id="movLabel">Cantidad <input name="cant" type="number" min="1" step="1" value="1" required></label>
+    <p class="hint" id="movHint"></p>
+    <div class="bar" style="justify-content:flex-end">
+      <button type="button" class="sec" id="cancelMov">Cancelar</button>
+      <button type="submit">Registrar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+const KEY = 'stockalerta.v1';
+let state = load();
+let editId = null, movCtx = null;
+
+/* ---------- datos ---------- */
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.productos) return s; }catch(e){}
+  return {productos:[], movimientos:[]};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+const uid = () => Math.random().toString(36).slice(2,10);
+const DAY = 86400000;
+
+/* ---------- lógica de inventario ---------- */
+const totalPiezas = p => p.paquetes * p.porPaquete + p.sueltas;
+
+// Descuenta n piezas; abre paquetes automáticamente cuando las sueltas no alcanzan.
+function descontar(p, n){
+  let falta = n;
+  const deSueltas = Math.min(p.sueltas, falta);
+  p.sueltas -= deSueltas; falta -= deSueltas;
+  if(falta > 0){
+    const abrir = Math.ceil(falta / p.porPaquete);
+    p.paquetes -= abrir;
+    p.sueltas += abrir * p.porPaquete - falta;
+  }
+}
+function consumoDiario(p){
+  const desde = Date.now() - 7*DAY;
+  const vend = state.movimientos.filter(m => m.pid===p.id && m.tipo==='salida' && m.t>=desde)
+                                .reduce((a,m)=>a+m.piezas,0);
+  return vend/7;
+}
+function diasRestantes(p){
+  const c = consumoDiario(p);
+  return c>0 ? totalPiezas(p)/c : null;
+}
+function estado(p){
+  const tot = totalPiezas(p), min = p.minimo*p.porPaquete;
+  if(tot<=0) return 'crit';
+  if(tot<=min) return 'crit';
+  const d = diasRestantes(p);
+  if(tot<=min*1.5 || (d!==null && d<=2)) return 'low';
+  return 'ok';
+}
+function paquetesAPedir(p){
+  const falta = p.objetivo*p.porPaquete - totalPiezas(p);
+  return falta>0 ? Math.ceil(falta/p.porPaquete) : 0;
+}
+const ETIQ = {ok:'🟢 Bien',low:'🟡 Por acabarse',crit:'🔴 Crítico'};
+const fmt = n => Number.isInteger(n)?String(n):n.toFixed(1);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ---------- render ---------- */
+function eqTexto(p){
+  const partes = [];
+  if(p.porPaquete>1) partes.push(`${p.paquetes} paq. × ${p.porPaquete}`);
+  if(p.sueltas>0 || p.porPaquete===1) partes.push(`${p.sueltas} ${p.porPaquete>1?'sueltas':'pzas'}`);
+  const tot = totalPiezas(p);
+  return (p.porPaquete>1 ? partes.join(' + ')+' = ' : '') + `<b>${tot} pzas</b>`;
+}
+function render(){
+  const prods = state.productos;
+  const crit = prods.filter(p=>estado(p)==='crit');
+  const low = prods.filter(p=>estado(p)==='low');
+
+  // alertas
+  const A = document.getElementById('alertas');
+  if(!prods.length){
+    A.innerHTML = `<div class="banner ok">👋 Empieza agregando tus productos o carga el ejemplo en "Herramientas".</div>`;
+  } else {
+    let h='';
+    if(crit.length) h+=`<div class="banner crit">🔴 ¡Atención! Se te está acabando o ya se acabó:<ul>${crit.map(p=>`<li>${esc(p.nombre)} — quedan ${totalPiezas(p)} pzas${diasTxt(p)}</li>`).join('')}</ul></div>`;
+    if(low.length) h+=`<div class="banner low">🟡 Pronto tendrás que comprar:<ul>${low.map(p=>`<li>${esc(p.nombre)} — quedan ${totalPiezas(p)} pzas${diasTxt(p)}</li>`).join('')}</ul></div>`;
+    if(!h) h=`<div class="banner ok">🟢 Todo bien surtido. No hay nada por acabarse.</div>`;
+    A.innerHTML = h;
+  }
+  document.title = (crit.length+low.length ? `(${crit.length+low.length}) ` : '') + 'StockAlerta – Inventario para tu negocio';
+
+  // stats
+  const valor = prods.reduce((a,p)=>a+(p.costo||0)*totalPiezas(p),0);
+  document.getElementById('stats').innerHTML = [
+    [prods.length,'Productos'],[crit.length,'Críticos / agotados'],[low.length,'Por acabarse'],[money(valor),'Valor del inventario']
+  ].map(([n,l])=>`<div class="card stat"><b>${n}</b><span>${l}</span></div>`).join('');
+
+  // lista
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const fe = document.getElementById('fEstado').value;
+  const orden = {crit:0,low:1,ok:2};
+  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!fe || estado(p)===fe))
+                   .sort((a,b)=>orden[estado(a)]-orden[estado(b)] || a.nombre.localeCompare(b.nombre));
+  const L = document.getElementById('lista');
+  L.innerHTML = vis.length ? vis.map(p=>{
+    const e = estado(p);
+    return `<div class="card prod ${e}">
+      <div>
+        <h3>${esc(p.nombre)} <span class="badge ${e}">${ETIQ[e]}</span></h3>
+        <small>${esc(p.categoria||'Sin categoría')} · avisar con ${fmt(p.minimo)} paq. (${fmt(p.minimo*p.porPaquete)} pzas)</small>
+        <div class="eq">${eqTexto(p)}${diasTxt(p)}</div>
+      </div>
+      <div class="actions">
+        <button class="sm" data-a="sale" data-id="${p.id}">− Vendí</button>
+        <button class="sm" data-a="buy" data-id="${p.id}">+ Llegaron paquetes</button>
+        <button class="sm sec" data-a="edit" data-id="${p.id}">Editar</button>
+        <button class="sm sec" data-a="del" data-id="${p.id}" aria-label="Eliminar">🗑</button>
+      </div></div>`;
+  }).join('') : `<div class="card empty">${prods.length?'Nada coincide con tu búsqueda.':'Aún no hay productos.'}</div>`;
+
+  // compras
+  const C = document.getElementById('comprasBox');
+  const compras = comprasLista();
+  C.innerHTML = compras.length
+    ? `<table><tr><th>Producto</th><th>Pedir</th></tr>${compras.map(c=>`<tr><td>${esc(c.p.nombre)}</td><td><b>${c.paq} paq.</b> <small>(${c.paq*c.p.porPaquete} pzas)</small></td></tr>`).join('')}</table>`
+    : '<div class="empty">No hace falta comprar nada por ahora. 🎉</div>';
+}
+function diasTxt(p){
+  const d = diasRestantes(p);
+  if(d===null) return '';
+  return d<1 ? ' · te alcanza menos de 1 día' : ` · te alcanza ~${Math.floor(d)} día${Math.floor(d)===1?'':'s'}`;
+}
+function comprasLista(){
+  return state.productos.filter(p=>estado(p)!=='ok').map(p=>({p,paq:Math.max(paquetesAPedir(p),1)}));
+}
+function comprasTexto(){
+  const c = comprasLista();
+  if(!c.length) return 'No hace falta comprar nada.';
+  return '🛒 Lista de compras\n'+c.map(x=>`- ${x.p.nombre}: ${x.paq} paq. (${x.paq*x.p.porPaquete} pzas)`).join('\n');
+}
+
+/* ---------- formulario de producto ---------- */
+const dlgProd = document.getElementById('dlgProd'), formProd = document.getElementById('formProd');
+function prevTotal(){
+  const f = formProd.elements;
+  const t = (+f.paquetes.value||0)*(+f.porPaquete.value||1)+(+f.sueltas.value||0);
+  document.getElementById('prevTotal').textContent = `Total: ${t} piezas`;
+}
+['paquetes','porPaquete','sueltas'].forEach(n=>formProd.elements[n].addEventListener('input',prevTotal));
+function abrirProd(p){
+  editId = p ? p.id : null;
+  document.getElementById('dlgTitulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
+  formProd.reset();
+  if(p) ['nombre','categoria','paquetes','porPaquete','sueltas','minimo','objetivo','costo','precio'].forEach(k=>formProd.elements[k].value = p[k] ?? '');
+  prevTotal(); dlgProd.showModal();
+}
+formProd.addEventListener('submit',()=>{
+  const f = formProd.elements, num=(k,d=0)=>f[k].value===''?d:+f[k].value;
+  const data = {nombre:f.nombre.value.trim(), categoria:f.categoria.value.trim(),
+    paquetes:Math.max(0,Math.floor(num('paquetes'))), porPaquete:Math.max(1,Math.floor(num('porPaquete',1))),
+    sueltas:Math.max(0,Math.floor(num('sueltas'))), minimo:Math.max(0,num('minimo')), objetivo:Math.max(0,num('objetivo')),
+    costo:f.costo.value===''?null:+f.costo.value, precio:f.precio.value===''?null:+f.precio.value};
+  if(!data.nombre) return;
+  if(editId){ Object.assign(state.productos.find(p=>p.id===editId), data); }
+  else state.productos.push({id:uid(), ...data});
+  save(); render();
+});
+document.getElementById('cancelProd').onclick = ()=>dlgProd.close();
+document.getElementById('btnNuevo').onclick = ()=>abrirProd(null);
+
+/* ---------- movimientos ---------- */
+const dlgMov = document.getElementById('dlgMov'), formMov = document.getElementById('formMov');
+function abrirMov(tipo,p){
+  movCtx = {tipo,id:p.id};
+  document.getElementById('movTitulo').textContent = (tipo==='sale'?'Registrar venta: ':'Llegada de paquetes: ')+p.nombre;
+  document.getElementById('movLabel').firstChild.textContent = tipo==='sale' ? 'Piezas vendidas ' : 'Paquetes que llegaron ';
+  document.getElementById('movHint').textContent = tipo==='sale'
+    ? `Hay ${totalPiezas(p)} piezas. Si hace falta, se abre un paquete solo.`
+    : `Cada paquete trae ${p.porPaquete} pieza${p.porPaquete===1?'':'s'}.`;
+  formMov.elements.cant.value = 1; dlgMov.showModal();
+}
+formMov.addEventListener('submit',()=>{
+  const p = state.productos.find(x=>x.id===movCtx.id); if(!p) return;
+  const n = Math.floor(+formMov.elements.cant.value); if(!(n>0)) return;
+  if(movCtx.tipo==='sale'){
+    const n2 = Math.min(n,totalPiezas(p));
+    descontar(p,n2); state.movimientos.push({pid:p.id,tipo:'salida',piezas:n2,t:Date.now()});
+  } else {
+    p.paquetes += n; state.movimientos.push({pid:p.id,tipo:'entrada',piezas:n*p.porPaquete,t:Date.now()});
+  }
+  save(); render();
+});
+document.getElementById('cancelMov').onclick = ()=>dlgMov.close();
+
+document.getElementById('lista').addEventListener('click',e=>{
+  const b = e.target.closest('button[data-a]'); if(!b) return;
+  const p = state.productos.find(x=>x.id===b.dataset.id); if(!p) return;
+  const a = b.dataset.a;
+  if(a==='edit') abrirProd(p);
+  else if(a==='sale') abrirMov('sale',p);
+  else if(a==='buy') abrirMov('buy',p);
+  else if(a==='del' && confirm(`¿Eliminar "${p.nombre}"?`)){
+    state.productos = state.productos.filter(x=>x.id!==p.id);
+    state.movimientos = state.movimientos.filter(m=>m.pid!==p.id);
+    save(); render();
+  }
+});
+document.getElementById('q').addEventListener('input',render);
+document.getElementById('fEstado').addEventListener('change',render);
+
+/* ---------- compras ---------- */
+document.getElementById('btnCopiar').onclick = async ()=>{
+  try{ await navigator.clipboard.writeText(comprasTexto()); alert('Lista copiada ✔'); }
+  catch(e){ prompt('Copia tu lista:',comprasTexto()); }
+};
+document.getElementById('btnWA').onclick = ()=>window.open('https://wa.me/?text='+encodeURIComponent(comprasTexto()),'_blank','noopener');
+document.getElementById('btnPrint').onclick = ()=>window.print();
+
+/* ---------- herramientas ---------- */
+document.getElementById('btnCSV').onclick = ()=>{
+  const rows = [['Producto','Categoria','Paquetes','Piezas por paquete','Sueltas','Total piezas','Minimo (paq)','Objetivo (paq)','Estado']]
+    .concat(state.productos.map(p=>[p.nombre,p.categoria||'',p.paquetes,p.porPaquete,p.sueltas,totalPiezas(p),p.minimo,p.objetivo,ETIQ[estado(p)].slice(3)]));
+  const csv = '﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = 'inventario.csv'; a.click(); URL.revokeObjectURL(a.href);
+};
+document.getElementById('btnReset').onclick = ()=>{
+  if(confirm('¿Borrar todos los productos y movimientos?')){ state={productos:[],movimientos:[]}; save(); render(); }
+};
+document.getElementById('btnDemo').onclick = ()=>{
+  if(state.productos.length && !confirm('Esto reemplazará tus datos actuales con el ejemplo. ¿Continuar?')) return;
+  // [nombre, categoría, paquetes, porPaquete, sueltas, mín(paq), objetivo(paq), costo, precio, vendidas por día]
+  const demo = [
+    ['Refresco 600 ml','Bebidas',1,12,3,1.5,5,11,16,[9,8,10,7,9,11,8]],
+    ['Galletas Marías','Botanas',6,10,2,1,4,6,10,[2,3,1,2,2,3,2]],
+    ['Leche 1 L','Lácteos',2,12,0,2,4,19,25,[6,7,5,6,8,7,6]],
+    ['Huevo (cartón 30)','Básicos',4,6,2,1,3,95,120,[1,1,2,1,1,2,1]],
+    ['Arroz 1 kg','Básicos',3,10,5,1,3,22,29,[1,2,1,1,2,1,1]],
+    ['Jabón de barra','Limpieza',0,20,4,0.5,2,8,12,[1,0,1,1,0,1,1]],
+    ['Papel higiénico 4 pzas','Limpieza',5,12,0,1,3,28,38,[2,2,3,2,2,3,2]],
+    ['Sopa instantánea','Botanas',1,24,6,1,3,9,14,[4,5,4,6,5,5,4]]
+  ];
+  const now = Date.now();
+  state = {productos:[],movimientos:[]};
+  demo.forEach(d=>{
+    const id = uid();
+    state.productos.push({id,nombre:d[0],categoria:d[1],paquetes:d[2],porPaquete:d[3],sueltas:d[4],minimo:d[5],objetivo:d[6],costo:d[7],precio:d[8]});
+    d[9].forEach((v,i)=>{ if(v>0) state.movimientos.push({pid:id,tipo:'salida',piezas:v,t:now-(i+0.5)*DAY}); });
+  });
+  save(); render();
+};
+
+render();
+})();
+</script>
+</body>
+</html>
