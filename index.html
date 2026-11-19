@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StockAlerta – Inventario para tu negocio</title>
 <style>
+/*
+ * COLORES DE LA APP
+ * Aquí se definen los colores una sola vez (variables) y el resto del CSS los usa con var(--nombre).
+ * Si quieres cambiar el color de la app, solo modifica estos valores.
+ * --ok / --low / --crit = verde / amarillo / rojo del semáforo; el sufijo -bg es el color de fondo suave.
+ */
 :root{
   --bg:#f4f6f8; --card:#fff; --text:#1c2733; --muted:#5d6b7a; --line:#e1e6eb;
   --brand:#0b6e4f; --brand-d:#084f39;
@@ -12,11 +18,20 @@
   --low:#8a5a00; --low-bg:#fff2cc;
   --crit:#b3261e; --crit-bg:#fde4e2;
 }
+/*
+ * MODO OSCURO
+ * Si el celular o la computadora está en modo oscuro, se cambian los colores de arriba por versiones más oscuras.
+ */
 @media (prefers-color-scheme: dark){
   :root{--bg:#10161c; --card:#1a232c; --text:#e8eef3; --muted:#9aa9b8; --line:#2b3743;
     --brand:#2fb386; --brand-d:#1f8a66;
     --ok:#6fd68b; --ok-bg:#16301f; --low:#f0c24b; --low-bg:#3a2f10; --crit:#ff8b83; --crit-bg:#3d1b19;}
 }
+/*
+ * ESTILOS GENERALES
+ * box-sizing hace que el ancho de un campo incluya su borde y relleno (evita que se desborden).
+ * Aquí también se estilizan el encabezado, el contenedor principal (main) y los títulos.
+ */
 *{box-sizing:border-box}
 body{margin:0;font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
 header{background:var(--brand);color:#fff;padding:18px 16px}
@@ -25,16 +40,30 @@ header p{margin:4px 0 0;opacity:.92;font-size:.95rem}
 main{max-width:1000px;margin:0 auto;padding:16px}
 section{margin-bottom:22px}
 h2{font-size:1.1rem;margin:0 0 10px}
+/*
+ * TARJETAS Y RESUMEN
+ * .card = caja blanca con borde redondeado que se usa para productos, estadísticas y lista de compras.
+ * .grid = acomoda las tarjetas de estadísticas en columnas que se adaptan al ancho de la pantalla.
+ */
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
 .grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .stat b{display:block;font-size:1.6rem}
 .stat span{color:var(--muted);font-size:.85rem}
+/*
+ * BOTONES
+ * Botón normal = verde. .sec = botón secundario (solo borde). .danger = rojo. .sm = más pequeño (los de cada producto).
+ */
 button,.btn{font:inherit;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;background:var(--brand);color:#fff;font-weight:600}
 button:hover{background:var(--brand-d)}
 button.sec{background:transparent;color:var(--text);border:1px solid var(--line)}
 button.sec:hover{background:var(--line)}
 button.danger{background:var(--crit);color:#fff}
 button.sm{padding:6px 10px;font-size:.9rem}
+/*
+ * BARRAS Y FORMULARIOS
+ * .bar = fila de controles (buscador, filtro, botones) que baja de renglón si no caben.
+ * .row2 / .row3 = formulario en 2 o 3 columnas. .hint = texto de ayuda pequeño debajo de un campo.
+ */
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 .bar input,.bar select{flex:1 1 150px}
 input,select{font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);width:100%}
@@ -43,11 +72,20 @@ label input,label select{margin-top:4px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .hint{font-size:.8rem;color:var(--muted);margin-top:-6px;margin-bottom:10px}
+/*
+ * AVISOS (ALERTAS)
+ * .banner = caja grande de aviso. Su color depende de la clase: .crit rojo, .low amarillo, .ok verde.
+ */
 .banner{border-radius:12px;padding:14px;font-weight:600;margin-bottom:10px}
 .banner.crit{background:var(--crit-bg);color:var(--crit);border:1px solid var(--crit)}
 .banner.low{background:var(--low-bg);color:var(--low);border:1px solid var(--low)}
 .banner.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)}
 .banner ul{margin:6px 0 0;padding-left:20px;font-weight:500}
+/*
+ * TARJETA DE PRODUCTO
+ * La franja de color a la izquierda (border-left) cambia según el estado: .ok verde, .low amarillo, .crit rojo.
+ * .badge = etiqueta redondeada con el estado (ej. "🟡 Por acabarse"). .eq = renglón con las piezas totales.
+ */
 .prod{display:grid;gap:8px;grid-template-columns:1fr auto;align-items:center;border-left:6px solid var(--line)}
 .prod.ok{border-left-color:var(--ok)} .prod.low{border-left-color:var(--low)} .prod.crit{border-left-color:var(--crit)}
 .prod h3{margin:0;font-size:1.05rem}
@@ -57,6 +95,11 @@ label input,label select{margin-top:4px}
 .eq{font-size:.95rem;margin-top:4px}
 .eq b{font-size:1.15rem}
 .actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+/*
+ * LISTA, TABLA, VENTANAS Y PIE
+ * .list = separa las tarjetas de productos. table/td = tabla de la lista de compras.
+ * dialog = ventanas emergentes (formulario de producto y de movimiento); ::backdrop es el fondo oscuro detrás.
+ */
 .list{display:grid;gap:10px}
 table{width:100%;border-collapse:collapse}
 td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left}
@@ -65,26 +108,50 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
 dialog h2{margin-top:0}
 .empty{text-align:center;padding:26px;color:var(--muted)}
 .foot{color:var(--muted);font-size:.8rem;text-align:center;padding:10px 0 30px}
+/*
+ * CELULARES
+ * En pantallas angostas, los botones pasan debajo del nombre del producto y el formulario usa menos columnas.
+ */
 @media (max-width:520px){
   .prod{grid-template-columns:1fr}.actions{justify-content:flex-start}
   .row3{grid-template-columns:1fr 1fr}
 }
+/*
+ * IMPRESIÓN
+ * Al imprimir se ocultan todas las secciones menos la lista de compras, para que salga una hoja limpia.
+ */
 @media print{header,#inventario,#resumen,#alertas,.noprint,.foot{display:none!important}}
 </style>
 </head>
 <body>
+<!--
+     ENCABEZADO: nombre de la app y la pregunta del reto que resuelve.
+-->
 <header>
   <h1>📦 StockAlerta</h1>
   <p>¿Cómo puede un negocio pequeño saber que se le está acabando? <b>Con avisos claros antes de quedarse sin producto.</b></p>
 </header>
 
+<!--
+     CONTENIDO PRINCIPAL: cada <section> es un bloque de la pantalla.
+     Las secciones vacías (alertas, stats, lista...) se llenan desde JavaScript en la función render().
+-->
 <main>
+  <!--
+       ALERTAS: aquí JavaScript escribe los avisos de "se acaba", "caduca pronto", etc. (aria-live hace que lectores de pantalla los anuncien).
+  -->
   <section id="alertas" aria-live="polite"></section>
 
+  <!--
+       RESUMEN: tarjetas con números (total de productos, críticos, por caducar, valor del inventario).
+  -->
   <section id="resumen">
     <div class="grid" id="stats"></div>
   </section>
 
+  <!--
+       INVENTARIO: buscador, filtro por estado, botón para agregar producto y la lista de tarjetas (#lista).
+  -->
   <section id="inventario">
     <h2>Inventario</h2>
     <div class="bar">
@@ -100,6 +167,9 @@ dialog h2{margin-top:0}
     <div class="list" id="lista"></div>
   </section>
 
+  <!--
+       LISTA DE COMPRAS: muestra qué pedir y cuántos paquetes. Los botones la copian, la mandan por WhatsApp o la imprimen.
+  -->
   <section id="compras">
     <h2>🛒 Lista de compras sugerida</h2>
     <div class="card" id="comprasBox"></div>
@@ -110,6 +180,9 @@ dialog h2{margin-top:0}
     </div>
   </section>
 
+  <!--
+       HERRAMIENTAS: cargar un ejemplo para probar, exportar el inventario a CSV (Excel) o borrar todo.
+  -->
   <section class="noprint">
     <h2>Herramientas</h2>
     <div class="bar">
@@ -121,6 +194,10 @@ dialog h2{margin-top:0}
   <p class="foot">Hackathon ITD 2026 · Comercio y emprendimiento local · Tus datos se guardan solo en este dispositivo.</p>
 </main>
 
+<!--
+     VENTANAS EMERGENTES (<dialog>): están ocultas hasta que JavaScript las abre con showModal().
+     Esta es para crear o editar un producto. El cuadro verde "Total" se actualiza solo al escribir paquetes y piezas.
+-->
 <!-- Formulario de producto -->
 <dialog id="dlgProd">
   <form method="dialog" id="formProd">
@@ -136,6 +213,7 @@ dialog h2{margin-top:0}
       <label>Piezas por paquete <input name="porPaquete" type="number" min="1" step="1" value="1" required></label>
       <label>Piezas sueltas <input name="sueltas" type="number" min="0" step="1" value="0" required></label>
     </div>
+    <label id="cadLabel">Caducidad del stock actual (opcional) <input name="cad" type="date"></label>
     <div class="banner ok" id="prevTotal" style="font-weight:600">Total: 0 piezas</div>
     <p class="hint">No cuentes pieza por pieza: escribe cuántos paquetes tienes y cuántas piezas trae cada uno. Si no vendes por paquete, deja "1".</p>
     <div class="row2">
@@ -153,11 +231,15 @@ dialog h2{margin-top:0}
   </form>
 </dialog>
 
+<!--
+     Ventana para anotar un movimiento: una VENTA (piezas) o la LLEGADA de paquetes (con fecha de caducidad opcional del lote).
+-->
 <!-- Movimiento -->
 <dialog id="dlgMov">
   <form method="dialog" id="formMov">
     <h2 id="movTitulo"></h2>
     <label id="movLabel">Cantidad <input name="cant" type="number" min="1" step="1" value="1" required></label>
+    <label id="movCadLabel">Fecha de caducidad de este lote (opcional) <input name="cad" type="date"></label>
     <p class="hint" id="movHint"></p>
     <div class="bar" style="justify-content:flex-end">
       <button type="button" class="sec" id="cancelMov">Cancelar</button>
@@ -167,45 +249,78 @@ dialog h2{margin-top:0}
 </dialog>
 
 <script>
+// TODO EL CÓDIGO VA DENTRO DE ESTA FUNCIÓN
+// Así las variables no se mezclan con otras de la página (no son globales). Termina al final con })();
 (function(){
 'use strict';
+// DATOS GUARDADOS
+// KEY = nombre con el que se guarda todo en el navegador (localStorage). Los datos viven solo en este dispositivo.
+// state tiene dos listas: productos (el inventario) y movimientos (historial de ventas/llegadas, sirve para calcular cuánto se vende al día).
 const KEY = 'stockalerta.v1';
 let state = load();
+// editId = id del producto que se está editando (null = se está creando uno nuevo).
+// movCtx = qué producto y qué tipo de movimiento (venta o llegada) tiene abierta la ventana de movimiento.
 let editId = null, movCtx = null;
 
 /* ---------- datos ---------- */
+// Lee los datos guardados. Si no hay nada (primera vez) o están dañados, empieza con listas vacías.
 function load(){
   try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.productos) return s; }catch(e){}
   return {productos:[], movimientos:[]};
 }
+// Guarda el estado en el navegador. El try/catch evita que la app falle si el navegador bloquea el almacenamiento.
+// Se llama cada vez que algo cambia (nuevo producto, venta, llegada, etc.).
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+// uid() = genera un id corto al azar para identificar cada producto o lote. DAY = milisegundos que tiene un día (para calcular fechas).
 const uid = () => Math.random().toString(36).slice(2,10);
 const DAY = 86400000;
 
+// LÓGICA DEL INVENTARIO
+// Cada producto se guarda así:
+// { id, nombre, categoria,
+//     paquetes (cajas completas), porPaquete (piezas por caja), sueltas (piezas fuera de caja),
+//     minimo y objetivo (en PAQUETES), costo, precio, lotes (fechas de caducidad) }
 /* ---------- lógica de inventario ---------- */
+// totalPiezas = cuántas piezas hay en total, sin contar una por una.
+// Ejemplo: 5 paquetes × 12 piezas + 3 sueltas = 63 piezas.
 const totalPiezas = p => p.paquetes * p.porPaquete + p.sueltas;
 
 // Descuenta n piezas; abre paquetes automáticamente cuando las sueltas no alcanzan.
+// Resta n piezas vendidas.
+// Primero gasta las sueltas; si no alcanzan, "abre" los paquetes necesarios y las piezas que sobran pasan a ser sueltas.
+// Ejemplo: hay 2 paquetes de 12 y 0 sueltas, vendes 5 -> se abre 1 paquete: queda 1 paquete y 7 sueltas.
 function descontar(p, n){
   let falta = n;
+  // 1) Gasta primero lo que haya en sueltas.
   const deSueltas = Math.min(p.sueltas, falta);
   p.sueltas -= deSueltas; falta -= deSueltas;
+  // 2) Si aún falta, calcula cuántos paquetes hay que abrir (redondeando hacia arriba).
   if(falta > 0){
     const abrir = Math.ceil(falta / p.porPaquete);
     p.paquetes -= abrir;
+    //     // Las piezas del paquete abierto que no se vendieron quedan como sueltas.
     p.sueltas += abrir * p.porPaquete - falta;
   }
 }
+// Consumo diario = promedio de piezas vendidas por día en los últimos 7 días.
+// Ejemplo: 70 piezas vendidas en la semana -> 10 al día. Solo cuenta los movimientos de tipo "salida" (ventas) de este producto.
 function consumoDiario(p){
   const desde = Date.now() - 7*DAY;
   const vend = state.movimientos.filter(m => m.pid===p.id && m.tipo==='salida' && m.t>=desde)
                                 .reduce((a,m)=>a+m.piezas,0);
   return vend/7;
 }
+// Cuántos días alcanza el stock al ritmo actual de ventas: piezas que hay ÷ piezas que se venden por día.
+// Si todavía no hay ventas registradas devuelve null (no se puede estimar).
 function diasRestantes(p){
   const c = consumoDiario(p);
   return c>0 ? totalPiezas(p)/c : null;
 }
+// Semáforo según la CANTIDAD que queda (la caducidad se revisa aparte, más abajo):
+// 🔴 crit = agotado o en/bajo el mínimo que el dueño definió.
+// 🟡 low  = ya casi llega al mínimo (hasta 1.5 veces el mínimo) o le quedan 2 días o menos al ritmo de venta.
+// 🟢 ok   = hay suficiente.
+// Ejemplo: mínimo 1 paquete de 12 = 12 piezas. Con 12 o menos -> rojo; de 13 a 18 -> amarillo.
 function estado(p){
   const tot = totalPiezas(p), min = p.minimo*p.porPaquete;
   if(tot<=0) return 'crit';
@@ -214,16 +329,66 @@ function estado(p){
   if(tot<=min*1.5 || (d!==null && d<=2)) return 'low';
   return 'ok';
 }
+// Cuántos paquetes comprar para llegar al "objetivo" (lo que el dueño quiere tener).
+// Ejemplo: objetivo 4 paq. × 12 = 48 piezas; hay 15 -> faltan 33 -> 3 paquetes (redondeado hacia arriba). Si ya llegó al objetivo devuelve 0.
 function paquetesAPedir(p){
   const falta = p.objetivo*p.porPaquete - totalPiezas(p);
   return falta>0 ? Math.ceil(falta/p.porPaquete) : 0;
 }
+// CADUCIDAD POR LOTE
+// Un lote es un grupo de piezas que llegó junto y comparte fecha de caducidad: {id, piezas, cad:"AAAA-MM-DD"}.
+// Las piezas que no están en ningún lote se consideran sin fecha de caducidad.
+/* ---------- caducidad por lote ---------- */
+// p.lotes = [{id, piezas, cad:'YYYY-MM-DD'}]. Las piezas sin lote se consideran sin fecha.
+// DIAS_AVISO = con cuántos días de anticipación se avisa que un lote está por caducar (cámbialo si quieres más o menos tiempo).
+const DIAS_AVISO = 7;
+// Funciones de fechas:
+// hoy0()  = hoy a las 00:00 (para comparar días completos y no horas).
+// diasA() = días que faltan para una fecha. Positivo = futuro, 0 = hoy, negativo = ya caducó.
+// lotesDe() = lotes con piezas, ordenados del que caduca primero al último.
+const hoy0 = () => { const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); };
+const diasA = cad => Math.round((new Date(cad+'T00:00:00').getTime()-hoy0())/DAY);
+const lotesDe = p => (p.lotes||[]).filter(l=>l.piezas>0).sort((a,b)=>a.cad<b.cad?-1:a.cad>b.cad?1:0);
+// Primero en caducar, primero en venderse (FEFO). Los lotes nunca pueden sumar más que el stock real.
+// Al vender, se gasta primero el lote que caduca antes (sistema "FEFO": el primero en caducar es el primero en salir).
+// Así se evita que el producto viejo se eche a perder.
+function consumirLotes(p,n){
+  for(const l of lotesDe(p)){ if(n<=0) break; const t=Math.min(l.piezas,n); l.piezas-=t; n-=t; }
+  p.lotes = lotesDe(p);
+}
+// Si el dueño edita la cantidad a mano, los lotes no pueden sumar más piezas que las que hay en realidad.
+// Si sobran, se quitan primero del lote que caduca más tarde (el más lejano).
+function ajustarLotes(p){
+  let exceso = (p.lotes||[]).reduce((a,l)=>a+l.piezas,0) - totalPiezas(p);
+  if(exceso>0) for(const l of lotesDe(p).reverse()){ const t=Math.min(l.piezas,exceso); l.piezas-=t; exceso-=t; if(exceso<=0) break; }
+  p.lotes = lotesDe(p);
+}
+// Semáforo según la CADUCIDAD del lote más próximo:
+// 🔴 crit = ya caducó (días < 0)
+// 🟡 low  = caduca en DIAS_AVISO días o menos
+// 🟢 ok   = falta mucho o no hay fechas registradas
+function estadoCad(p){
+  const ls = lotesDe(p); if(!ls.length) return 'ok';
+  const d = diasA(ls[0].cad);
+  return d<0 ? 'crit' : d<=DIAS_AVISO ? 'low' : 'ok';
+}
+// Un producto muestra el PEOR de sus dos semáforos (cantidad y caducidad).
+// Ejemplo: stock en verde pero un lote caducado -> el producto se ve en rojo.
+const peor = (a,b) => ({ok:0,low:1,crit:2}[a] >= {ok:0,low:1,crit:2}[b] ? a : b);
+const estadoTotal = p => peor(estado(p), estadoCad(p));
+// Funciones de formato (solo cambian cómo se ve algo en pantalla):
+// cadTxt = convierte días en frase: "caduca en 3 días" / "caducó hace 2 días".
+// fechaCorta = "22 nov".   ETIQ = textos del semáforo.   fmt = número sin decimales inútiles.
+// esc = protege el texto escrito por el usuario para que no se interprete como código HTML (seguridad).   money = formato de dinero.
+function cadTxt(d){ return d<0 ? `caducó hace ${-d} día${d===-1?'':'s'}` : d===0 ? 'caduca hoy' : `caduca en ${d} día${d===1?'':'s'}`; }
+const fechaCorta = cad => new Date(cad+'T00:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'});
 const ETIQ = {ok:'🟢 Bien',low:'🟡 Por acabarse',crit:'🔴 Crítico'};
 const fmt = n => Number.isInteger(n)?String(n):n.toFixed(1);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = n => '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 /* ---------- render ---------- */
+// Arma el texto que muestra la equivalencia: "5 paq. × 12 + 3 sueltas = 63 pzas".
 function eqTexto(p){
   const partes = [];
   if(p.porPaquete>1) partes.push(`${p.paquetes} paq. × ${p.porPaquete}`);
@@ -231,11 +396,23 @@ function eqTexto(p){
   const tot = totalPiezas(p);
   return (p.porPaquete>1 ? partes.join(' + ')+' = ' : '') + `<b>${tot} pzas</b>`;
 }
+// RENDER: dibuja toda la pantalla a partir de "state".
+// Se llama al abrir la página y después de cada cambio. Ninguna otra función toca la pantalla directamente.
 function render(){
   const prods = state.productos;
+  // Separa los productos por estado de cantidad (rojos y amarillos) para las alertas.
   const crit = prods.filter(p=>estado(p)==='crit');
   const low = prods.filter(p=>estado(p)==='low');
+  // Junta los lotes que ya caducaron o caducan pronto, el más urgente primero.
+  const lotesAlerta = [];
+  prods.forEach(p=>lotesDe(p).forEach(l=>{ const d=diasA(l.cad); if(d<=DIAS_AVISO) lotesAlerta.push({p,l,d}); }));
+  lotesAlerta.sort((a,b)=>a.d-b.d);
+  // nCad = cuántos productos distintos tienen algún lote en alerta.
+  const nCad = new Set(lotesAlerta.map(x=>x.p.id)).size;
 
+  // ---- ALERTAS (arriba de la página) ----
+  // Si no hay productos muestra un mensaje de bienvenida; si hay, arma un aviso por cada nivel que aplique.
+  // Al final el título de la pestaña lleva el número de productos con problemas, ej. "(3) StockAlerta".
   // alertas
   const A = document.getElementById('alertas');
   if(!prods.length){
@@ -244,31 +421,39 @@ function render(){
     let h='';
     if(crit.length) h+=`<div class="banner crit">🔴 ¡Atención! Se te está acabando o ya se acabó:<ul>${crit.map(p=>`<li>${esc(p.nombre)} — quedan ${totalPiezas(p)} pzas${diasTxt(p)}</li>`).join('')}</ul></div>`;
     if(low.length) h+=`<div class="banner low">🟡 Pronto tendrás que comprar:<ul>${low.map(p=>`<li>${esc(p.nombre)} — quedan ${totalPiezas(p)} pzas${diasTxt(p)}</li>`).join('')}</ul></div>`;
-    if(!h) h=`<div class="banner ok">🟢 Todo bien surtido. No hay nada por acabarse.</div>`;
+    if(lotesAlerta.length) h+=`<div class="banner ${lotesAlerta[0].d<0?'crit':'low'}">⏳ Caducidad:<ul>${lotesAlerta.map(x=>`<li>${esc(x.p.nombre)} — ${x.l.piezas} pzas (${fechaCorta(x.l.cad)}): ${cadTxt(x.d)}</li>`).join('')}</ul></div>`;
+    if(!h) h=`<div class="banner ok">🟢 Todo bien surtido. No hay nada por acabarse ni por caducar.</div>`;
     A.innerHTML = h;
   }
-  document.title = (crit.length+low.length ? `(${crit.length+low.length}) ` : '') + 'StockAlerta – Inventario para tu negocio';
+  document.title = (new Set([...crit,...low,...lotesAlerta.map(x=>x.p)]).size ? `(${new Set([...crit,...low,...lotesAlerta.map(x=>x.p)]).size}) ` : '') + 'StockAlerta – Inventario para tu negocio';
 
+  // ---- RESUMEN ---- valor del inventario = suma de (costo por pieza × piezas) de cada producto.
   // stats
   const valor = prods.reduce((a,p)=>a+(p.costo||0)*totalPiezas(p),0);
   document.getElementById('stats').innerHTML = [
-    [prods.length,'Productos'],[crit.length,'Críticos / agotados'],[low.length,'Por acabarse'],[money(valor),'Valor del inventario']
+    [prods.length,'Productos'],[crit.length,'Críticos / agotados'],[low.length,'Por acabarse'],[nCad,'Por caducar / caducados'],[money(valor),'Valor del inventario']
   ].map(([n,l])=>`<div class="card stat"><b>${n}</b><span>${l}</span></div>`).join('');
 
+  // ---- LISTA DE PRODUCTOS ----
+  // 1) Filtra por lo escrito en el buscador y por el estado elegido.
+  // 2) Ordena: primero los urgentes (rojos), luego amarillos, luego verdes; dentro de cada grupo, alfabético.
+  // 3) Dibuja una tarjeta por producto con su semáforo, piezas, lotes y botones (data-a dice qué hace cada botón).
   // lista
   const q = document.getElementById('q').value.trim().toLowerCase();
   const fe = document.getElementById('fEstado').value;
   const orden = {crit:0,low:1,ok:2};
-  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!fe || estado(p)===fe))
-                   .sort((a,b)=>orden[estado(a)]-orden[estado(b)] || a.nombre.localeCompare(b.nombre));
+  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!fe || estadoTotal(p)===fe))
+                   .sort((a,b)=>orden[estadoTotal(a)]-orden[estadoTotal(b)] || a.nombre.localeCompare(b.nombre));
   const L = document.getElementById('lista');
   L.innerHTML = vis.length ? vis.map(p=>{
-    const e = estado(p);
+    const e = estadoTotal(p), ec = estadoCad(p);
+    const lotes = lotesDe(p);
+    const lotesHtml = lotes.length ? `<div class="eq"><small>Lotes: ${lotes.map(l=>{const d=diasA(l.cad);return `${l.piezas} pzas · ${fechaCorta(l.cad)} (${cadTxt(d)})`;}).join(' | ')}</small></div>` : '';
     return `<div class="card prod ${e}">
       <div>
-        <h3>${esc(p.nombre)} <span class="badge ${e}">${ETIQ[e]}</span></h3>
+        <h3>${esc(p.nombre)} <span class="badge ${estado(p)}">${ETIQ[estado(p)]}</span>${ec!=='ok'?` <span class="badge ${ec}">${ec==='crit'?'⌛ Caducado':'⏳ Por caducar'}</span>`:''}</h3>
         <small>${esc(p.categoria||'Sin categoría')} · avisar con ${fmt(p.minimo)} paq. (${fmt(p.minimo*p.porPaquete)} pzas)</small>
-        <div class="eq">${eqTexto(p)}${diasTxt(p)}</div>
+        <div class="eq">${eqTexto(p)}${diasTxt(p)}</div>${lotesHtml}
       </div>
       <div class="actions">
         <button class="sm" data-a="sale" data-id="${p.id}">− Vendí</button>
@@ -278,6 +463,7 @@ function render(){
       </div></div>`;
   }).join('') : `<div class="card empty">${prods.length?'Nada coincide con tu búsqueda.':'Aún no hay productos.'}</div>`;
 
+  // ---- LISTA DE COMPRAS (pantalla) ---- tabla con los productos que no están en verde y cuántos paquetes pedir.
   // compras
   const C = document.getElementById('comprasBox');
   const compras = comprasLista();
@@ -285,11 +471,14 @@ function render(){
     ? `<table><tr><th>Producto</th><th>Pedir</th></tr>${compras.map(c=>`<tr><td>${esc(c.p.nombre)}</td><td><b>${c.paq} paq.</b> <small>(${c.paq*c.p.porPaquete} pzas)</small></td></tr>`).join('')}</table>`
     : '<div class="empty">No hace falta comprar nada por ahora. 🎉</div>';
 }
+// Texto "te alcanza ~N días" que se muestra junto al stock. No muestra nada si aún no hay ventas para estimar.
 function diasTxt(p){
   const d = diasRestantes(p);
   if(d===null) return '';
   return d<1 ? ' · te alcanza menos de 1 día' : ` · te alcanza ~${Math.floor(d)} día${Math.floor(d)===1?'':'s'}`;
 }
+// Lista de compras: todo producto que no esté en verde, con los paquetes a pedir (mínimo 1).
+// comprasTexto() la convierte en texto simple para copiarla o mandarla por WhatsApp.
 function comprasLista(){
   return state.productos.filter(p=>estado(p)!=='ok').map(p=>({p,paq:Math.max(paquetesAPedir(p),1)}));
 }
@@ -299,21 +488,31 @@ function comprasTexto(){
   return '🛒 Lista de compras\n'+c.map(x=>`- ${x.p.nombre}: ${x.paq} paq. (${x.paq*x.p.porPaquete} pzas)`).join('\n');
 }
 
+// FORMULARIO DE PRODUCTO (crear y editar)
 /* ---------- formulario de producto ---------- */
 const dlgProd = document.getElementById('dlgProd'), formProd = document.getElementById('formProd');
+// Actualiza el cuadro verde "Total: N piezas" mientras se escriben paquetes, piezas por paquete y sueltas.
 function prevTotal(){
   const f = formProd.elements;
   const t = (+f.paquetes.value||0)*(+f.porPaquete.value||1)+(+f.sueltas.value||0);
   document.getElementById('prevTotal').textContent = `Total: ${t} piezas`;
 }
 ['paquetes','porPaquete','sueltas'].forEach(n=>formProd.elements[n].addEventListener('input',prevTotal));
+// Abre el formulario. Si recibe un producto lo llena con sus datos (editar); si no, lo deja vacío (nuevo).
+// La caducidad del stock inicial solo se pide al crear; después las fechas se agregan al registrar llegadas.
 function abrirProd(p){
   editId = p ? p.id : null;
   document.getElementById('dlgTitulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
   formProd.reset();
   if(p) ['nombre','categoria','paquetes','porPaquete','sueltas','minimo','objetivo','costo','precio'].forEach(k=>formProd.elements[k].value = p[k] ?? '');
+  document.getElementById('cadLabel').style.display = p ? 'none' : '';
   prevTotal(); dlgProd.showModal();
 }
+// Al pulsar "Guardar":
+// 1) Lee los campos y los limpia (números enteros, nada negativo, mínimo 1 pieza por paquete).
+// 2) Si se está editando, actualiza el producto y recorta lotes sobrantes; si es nuevo, lo agrega.
+// 3) Si puso fecha de caducidad, crea un lote con todo el stock inicial.
+// 4) Guarda y vuelve a dibujar la pantalla.
 formProd.addEventListener('submit',()=>{
   const f = formProd.elements, num=(k,d=0)=>f[k].value===''?d:+f[k].value;
   const data = {nombre:f.nombre.value.trim(), categoria:f.categoria.value.trim(),
@@ -321,15 +520,21 @@ formProd.addEventListener('submit',()=>{
     sueltas:Math.max(0,Math.floor(num('sueltas'))), minimo:Math.max(0,num('minimo')), objetivo:Math.max(0,num('objetivo')),
     costo:f.costo.value===''?null:+f.costo.value, precio:f.precio.value===''?null:+f.precio.value};
   if(!data.nombre) return;
-  if(editId){ Object.assign(state.productos.find(p=>p.id===editId), data); }
-  else state.productos.push({id:uid(), ...data});
+  if(editId){ const p = state.productos.find(p=>p.id===editId); Object.assign(p, data); ajustarLotes(p); }
+  else {
+    const np = {id:uid(), ...data, lotes:[]};
+    if(f.cad.value && totalPiezas(np)>0) np.lotes.push({id:uid(), piezas:totalPiezas(np), cad:f.cad.value});
+    state.productos.push(np);
+  }
   save(); render();
 });
 document.getElementById('cancelProd').onclick = ()=>dlgProd.close();
 document.getElementById('btnNuevo').onclick = ()=>abrirProd(null);
 
+// MOVIMIENTOS: ventas y llegadas de mercancía
 /* ---------- movimientos ---------- */
 const dlgMov = document.getElementById('dlgMov'), formMov = document.getElementById('formMov');
+// Abre la ventana de movimiento. "sale" = venta (se escriben PIEZAS); "buy" = llegada (se escriben PAQUETES y puede llevar fecha de caducidad).
 function abrirMov(tipo,p){
   movCtx = {tipo,id:p.id};
   document.getElementById('movTitulo').textContent = (tipo==='sale'?'Registrar venta: ':'Llegada de paquetes: ')+p.nombre;
@@ -337,21 +542,31 @@ function abrirMov(tipo,p){
   document.getElementById('movHint').textContent = tipo==='sale'
     ? `Hay ${totalPiezas(p)} piezas. Si hace falta, se abre un paquete solo.`
     : `Cada paquete trae ${p.porPaquete} pieza${p.porPaquete===1?'':'s'}.`;
-  formMov.elements.cant.value = 1; dlgMov.showModal();
+  formMov.elements.cant.value = 1; formMov.elements.cad.value = '';
+  document.getElementById('movCadLabel').style.display = tipo==='buy' ? '' : 'none';
+  dlgMov.showModal();
 }
+// Al pulsar "Registrar":
+// VENTA: descuenta piezas (abre paquetes si hace falta), gasta primero el lote que caduca antes y no permite vender más de lo que hay.
+// LLEGADA: suma paquetes completos y, si se puso fecha, crea un lote nuevo con esas piezas.
+// En ambos casos se anota en el historial (movimientos), que luego sirve para estimar cuántos días alcanza el producto.
 formMov.addEventListener('submit',()=>{
   const p = state.productos.find(x=>x.id===movCtx.id); if(!p) return;
   const n = Math.floor(+formMov.elements.cant.value); if(!(n>0)) return;
   if(movCtx.tipo==='sale'){
     const n2 = Math.min(n,totalPiezas(p));
-    descontar(p,n2); state.movimientos.push({pid:p.id,tipo:'salida',piezas:n2,t:Date.now()});
+    descontar(p,n2); consumirLotes(p,n2); state.movimientos.push({pid:p.id,tipo:'salida',piezas:n2,t:Date.now()});
   } else {
-    p.paquetes += n; state.movimientos.push({pid:p.id,tipo:'entrada',piezas:n*p.porPaquete,t:Date.now()});
+    p.paquetes += n;
+    if(formMov.elements.cad.value){ (p.lotes = p.lotes||[]).push({id:uid(), piezas:n*p.porPaquete, cad:formMov.elements.cad.value}); }
+    state.movimientos.push({pid:p.id,tipo:'entrada',piezas:n*p.porPaquete,t:Date.now()});
   }
   save(); render();
 });
 document.getElementById('cancelMov').onclick = ()=>dlgMov.close();
 
+// Un solo "oyente" para todos los botones de las tarjetas (se llama delegación de eventos).
+// Mira qué botón se pulsó con data-a: editar, vender (sale), llegada (buy) o eliminar (del, pide confirmación).
 document.getElementById('lista').addEventListener('click',e=>{
   const b = e.target.closest('button[data-a]'); if(!b) return;
   const p = state.productos.find(x=>x.id===b.dataset.id); if(!p) return;
@@ -365,9 +580,11 @@ document.getElementById('lista').addEventListener('click',e=>{
     save(); render();
   }
 });
+// Buscador y filtro: cada vez que cambian, se vuelve a dibujar la lista.
 document.getElementById('q').addEventListener('input',render);
 document.getElementById('fEstado').addEventListener('change',render);
 
+// LISTA DE COMPRAS: copiar al portapapeles, enviar por WhatsApp (abre wa.me con el texto) o imprimir.
 /* ---------- compras ---------- */
 document.getElementById('btnCopiar').onclick = async ()=>{
   try{ await navigator.clipboard.writeText(comprasTexto()); alert('Lista copiada ✔'); }
@@ -376,18 +593,23 @@ document.getElementById('btnCopiar').onclick = async ()=>{
 document.getElementById('btnWA').onclick = ()=>window.open('https://wa.me/?text='+encodeURIComponent(comprasTexto()),'_blank','noopener');
 document.getElementById('btnPrint').onclick = ()=>window.print();
 
+// HERRAMIENTAS: exportar CSV, borrar todo y cargar datos de ejemplo.
 /* ---------- herramientas ---------- */
+// Exporta el inventario como archivo CSV que abre Excel. El carácter especial del inicio (BOM) hace que se vean bien los acentos.
 document.getElementById('btnCSV').onclick = ()=>{
-  const rows = [['Producto','Categoria','Paquetes','Piezas por paquete','Sueltas','Total piezas','Minimo (paq)','Objetivo (paq)','Estado']]
-    .concat(state.productos.map(p=>[p.nombre,p.categoria||'',p.paquetes,p.porPaquete,p.sueltas,totalPiezas(p),p.minimo,p.objetivo,ETIQ[estado(p)].slice(3)]));
+  const rows = [['Producto','Categoria','Paquetes','Piezas por paquete','Sueltas','Total piezas','Minimo (paq)','Objetivo (paq)','Estado','Proxima caducidad']]
+    .concat(state.productos.map(p=>[p.nombre,p.categoria||'',p.paquetes,p.porPaquete,p.sueltas,totalPiezas(p),p.minimo,p.objetivo,ETIQ[estado(p)].slice(3),(lotesDe(p)[0]||{}).cad||'']));
   const csv = '﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   a.download = 'inventario.csv'; a.click(); URL.revokeObjectURL(a.href);
 };
+// Borra todos los productos y movimientos, pero antes pide confirmación.
 document.getElementById('btnReset').onclick = ()=>{
   if(confirm('¿Borrar todos los productos y movimientos?')){ state={productos:[],movimientos:[]}; save(); render(); }
 };
+// Carga una tiendita de ejemplo para demostrar la app sin escribir nada.
+// Cada fila de "demo" es: nombre, categoría, paquetes, piezas por paquete, sueltas, mínimo (paq), objetivo (paq), costo, precio y las ventas de cada uno de los últimos 7 días.
 document.getElementById('btnDemo').onclick = ()=>{
   if(state.productos.length && !confirm('Esto reemplazará tus datos actuales con el ejemplo. ¿Continuar?')) return;
   // [nombre, categoría, paquetes, porPaquete, sueltas, mín(paq), objetivo(paq), costo, precio, vendidas por día]
@@ -401,16 +623,23 @@ document.getElementById('btnDemo').onclick = ()=>{
     ['Papel higiénico 4 pzas','Limpieza',5,12,0,1,3,28,38,[2,2,3,2,2,3,2]],
     ['Sopa instantánea','Botanas',1,24,6,1,3,9,14,[4,5,4,6,5,5,4]]
   ];
+  // CAD = lotes de ejemplo por producto: [piezas, días para caducar]. Un número negativo significa que ya caducó.
   const now = Date.now();
+  // lotes de ejemplo: [piezas, días para caducar]
+  const CAD = {'Leche 1 L':[[10,3],[14,20]], 'Galletas Marías':[[20,-2],[42,60]], 'Huevo (cartón 30)':[[26,5]], 'Sopa instantánea':[[30,120]]};
   state = {productos:[],movimientos:[]};
+  // Convierte cada fila de "demo" en un producto real, con sus lotes y sus ventas de días pasados
+  // (así el cálculo de "te alcanza N días" ya funciona desde el primer momento).
   demo.forEach(d=>{
     const id = uid();
-    state.productos.push({id,nombre:d[0],categoria:d[1],paquetes:d[2],porPaquete:d[3],sueltas:d[4],minimo:d[5],objetivo:d[6],costo:d[7],precio:d[8]});
+    const lotes = (CAD[d[0]]||[]).map(([piezas,dias])=>{ const f=new Date(hoy0()+dias*DAY); const cad=f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0')+'-'+String(f.getDate()).padStart(2,'0'); return {id:uid(),piezas,cad}; });
+    state.productos.push({id,lotes,nombre:d[0],categoria:d[1],paquetes:d[2],porPaquete:d[3],sueltas:d[4],minimo:d[5],objetivo:d[6],costo:d[7],precio:d[8]});
     d[9].forEach((v,i)=>{ if(v>0) state.movimientos.push({pid:id,tipo:'salida',piezas:v,t:now-(i+0.5)*DAY}); });
   });
   save(); render();
 };
 
+// ARRANQUE: dibuja la pantalla por primera vez al abrir la página.
 render();
 })();
 </script>

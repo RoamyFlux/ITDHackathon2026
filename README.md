@@ -11,6 +11,7 @@ Una página web (un solo `index.html`, sin instalación ni internet) que avisa a
 - **Días restantes estimados** según lo que realmente se vende (últimos 7 días).
 - **Panel de alertas** arriba de todo y contador en la pestaña del navegador.
 - **Inventario por paquetes:** se registra cuántos paquetes hay y cuántas piezas trae cada uno; la app calcula el total sin contar pieza por pieza. Al vender, abre paquetes automáticamente.
+- **Caducidad por lote:** al registrar la llegada de paquetes se anota la fecha de caducidad de ese lote. Avisa 7 días antes (⏳ por caducar) y cuando ya caducó (⌛), y al vender descuenta primero del lote que caduca antes.
 - **Lista de compras automática** en paquetes, que se puede copiar, mandar por WhatsApp o imprimir.
 - Buscador, filtros, exportar CSV y datos de ejemplo para demostrar.
 
