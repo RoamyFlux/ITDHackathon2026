@@ -16,7 +16,16 @@ Una página web (un solo `index.html`, sin instalación ni internet) que avisa a
 - Buscador, filtros, exportar CSV y datos de ejemplo para demostrar.
 
 ## Cómo usarla
-Abre `index.html` en cualquier navegador (celular o computadora). Pulsa **"Cargar ejemplo"** para ver una tiendita de abarrotes. Los datos se guardan en el navegador (`localStorage`).
+Abre `index.html` en cualquier navegador (celular o computadora), entra con tu correo y contraseña y pulsa **"Cargar ejemplo"** para ver una tiendita de abarrotes. Los datos se guardan en tu cuenta de Supabase, así que los ves desde cualquier dispositivo.
+
+## Conectar con Supabase (una sola vez)
+1. Crea una cuenta y un proyecto en [supabase.com](https://supabase.com) (guarda la contraseña de la base).
+2. En **SQL Editor** → *New query*: pega todo `supabase/schema.sql` y pulsa **Run**. Crea las tablas `productos`, `lotes` y `movimientos` con seguridad por usuario (RLS).
+3. En **Authentication → Providers → Email**, para la demo desactiva **Confirm email** (así se puede entrar justo al crear la cuenta).
+4. En **Project Settings → API** copia el **Project URL** y la **anon public key** y pégalos en `SUPABASE_URL` y `SUPABASE_ANON_KEY` al inicio del `<script>` de `index.html`.
+5. Abre la página, pulsa **Crear cuenta** y listo.
+
+**Seguridad:** la *anon key* es pública por diseño (la protegen las reglas RLS: cada usuario solo ve sus filas). **Nunca** pegues la *service_role key* en el código.
 
 ## Equipo
 Abel, Joto, Marika
