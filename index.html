@@ -218,6 +218,7 @@ label input,label select{margin-top:6px;font-weight:500}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .hint{font-size:.8rem;color:var(--muted);margin:-2px 0 14px}
+.hint.aviso-objetivo{color:var(--low);font-weight:600}
 .fieldset{border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
 .fieldset h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--brand-text);display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .buscar{position:relative;margin-bottom:12px}
@@ -305,6 +306,7 @@ label input,label select{margin-top:6px;font-weight:500}
 .fila-alerta:hover{background:var(--brand-soft);border-color:color-mix(in srgb,var(--brand) 25%,transparent);box-shadow:none;transform:translateX(3px)}
 .fila-alerta b{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fila-alerta span{color:var(--muted);font-size:.8rem;font-weight:600;white-space:nowrap}
+.ver-mas{width:100%;color:var(--brand-text)}
 .estado-vacio{display:flex;gap:14px;align-items:center;padding:18px}
 .estado-vacio .ico-grande{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--ok-bg);color:var(--ok)}
 .bienvenida{padding:22px;position:relative;overflow:hidden}
@@ -337,6 +339,8 @@ label input,label select{margin-top:6px;font-weight:500}
 .chip.activo{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 4px 14px var(--glow)}
 .chip.activo .n{background:rgba(255,255,255,.22)}
 .list{display:grid;gap:12px}
+.mas{width:100%;margin-top:4px}
+.tabla-wrap + .mas{margin-top:12px}
 .prod{position:relative;overflow:hidden;padding:16px 18px 16px 22px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 18px;align-items:center;
   transition:transform .2s var(--ease),box-shadow .2s;scroll-margin-top:100px}
 .prod:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
@@ -429,6 +433,9 @@ dialog form{padding:24px}
 .previa{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 16px;border-radius:14px;margin-bottom:14px;
   background:var(--brand-soft);color:var(--brand-text);font-weight:700;font-size:.9rem}
 .previa b{font-size:1.2rem;font-weight:800;color:var(--text)}
+.previa.aviso{background:var(--low-bg);color:var(--low)}
+.previa.aviso b{margin-left:auto}
+.previa .ic{flex:none}
 .stepper{display:grid;grid-template-columns:auto 1fr auto;gap:8px;margin-top:6px}
 .stepper input{text-align:center;font-size:1.2rem;font-weight:800;margin:0}
 .stepper button{width:48px}
@@ -979,7 +986,9 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
     </div>
     <div class="row2">
       <label>Nombre del producto <input name="nombre" required maxlength="60" placeholder="Ej. Refresco 600 ml"></label>
-      <label>Categoría (opcional) <input name="categoria" maxlength="30" placeholder="Ej. Bebidas"></label>
+      <label>Categoría (opcional) <input name="categoria" maxlength="30" placeholder="Ej. Bebidas" list="listaCategorias" autocomplete="off"></label>
+      <!-- Sugerencias: las categorías que ya existen (se llenan al abrir la ventana). -->
+      <datalist id="listaCategorias"></datalist>
     </div>
     <div class="fieldset">
       <h3><svg class="ic sm"><use href="#i-layers"/></svg>¿Cuánto tienes ahora?</h3>
@@ -998,6 +1007,7 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
         <label>Avisarme cuando queden (paquetes) <input name="minimo" type="number" min="0" step="0.5" value="1" required></label>
         <label>Quiero tener (paquetes) <input name="objetivo" type="number" min="0" step="0.5" value="4" required></label>
       </div>
+      <p class="hint aviso-objetivo" id="avisoObjetivo" hidden>"Quiero tener" es menor que el aviso: la lista de compras pedirá solo 1 paquete cuando se acabe.</p>
       <div class="row2">
         <label>Costo por pieza (opcional) <input name="costo" type="number" min="0" step="0.01" placeholder="$0.00"></label>
         <label>Precio de venta (opcional) <input name="precio" type="number" min="0" step="0.01" placeholder="$0.00"></label>
@@ -1299,22 +1309,34 @@ const aDB = p => ({nombre:p.nombre, categoria:p.categoria, paquetes:p.paquetes, 
 // chk: cada llamada a Supabase devuelve {data, error}; si hay error lo lanzamos para que lo atrape guardar().
 function chk(r){ if(r.error) throw r.error; return r; }
 
-// Lee las 3 tablas y arma "state". De movimientos solo pide los últimos 8 días (el consumo diario usa 7).
+// Supabase entrega como máximo 1000 filas por consulta. leerTodo pide de 1000 en 1000 (range) hasta traer
+// todas; así un negocio con muchos productos o muchas ventas no pierde datos sin darse cuenta.
+// "armar" es una función que crea la consulta (se vuelve a crear para cada página).
+const PAGINA = 1000;
+async function leerTodo(armar){
+  const filas = [];
+  for(let desde = 0; ; desde += PAGINA){
+    const r = chk(await armar().range(desde, desde + PAGINA - 1));
+    filas.push(...r.data);
+    if(r.data.length < PAGINA) return filas;
+  }
+}
+// Lee las 3 tablas (solo las columnas que usa la app, para bajar menos datos) y arma "state".
+// De movimientos solo pide los últimos 8 días (el consumo diario usa 7).
 async function cargarTodo(){
   const desde = new Date(Date.now() - 8*DAY).toISOString();
-  const [rp, rl, rm] = await Promise.all([
-    sb.from('productos').select('*').order('created_at'),
-    sb.from('lotes').select('*'),
-    sb.from('movimientos').select('*').gte('created_at', desde)
+  const [prodsDB, lotesDB, movsDB] = await Promise.all([
+    leerTodo(()=>sb.from('productos').select('id,nombre,categoria,paquetes,por_paquete,sueltas,minimo,objetivo,costo,precio,created_at').order('created_at').order('id')),
+    leerTodo(()=>sb.from('lotes').select('id,producto_id,piezas,caducidad').order('id')),
+    leerTodo(()=>sb.from('movimientos').select('producto_id,tipo,piezas,created_at').gte('created_at', desde).order('created_at'))
   ]);
-  [rp, rl, rm].forEach(chk);
-  const prods = rp.data.map(deDB);
+  const prods = prodsDB.map(deDB);
   const porId = new Map(prods.map(p => [p.id, p]));
   // Cada lote se cuelga de su producto; "cad" es la fecha de caducidad (AAAA-MM-DD).
-  rl.data.forEach(l => { const p = porId.get(l.producto_id); if(p) p.lotes.push({id:l.id, piezas:l.piezas, cad:l.caducidad}); });
+  lotesDB.forEach(l => { const p = porId.get(l.producto_id); if(p) p.lotes.push({id:l.id, piezas:l.piezas, cad:l.caducidad}); });
   state = {
     productos: prods,
-    movimientos: rm.data.map(m => ({pid:m.producto_id, tipo:m.tipo, piezas:m.piezas, t:Date.parse(m.created_at)}))
+    movimientos: movsDB.map(m => ({pid:m.producto_id, tipo:m.tipo, piezas:m.piezas, t:Date.parse(m.created_at)}))
   };
 }
 
@@ -1394,19 +1416,36 @@ function descontar(p, n){
 //      divide entre 7 (eso haría parecer que se vende poco y avisaría tarde).
 //   3) Días que alcanza = piezas en tienda ÷ venta diaria. Se muestra redondeado hacia abajo ("~N días").
 // Ejemplo (tienda de ejemplo): Refresco vendió 62 pzas en 7 días -> 8.9 al día; hay 15 -> 15 ÷ 8.9 = 1.7 -> "~1 día".
+// ÍNDICE DE VENTAS (optimización): en lugar de recorrer TODOS los movimientos por cada producto (y varias
+// veces por dibujo), se recorren UNA sola vez y se guarda por producto: ventas de cada uno de los últimos
+// 7 días (dias), total de la semana (suma) y la fecha de la primera venta (primera). "todos" = toda la tienda.
+// Se vuelve a armar solo si cambiaron los movimientos (nueva lectura de la base) o cambió el día.
+const SIN_VENTAS = Object.freeze({dias:Object.freeze([0,0,0,0,0,0,0]), suma:0, primera:Infinity});
+let idxVentas = null;
+function indiceVentas(){
+  const hoy = hoy0();
+  if(idxVentas && idxVentas.ref===state.movimientos && idxVentas.hoy===hoy) return idxVentas;
+  const desde = Date.now() - 7*DAY, por = new Map(), todos = {dias:[0,0,0,0,0,0,0], suma:0, primera:Infinity};
+  for(const m of state.movimientos){
+    if(m.tipo!=='salida' || m.t < desde) continue;          // solo ventas de los últimos 7 días
+    let v = por.get(m.pid);
+    if(!v) por.set(m.pid, v = {dias:[0,0,0,0,0,0,0], suma:0, primera:Infinity});
+    const d = Math.floor((m.t - hoy)/DAY);                  // 0 = hoy, -1 = ayer, …, -6
+    for(const x of [v, todos]){
+      x.suma += m.piezas; x.primera = Math.min(x.primera, m.t);
+      if(d>=-6 && d<=0) x.dias[6+d] += m.piezas;
+    }
+  }
+  return idxVentas = {ref:state.movimientos, hoy, por, todos};
+}
+// Ventas de un producto (o de toda la tienda si no se pasa id).
+const ventasDe = pid => pid ? (indiceVentas().por.get(pid) || SIN_VENTAS) : indiceVentas().todos;
 function diasHistorial(p){
-  const desde = Date.now() - 7*DAY;
-  const primeraVenta = state.movimientos.reduce((a,m)=> m.pid===p.id && m.tipo==='salida' && m.t>=desde ? Math.min(a,m.t) : a, Infinity);
-  const inicio = Math.min(p.creado || Date.now(), primeraVenta);
+  const inicio = Math.min(p.creado || Date.now(), ventasDe(p.id).primera);
   return Math.min(7, Math.max(1, Math.ceil((Date.now() - inicio) / DAY)));
 }
 // Venta diaria promedio (piezas por día) según el historial de arriba.
-function consumoDiario(p){
-  const desde = Date.now() - 7*DAY;
-  const vend = state.movimientos.filter(m => m.pid===p.id && m.tipo==='salida' && m.t>=desde)
-                                .reduce((a,m)=>a+m.piezas,0);
-  return vend / diasHistorial(p);
-}
+function consumoDiario(p){ return ventasDe(p.id).suma / diasHistorial(p); }
 // Días que alcanza el stock al ritmo actual (null si aún no hay ventas para estimar).
 function diasRestantes(p){
   const c = consumoDiario(p);
@@ -1421,7 +1460,9 @@ function explicarDias(p){
 // Semáforo por CANTIDAD:
 //   crit = agotado o en/bajo el mínimo.   low = hasta 1.5 veces el mínimo o le quedan ≤ 2 días.   ok = suficiente.
 // Ejemplo: mínimo 1 paquete de 12 = 12 piezas -> con 12 o menos rojo; de 13 a 18 ámbar.
-function estado(p){
+// (Se memoriza: ver "memoDe" más abajo; calcEstado hace la cuenta real.)
+const estado = p => { const m = memoDe(p); return m.s ?? (m.s = calcEstado(p)); };
+function calcEstado(p){
   const tot = totalPiezas(p), min = p.minimo*p.porPaquete;
   if(tot<=0) return 'crit';
   if(tot<=min) return 'crit';
@@ -1458,14 +1499,20 @@ function ajustarLotes(p){
   p.lotes = lotesDe(p);
 }
 // Semáforo por CADUCIDAD (según el lote más próximo): crit = ya caducó, low = caduca en ≤ 7 días.
-function estadoCad(p){
+const estadoCad = p => { const m = memoDe(p); return m.c ?? (m.c = calcEstadoCad(p)); };
+function calcEstadoCad(p){
   const ls = lotesDe(p); if(!ls.length) return 'ok';
   const d = diasA(ls[0].cad);
   return d<0 ? 'crit' : d<=DIAS_AVISO ? 'low' : 'ok';
 }
 // El producto muestra el PEOR de sus dos semáforos (cantidad y caducidad).
 const peor = (a,b) => ({ok:0,low:1,crit:2}[a] >= {ok:0,low:1,crit:2}[b] ? a : b);
-const estadoTotal = p => peor(estado(p), estadoCad(p));
+const estadoTotal = p => { const m = memoDe(p); return m.t ?? (m.t = peor(estado(p), estadoCad(p))); };
+// MEMORIA DE ESTADOS (optimización): un mismo dibujo pregunta muchas veces el estado de cada producto
+// (filtros, orden, contadores, alertas, tabla…). Se calcula una vez y se guarda aquí; render() la borra
+// al empezar (los datos o la configuración pudieron cambiar). WeakMap: se libera sola con los productos.
+let memo = new WeakMap();
+function memoDe(p){ let m = memo.get(p); if(!m) memo.set(p, m = {}); return m; }
 
 /* =====================================================================
  * F) TEXTOS Y FORMATOS (solo cambian cómo se ve algo)
@@ -1498,6 +1545,7 @@ const avatarHTML = () => perfil.avatar ? `<img src="${esc(perfil.avatar)}" alt="
  * Se llama al cargar y después de cada cambio. Ninguna otra función toca la lista directamente.
  * ===================================================================== */
 function render(){
+  memo = new WeakMap();   // los estados se recalculan en cada dibujo (ver "MEMORIA DE ESTADOS")
   const prods = state.productos;
   const anim = animar;   // ¿esta vez se dibuja con animaciones de entrada? (solo al cargar datos)
   // Separa por estado de cantidad (para alertas) y junta los lotes por caducar (el más urgente primero).
@@ -1525,10 +1573,13 @@ function render(){
       <button type="button" data-accion="importar">${ico('upload','sm')}Importar mis productos desde Excel</button>
       <button type="button" class="sec" data-accion="demo" style="margin-top:8px">${ico('spark','sm')}Probar con una tienda de ejemplo</button></div>`;
   } else {
+    // Cada grupo muestra hasta 8 renglones (los más urgentes); si hay más, un botón lleva al inventario filtrado.
+    const MAX_ALERTAS = 8;
+    const resto = (n, f) => n > MAX_ALERTAS ? `<li><button type="button" class="ghost sm ver-mas" ${f?`data-ver="${f}"`:'data-ver="todo"'}>Ver ${n - MAX_ALERTAS} más</button></li>` : '';
     let h='';
-    if(crit.length) h+=`<div class="grupo crit"><h3><span class="dot crit"></span>Se acaba o se acabó</h3><ul>${crit.map(p=>fila(p, detalleStock(p))).join('')}</ul></div>`;
-    if(low.length) h+=`<div class="grupo low"><h3><span class="dot low"></span>Pronto hay que comprar</h3><ul>${low.map(p=>fila(p, detalleStock(p))).join('')}</ul></div>`;
-    if(lotesAlerta.length) h+=`<div class="grupo ${lotesAlerta[0].d<0?'crit':'low'}"><h3>${ico('clock','sm')}Caducidad</h3><ul>${lotesAlerta.map(x=>fila(x.p, `${x.l.piezas} pzas · ${cadTxt(x.d)}`)).join('')}</ul></div>`;
+    if(crit.length) h+=`<div class="grupo crit"><h3><span class="dot crit"></span>Se acaba o se acabó</h3><ul>${crit.slice(0,MAX_ALERTAS).map(p=>fila(p, detalleStock(p))).join('')}${resto(crit.length,'crit')}</ul></div>`;
+    if(low.length) h+=`<div class="grupo low"><h3><span class="dot low"></span>Pronto hay que comprar</h3><ul>${low.slice(0,MAX_ALERTAS).map(p=>fila(p, detalleStock(p))).join('')}${resto(low.length,'low')}</ul></div>`;
+    if(lotesAlerta.length) h+=`<div class="grupo ${lotesAlerta[0].d<0?'crit':'low'}"><h3>${ico('clock','sm')}Caducidad</h3><ul>${lotesAlerta.slice(0,MAX_ALERTAS).map(x=>fila(x.p, `${x.l.piezas} pzas · ${cadTxt(x.d)}`)).join('')}${resto(lotesAlerta.length,'')}</ul></div>`;
     A.innerHTML = h
       ? `<div class="card alertas"><div class="sec-tit"><h2>${ico('bell')}Requiere atención</h2><span class="contador crit">${nAtencion}</span></div>${h}</div>`
       : `<div class="card estado-vacio"><span class="ico-grande">${ico('check')}</span><div><b>Todo en orden</b><br><small>Nada por acabarse ni por caducar.</small></div></div>`;
@@ -1593,14 +1644,17 @@ function render(){
                    .sort((a,b)=>orden[estadoTotal(a)]-orden[estadoTotal(b)] || a.nombre.localeCompare(b.nombre));
   const L = $('lista');
   L.classList.toggle('anim', animar);
+  // Si cambió la búsqueda, un filtro, la vista o el orden, se vuelve a mostrar desde los primeros 60.
+  const firma = [q, filtroEstado, filtroCategoria, prefs.vista, ordenTabla.col, ordenTabla.dir].join('|');
+  if(firma !== firmaLista){ firmaLista = firma; limiteLista = PASO_LISTA; }
   if(cargando && !prods.length){
     L.innerHTML = '<div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>';
   } else if(!vis.length){
-    L.innerHTML = `<div class="card vacio-lista">${ico(prods.length?'search':'box')}<div>${prods.length?'Nada coincide con tu búsqueda o filtro.':'Aún no tienes productos. Agrega el primero con "Nuevo producto".'}</div></div>`;
+    L.innerHTML = `<div class="card vacio-lista">${ico(prods.length?'search':'box')}<div>${prods.length?'Nada coincide con tu búsqueda o filtro.':'Aún no tienes productos. Agrega el primero con "Nuevo producto".'}</div>${prods.length?`<button type="button" class="sec sm" data-accion="quitar-filtros">${ico('x','sm')}Quitar filtros</button>`:''}</div>`;
   } else if(prefs.vista==='tabla'){
     L.innerHTML = tablaHTML(vis);          // vista de tabla (ver más abajo)
   } else {
-    L.innerHTML = vis.map((p,k)=>{
+    L.innerHTML = vis.slice(0, limiteLista).map((p,k)=>{
       const e = estadoTotal(p), es = estado(p), ec = estadoCad(p);
       // Lotes con fecha; cada pastilla se pinta según qué tan cerca está de caducar.
       const lotes = lotesDe(p);
@@ -1622,21 +1676,24 @@ function render(){
           <button class="sm ghost icono" data-a="edit" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ico('edit','sm')}</button>
           <button class="sm ghost icono" data-a="del" data-id="${p.id}" aria-label="Eliminar ${esc(p.nombre)}" title="Eliminar">${ico('trash','sm')}</button>
         </div></article>`;
-    }).join('');
+    }).join('') + botonMas(vis.length);
   }
+  vigilarMas();
 
   // ---- LISTA DE COMPRAS ---- productos que no están en verde y cuántos paquetes pedir.
   const compras = comprasLista();
   $('nCompras').textContent = compras.length;
   $('comprasBox').innerHTML = compras.length
-    ? `<ul>${compras.map(c=>`<li><span class="prodc"><span class="dot ${estado(c.p)}"></span><b>${esc(c.p.nombre)}</b></span><span class="cant">${c.paq} paq. · ${c.paq*c.p.porPaquete} pzas</span></li>`).join('')}</ul>`
+    // En pantalla hasta 15 renglones; al copiar, enviar por WhatsApp o imprimir sí va la lista completa.
+    ? `<ul>${compras.slice(0,15).map(c=>`<li><span class="prodc"><span class="dot ${estado(c.p)}"></span><b>${esc(c.p.nombre)}</b></span><span class="cant">${c.paq} paq. · ${c.paq*c.p.porPaquete} pzas</span></li>`).join('')}${compras.length>15?`<li class="mas-compras"><small>y ${compras.length-15} producto${compras.length-15===1?'':'s'} más (se incluyen al copiar o enviar)</small></li>`:''}</ul>`
     : `<div class="vacio-mini">${ico('check')}No hace falta comprar nada por ahora.</div>`;
 
   // ---- GRÁFICA DE VENTAS (7 días) ---- piezas vendidas por día, promedio y producto más vendido.
   const v = ventasPorDia(), max = Math.max(1, ...v), totalSem = v.reduce((a,b)=>a+b,0);
   const nombreDia = i => i===6 ? 'Hoy' : new Date(hoy0()-(6-i)*DAY).toLocaleDateString('es-MX',{weekday:'short'}).replace('.','');
+  // Producto más vendido de la semana: se toma del índice de ventas (sin volver a recorrer los movimientos).
   const porProd = {};
-  state.movimientos.forEach(m=>{ if(m.tipo==='salida' && m.t >= hoy0()-6*DAY) porProd[m.pid] = (porProd[m.pid]||0) + m.piezas; });
+  for(const [pid, x] of indiceVentas().por){ const n = x.dias.reduce((a,b)=>a+b,0); if(n) porProd[pid] = n; }
   const topId = Object.keys(porProd).sort((a,b)=>porProd[b]-porProd[a])[0];
   const top = prods.find(p=>p.id===topId);
   $('ventasTotal').textContent = `${totalSem} pzas`;
@@ -1647,17 +1704,9 @@ function render(){
     <div><span>Más vendido</span><b>${top ? `${esc(top.nombre)} · ${porProd[topId]} pzas` : '—'}</b></div></div>`;
   animar = false;
 }
-// Piezas vendidas por día en los últimos 7 días: [hace 6 días, …, ayer, hoy].
-// Si se pasa el id de un producto, cuenta solo ese producto (para su mini gráfica).
-function ventasPorDia(pid){
-  const base = hoy0(), r = [0,0,0,0,0,0,0];
-  state.movimientos.forEach(m=>{
-    if(m.tipo!=='salida' || (pid && m.pid!==pid)) return;
-    const d = Math.floor((m.t - base)/DAY);          // 0 = hoy, -1 = ayer, …, -6
-    if(d>=-6 && d<=0) r[6+d] += m.piezas;
-  });
-  return r;
-}
+// Piezas vendidas por día en los últimos 7 días: [hace 6 días, …, ayer, hoy] (sale del índice de ventas).
+// Si se pasa el id de un producto, solo de ese producto (para su mini gráfica).
+const ventasPorDia = pid => ventasDe(pid).dias;
 // Mini gráfica (sparkline) de un producto: una línea con su área sombreada. Vacía si no hubo ventas.
 function spark(pid){
   const v = ventasPorDia(pid); if(!v.some(Boolean)) return '';
@@ -1687,12 +1736,15 @@ const COLS = [
 // Los botones de cada fila usan los mismos data-a que las tarjetas, así los maneja el mismo código de clics.
 function tablaHTML(vis){
   const c = COLS.find(x=>x.k===ordenTabla.col) || COLS[2];
-  const filas = [...vis].sort((a,b)=>{ const va=c.v(a), vb=c.v(b); return (va<vb?-1:va>vb?1:0)*ordenTabla.dir || a.nombre.localeCompare(b.nombre); });
+  // Se calcula el valor de orden UNA vez por producto (no en cada comparación) y luego se ordena.
+  const filas = vis.map(p=>[c.v(p), p])
+    .sort(([va,a],[vb,b])=>(va<vb?-1:va>vb?1:0)*ordenTabla.dir || a.nombre.localeCompare(b.nombre))
+    .map(x=>x[1]);
   const th = COLS.map(col=>{
     const act = col.k===ordenTabla.col;
     return `<th class="${col.num?'num':''}" ${act?`aria-sort="${ordenTabla.dir>0?'ascending':'descending'}"`:''}><button type="button" class="orden" data-orden="${col.k}" title="Ordenar por ${col.t}">${col.t}${ico(act?(ordenTabla.dir>0?'up':'dn'):'sort','sm')}</button></th>`;
   }).join('') + '<th class="num"><span class="th-txt">Acciones</span></th>';
-  const tr = filas.map((p,k)=>{
+  const tr = filas.slice(0, limiteLista).map((p,k)=>{
     const e = estadoTotal(p), es = estado(p), ec = estadoCad(p), l = lotesDe(p)[0], d = l ? diasA(l.cad) : null;
     const v7 = ventasPorDia(p.id).reduce((a,b)=>a+b,0);
     return `<tr class="${e}" data-fila="${p.id}" style="--i:${Math.min(k,14)}">
@@ -1714,7 +1766,7 @@ function tablaHTML(vis){
   }).join('');
   const totPz = filas.reduce((a,p)=>a+totalPiezas(p),0), valor = filas.reduce((a,p)=>a+(p.costo||0)*totalPiezas(p),0);
   return `<div class="tabla-wrap"><table class="tabla" aria-label="Inventario en tabla"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody>
-    <tfoot><tr><td>${filas.length} producto${filas.length===1?'':'s'}</td><td colspan="5"></td><td class="num">${totPz} pzas</td><td colspan="3"></td><td class="num" colspan="2">Valor ${money(valor)}</td></tr></tfoot></table></div>`;
+    <tfoot><tr><td>${filas.length} producto${filas.length===1?'':'s'}</td><td colspan="5"></td><td class="num">${totPz} pzas</td><td colspan="3"></td><td class="num" colspan="2">Valor ${money(valor)}</td></tr></tfoot></table></div>` + botonMas(filas.length);
 }
 // formatear(valor, formato): 'money' -> $1,234.00 · 'pct' -> 72% · 'int' -> 12
 function formatear(n, f){ return f==='money' ? money(n) : f==='pct' ? Math.round(n)+'% en riesgo' : String(Math.round(n)); }
@@ -1732,6 +1784,25 @@ function contar(el){
   };
   requestAnimationFrame(paso);
 }
+/* ---- LISTA POR PARTES (optimización) ----
+ * Dibujar cientos de tarjetas a la vez hace lenta la página. Se muestran de 60 en 60; al acercarse al final
+ * (o tocar el botón) se agregan 60 más. IntersectionObserver avisa cuando el botón entra en pantalla
+ * (en la vista de tarjetas; en la tabla se usa el botón, ver vigilarMas). */
+const PASO_LISTA = 60;
+let limiteLista = PASO_LISTA, firmaLista = '';
+const botonMas = total => total > limiteLista
+  ? `<button type="button" class="sec mas" data-accion="mas">${ico('dn','sm')}Mostrar ${Math.min(PASO_LISTA, total - limiteLista)} más · ${limiteLista} de ${total}</button>` : '';
+const mostrarMas = () => { limiteLista += PASO_LISTA; render(); };
+const observaMas = 'IntersectionObserver' in window
+  ? new IntersectionObserver(ents=>{ if(ents.some(x=>x.isIntersecting)) mostrarMas(); }, {rootMargin:'500px'}) : null;
+// Solo en "Tarjetas": en "Tabla" las filas están en una caja con su propio scroll (la página no crece),
+// así que el botón quedaría siempre a la vista y se cargaría todo de golpe; ahí se usa el botón.
+function vigilarMas(){
+  if(!observaMas) return;
+  observaMas.disconnect();
+  if(prefs.vista==='tabla') return;
+  const b = document.querySelector('#lista [data-accion="mas"]'); if(b) observaMas.observe(b);
+}
 // Lista de compras: todo producto que no esté en verde, con los paquetes a pedir (mínimo 1).
 function comprasLista(){
   return state.productos.filter(p=>estado(p)!=='ok').map(p=>({p,paq:Math.max(paquetesAPedir(p),1)}));
@@ -1747,6 +1818,7 @@ function irAProducto(id){
   // Si un filtro o una búsqueda la esconde, se quitan para que aparezca.
   // (data-fila es el id del producto en la tarjeta o en la fila de la tabla)
   if(!document.querySelector(`#lista [data-fila="${id}"]`)){ filtroEstado=''; filtroCategoria=''; $('q').value=''; render(); }
+  if(!document.querySelector(`#lista [data-fila="${id}"]`)){ limiteLista = state.productos.length; render(); }   // estaba más abajo de lo mostrado
   const el = document.querySelector(`#lista [data-fila="${id}"]`); if(!el) return;
   el.scrollIntoView({behavior:'smooth', block:'center'});
   el.classList.remove('resaltar'); void el.offsetWidth; el.classList.add('resaltar');
@@ -1770,12 +1842,35 @@ function abrirProd(p){
   formProd.reset();
   if(p) ['nombre','categoria','paquetes','porPaquete','sueltas','minimo','objetivo','costo','precio'].forEach(k=>formProd.elements[k].value = p[k] ?? '');
   $('cadLabel').style.display = p ? 'none' : '';
-  prevTotal(); dlgProd.showModal();
+  $('listaCategorias').innerHTML = categoriasExistentes().map(c=>`<option value="${esc(c)}">`).join('');
+  prevTotal(); revisarObjetivo(); dlgProd.showModal();
 }
+// Categorías que ya existen (sin repetir, en orden alfabético) y un mapa "sin acentos/mayúsculas -> escritura real".
+// Se calculan una vez por lectura de datos (no en cada uso; importa mucho al importar miles de filas).
+let cacheCats = {ref:null};
+function catsIdx(){
+  if(cacheCats.ref!==state.productos){
+    const lista = [...new Set(state.productos.map(p=>p.categoria).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+    cacheCats = {ref:state.productos, lista, porNorm:new Map(lista.map(c=>[norm(c), c]))};
+  }
+  return cacheCats;
+}
+const categoriasExistentes = () => catsIdx().lista;
+// Si escriben "bebidas" y ya existe "Bebidas", se usa la escritura existente (así no se duplican categorías).
+function unificarCategoria(c){
+  const t = String(c||'').trim(); if(!t) return '';
+  return catsIdx().porNorm.get(norm(t)) || t;
+}
+// Aviso si "Quiero tener" es menor que "Avisarme cuando queden" (la lista de compras pediría muy poco).
+function revisarObjetivo(){
+  const f = formProd.elements, mal = +f.objetivo.value < +f.minimo.value;
+  $('avisoObjetivo').hidden = !mal;
+}
+['minimo','objetivo'].forEach(n=>formProd.elements[n].addEventListener('input', revisarObjetivo));
 // Al guardar: limpia los números, actualiza (y recorta lotes) o crea el producto (con lote si trae fecha).
 formProd.addEventListener('submit',()=>{
   const f = formProd.elements, num=(k,d=0)=>f[k].value===''?d:+f[k].value;
-  const data = {nombre:f.nombre.value.trim(), categoria:f.categoria.value.trim(),
+  const data = {nombre:f.nombre.value.trim(), categoria:unificarCategoria(f.categoria.value),
     paquetes:Math.max(0,Math.floor(num('paquetes'))), porPaquete:Math.max(1,Math.floor(num('porPaquete',1))),
     sueltas:Math.max(0,Math.floor(num('sueltas'))), minimo:Math.max(0,num('minimo')), objetivo:Math.max(0,num('objetivo')),
     costo:f.costo.value===''?null:+f.costo.value, precio:f.precio.value===''?null:+f.precio.value};
@@ -1807,8 +1902,16 @@ function prevMov(){
   if(!movCtx) return;
   const p = state.productos.find(x=>x.id===movCtx.id); if(!p) return;
   const n = Math.max(0, Math.floor(+formMov.elements.cant.value||0));
-  const despues = movCtx.tipo==='sale' ? Math.max(0, totalPiezas(p)-n) : totalPiezas(p) + piezasLlegada(p, n);
-  $('movPrevia').innerHTML = `${movCtx.tipo==='sale'?'Quedarán en tienda':'Tendrás en tienda'} <b>${despues} pzas</b>`;
+  const venta = movCtx.tipo==='sale', hay = totalPiezas(p);
+  const despues = venta ? Math.max(0, hay-n) : hay + piezasLlegada(p, n);
+  // En una venta no se puede vender más de lo que hay: se avisa (y al registrar se toma lo que hay).
+  const excede = venta && n > hay;
+  $('movPrevia').classList.toggle('aviso', excede);
+  $('movPrevia').innerHTML = excede
+    ? `${ico('alert','sm')}Solo hay ${hay} pzas: se registrarán ${hay}. <b>0 pzas</b>`
+    : `${venta?'Quedarán en tienda':'Tendrás en tienda'} <b>${despues} pzas</b>`;
+  $('movOk').disabled = venta && hay===0;
+  if(venta && hay===0) $('movPrevia').innerHTML = `${ico('alert','sm')}No hay existencias para vender. <b>0 pzas</b>`;
 }
 // Piezas reales de una llegada: n paquetes × piezas por paquete, o n piezas sueltas (según el botón elegido).
 const piezasLlegada = (p, n) => movCtx.unidad==='pza' ? n : n*p.porPaquete;
@@ -1904,6 +2007,13 @@ $('lista').addEventListener('click',e=>{
       .then(ok=>{ if(ok) guardar(async()=>{ chk(await sb.from('productos').delete().eq('id', p.id)); }, 'Producto eliminado'); });
   }
 });
+// Botón "Mostrar más" al final de la lista.
+$('lista').addEventListener('click', e=>{ if(e.target.closest('[data-accion="mas"]')) mostrarMas(); });
+// Botón "Quitar filtros" (cuando la búsqueda o los filtros no dejan ningún producto a la vista).
+$('lista').addEventListener('click', e=>{
+  if(!e.target.closest('[data-accion="quitar-filtros"]')) return;
+  filtroEstado = ''; filtroCategoria = ''; $('q').value = ''; render();
+});
 // Encabezados de la tabla: tocar una columna la ordena; tocarla otra vez invierte el orden.
 $('lista').addEventListener('click', e=>{
   const o = e.target.closest('[data-orden]'); if(!o) return;
@@ -1912,6 +2022,8 @@ $('lista').addEventListener('click', e=>{
 });
 // Panel de alertas: renglón -> ir al producto; botón de bienvenida -> cargar ejemplo o importar Excel.
 $('alertas').addEventListener('click', e=>{
+  const ver = e.target.closest('[data-ver]');
+  if(ver){ filtroEstado = ver.dataset.ver==='todo' ? '' : ver.dataset.ver; filtroCategoria = ''; $('q').value = ''; render(); $('inventario').scrollIntoView({behavior:'smooth'}); return; }
   const ir = e.target.closest('[data-ir]');
   if(ir) irAProducto(ir.dataset.ir);
   if(e.target.closest('[data-accion="demo"]')) $('btnDemo').click();
@@ -1927,7 +2039,12 @@ $('cats').addEventListener('click', e=>{
   const c = e.target.closest('[data-cat]'); if(!c) return;
   filtroCategoria = c.dataset.cat; render();
 });
-$('q').addEventListener('input',render);
+// Buscador: se dibuja como máximo una vez por cuadro de pantalla (requestAnimationFrame), aunque se escriba rápido.
+// Esc borra la búsqueda.
+let rafRender = 0;
+const programarRender = () => { if(!rafRender) rafRender = requestAnimationFrame(()=>{ rafRender = 0; render(); }); };
+$('q').addEventListener('input', programarRender);
+$('q').addEventListener('keydown', e=>{ if(e.key==='Escape' && e.target.value){ e.stopPropagation(); e.target.value = ''; render(); } });
 
 /* =====================================================================
  * K) LISTA DE COMPRAS: copiar, WhatsApp (abre wa.me con el texto) e imprimir
@@ -1937,7 +2054,13 @@ $('btnCopiar').onclick = async ()=>{
   catch(e){ prompt('Copia tu lista:',comprasTexto()); }
 };
 $('btnWA').onclick = ()=>window.open('https://wa.me/?text='+encodeURIComponent(comprasTexto()),'_blank','noopener');
-$('btnPrint').onclick = ()=>window.print();
+// Imprimir: se dibuja temporalmente la lista COMPLETA (en pantalla se recorta a 15) y luego se restaura.
+$('btnPrint').onclick = ()=>{
+  const box = $('comprasBox'), antes = box.innerHTML;
+  box.innerHTML = `<ul>${comprasLista().map(c=>`<li><span class="prodc"><b>${esc(c.p.nombre)}</b></span><span class="cant">${c.paq} paq. · ${c.paq*c.p.porPaquete} pzas</span></li>`).join('')}</ul>`;
+  window.print();
+  box.innerHTML = antes;
+};
 
 /* =====================================================================
  * L) HERRAMIENTAS: exportar CSV, borrar todo y cargar el ejemplo
@@ -2313,6 +2436,10 @@ document.addEventListener('pointerdown', e=>{
   o.addEventListener('animationend', ()=>o.remove());
 });
 
+// Aviso de conexión: si se pierde internet, los cambios no se pueden guardar en la base de datos.
+addEventListener('offline', ()=>avisar('Sin conexión a internet: los cambios no se guardarán hasta que vuelva.'));
+addEventListener('online', ()=>{ avisar('Conexión recuperada', 'ok'); if(usuarioActual) guardar(async()=>{}); });
+
 /* =====================================================================
  * T) APP INSTALABLE (PWA)
  * Registra sw.js (ver ese archivo) y, si el navegador ofrece instalar, muestra el botón en Configuración.
@@ -2527,7 +2654,7 @@ function convertirFila(fila){
   });
   let cad = null;
   if(tiene('cad')){ cad = parseFecha(g('cad')); if(cad===undefined){ errores.push(`Fecha "${String(g('cad')).slice(0,20)}" no reconocida`); cad = null; } }
-  const categoria = tiene('categoria') ? String(g('categoria')).trim().slice(0,30) : null;
+  const categoria = tiene('categoria') ? unificarCategoria(String(g('categoria')).slice(0,30)) : null;
   return {nombre, categoria, n, cad, errores};
 }
 // Reparte el stock en paquetes + sueltas. Si el archivo solo trae la existencia total, la divide:
@@ -2602,16 +2729,29 @@ function ejecutarImport(){
                           .map(x=>({producto_id:idDe.get(x.vista.nombre), piezas:totalPiezas(x.vista), caducidad:x.cad}));
       if(lotes.length) chk(await sb.from('lotes').insert(lotes));
     }
-    for(const x of act){
-      const p = state.productos.find(q=>q.id===x.p.id); if(!p) continue;
+    // Actualizaciones (optimizado): se aplican en memoria y se mandan en bloques de 200 con "upsert"
+    // (una llamada por bloque en lugar de una por producto).
+    const porId = new Map(state.productos.map(p=>[p.id, p]));
+    const cambiados = act.map(x=>{
+      const p = porId.get(x.p.id); if(!p) return null;
       const antes = fotoLotes(p);
       Object.assign(p, cambiosPara(x, p));
-      chk(await sb.from('productos').update(aDB(p)).eq('id', p.id));
-      if(x.cad){
-        chk(await sb.from('lotes').delete().eq('producto_id', p.id));
-        if(totalPiezas(p)>0) chk(await sb.from('lotes').insert({producto_id:p.id, piezas:totalPiezas(p), caducidad:x.cad}));
-      } else { ajustarLotes(p); await sincronizarLotes(antes, p); }
+      if(!x.cad) ajustarLotes(p);
+      return {x, p, antes};
+    }).filter(Boolean);
+    for(let i=0; i<cambiados.length; i+=200){
+      chk(await sb.from('productos').upsert(cambiados.slice(i, i+200).map(({p})=>({id:p.id, ...aDB(p)}))));
     }
+    // Lotes: si el archivo trae fecha, los lotes del producto se reemplazan por uno con todo su stock;
+    // si no trae fecha, solo se recortan los que sobren (como al editar a mano).
+    const conFecha = cambiados.filter(c=>c.x.cad);
+    for(let i=0; i<conFecha.length; i+=200){
+      const b = conFecha.slice(i, i+200);
+      chk(await sb.from('lotes').delete().in('producto_id', b.map(c=>c.p.id)));
+      const nuevosLotes = b.filter(c=>totalPiezas(c.p)>0).map(c=>({producto_id:c.p.id, piezas:totalPiezas(c.p), caducidad:c.x.cad}));
+      if(nuevosLotes.length) chk(await sb.from('lotes').insert(nuevosLotes));
+    }
+    for(const c of cambiados) if(!c.x.cad) await sincronizarLotes(c.antes, c.p);
   }, `Importación lista: ${nuevos.length} nuevo${nuevos.length===1?'':'s'}, ${act.length} actualizado${act.length===1?'':'s'}${omit?`, ${omit} omitido${omit===1?'':'s'}`:''}`, true);
 }
 // Eventos del importador: elegir/soltar archivo, cambiar hoja o columnas, modo, Atrás y Siguiente.
