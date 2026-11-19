@@ -3,446 +3,683 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>StockAlerta – Inventario para tu negocio</title>
+<title>EarlyStock · Inventario inteligente para tu negocio</title>
+<meta name="description" content="EarlyStock: inventario por paquetes, alertas de stock y caducidad, y lista de compras para pequeños negocios.">
+<!-- Ícono de la pestaña del navegador: el mismo logo de assets/logo.svg -->
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<meta name="theme-color" content="#1b0d33">
 <!--
-     TIPOGRAFÍA: fuente "Plus Jakarta Sans" de Google Fonts. Si no carga, se usa la fuente del sistema.
+     TIPOGRAFÍA: "Plus Jakarta Sans" de Google Fonts (moderna y formal).
+     Si no carga (sin internet), el navegador usa la fuente del sistema y todo sigue funcionando.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/*
- * COLORES Y MEDIDAS DE LA APP (variables)
- * Todo el CSS usa estas variables con var(--nombre). Para cambiar el look, cambia solo estos valores.
- *   --brand          = verde principal (botones). --top-bg = fondo del encabezado (más sobrio en modo oscuro)
- *   --ok/--low/--crit = semáforo: verde / ámbar / rojo. El sufijo -bg es el fondo suave de cada color.
- *   --radius, --shadow = esquinas redondeadas y sombra suave de las tarjetas.
- */
+/* =====================================================================
+ * 1) PALETA DE COLORES (variables CSS)
+ * Inspirada en los atardeceres morados, lilas y rosas (solo los colores).
+ * Todo el CSS usa estas variables con var(--nombre): para cambiar el look, cambia solo estos valores.
+ *   --brand / --brand-2 = morado principal (botones, enlaces).   --lila = acento suave.
+ *   --grad              = degradado de marca (botones principales, logo, detalles).
+ *   --grad-hero         = degradado de "atardecer" para la pantalla de inicio de sesión.
+ *   --ok / --low / --crit = semáforo (verde / ámbar / rojo-rosa). Se mantienen verde-ámbar-rojo
+ *                           porque son los colores que todos entienden como "bien / cuidado / urgente".
+ *   El sufijo -bg es el fondo suave de cada color.
+ * ===================================================================== */
 :root{
-  --bg:#f4f5f1; --surface:#ffffff; --surface-2:#f0f2ed; --text:#16201a; --muted:#5d6a62; --line:#e2e6df;
-  --brand:#0f6b4f; --brand-2:#0a5740; --brand-soft:#e2f1e9; --on-brand:#ffffff;
-  --top-bg:#0f6b4f; --on-top:#ffffff;
-  --ok:#1d7a43; --ok-bg:#e5f3ea;
-  --low:#9a6100; --low-bg:#fcf1d6;
-  --crit:#b42318; --crit-bg:#fce9e7;
-  --radius:16px; --radius-sm:10px;
-  --shadow:0 1px 2px rgba(20,32,25,.06), 0 2px 8px rgba(20,32,25,.05);
-  --shadow-lg:0 12px 40px rgba(20,32,25,.18);
+  --bg:#f6f4fb; --surface:#ffffff; --surface-2:#f3effa; --text:#1d1530; --muted:#6c6483; --line:#e8e2f3;
+  --brand:#7c3aed; --brand-2:#6d28d9; --brand-soft:#f1eaff; --brand-text:#6d28d9; --lila:#c4b5fd;
+  --grad:linear-gradient(135deg,#6d28d9 0%,#a21caf 55%,#db2777 100%);
+  --grad-hero:linear-gradient(140deg,#1b0d33 0%,#4c1d95 38%,#a21caf 68%,#ec4899 86%,#fb923c 100%);
+  --top-bg:linear-gradient(90deg,#1b0d33 0%,#2e1065 60%,#4a145f 100%);
+  --ok:#0e9f6e; --ok-bg:#e3f7ef;
+  --low:#c26a06; --low-bg:#fff1dc;
+  --crit:#e11d48; --crit-bg:#ffe4ea;
+  --radius:18px; --radius-sm:12px;
+  --shadow:0 1px 2px rgba(45,20,90,.06), 0 4px 14px rgba(45,20,90,.06);
+  --shadow-hover:0 2px 4px rgba(45,20,90,.08), 0 12px 28px rgba(45,20,90,.12);
+  --shadow-lg:0 24px 60px rgba(27,13,51,.35);
   --font:"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
 }
-/*
- * MODO OSCURO
- * Si el celular o la computadora usa modo oscuro, se cambian los mismos colores por versiones oscuras.
- */
+/* MODO OSCURO: si el dispositivo está en modo oscuro se usan versiones nocturnas de los mismos colores. */
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#0e1411; --surface:#161e19; --surface-2:#1d2721; --text:#e7eee9; --muted:#9aaba1; --line:#2a362f;
-    --brand:#34b382; --brand-2:#2a9a6f; --brand-soft:#173327; --on-brand:#06140d;
-    --top-bg:#123326; --on-top:#e7eee9;
-    --ok:#6fd395; --ok-bg:#15301f; --low:#f2c357; --low-bg:#352b12; --crit:#ff8a7e; --crit-bg:#3a1916;
-    --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 40px rgba(0,0,0,.6);
+    --bg:#0f0a1a; --surface:#18112a; --surface-2:#221838; --text:#efe9fb; --muted:#a59cbd; --line:#2f2549;
+    --brand:#a78bfa; --brand-2:#8b5cf6; --brand-soft:#2a1d4a; --brand-text:#c4b5fd;
+    --ok:#34d399; --ok-bg:#0f2e25; --low:#fbbf24; --low-bg:#33260d; --crit:#fb7185; --crit-bg:#3a1424;
+    --shadow:0 1px 2px rgba(0,0,0,.45); --shadow-hover:0 10px 28px rgba(0,0,0,.55); --shadow-lg:0 24px 60px rgba(0,0,0,.7);
   }
 }
-/*
- * BASE
- * box-sizing hace que el ancho de un elemento incluya su borde y relleno (evita desbordes).
- * [hidden] oculta elementos: JavaScript lo usa para alternar entre el login y la app.
- */
+
+/* =====================================================================
+ * 2) BASE
+ * box-sizing: el ancho de cada caja incluye borde y relleno (evita desbordes).
+ * [hidden]: oculta elementos; JavaScript lo usa para alternar entre el inicio de sesión y la app.
+ * .ic: tamaño estándar de los iconos SVG (heredan el color del texto con currentColor).
+ * ===================================================================== */
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;font:15px/1.5 var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
-h1,h2,h3{margin:0;line-height:1.25;letter-spacing:-.01em}
-h2{font-size:1.15rem;font-weight:700}
+html{scroll-behavior:smooth}
+body{margin:0;font:15px/1.55 var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;line-height:1.25;letter-spacing:-.015em}
+h2{font-size:1.1rem;font-weight:700}
 small{color:var(--muted)}
-/*
- * ENCABEZADO (barra verde superior)
- * Se queda pegado arriba al hacer scroll (position:sticky). .marca = logo + nombre + frase.
- * #sesion = correo del usuario y botón "Salir".
- */
-.top{background:var(--top-bg);color:var(--on-top);position:sticky;top:0;z-index:20;box-shadow:0 1px 0 rgba(0,0,0,.08)}
-.top-in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
-.marca{display:flex;gap:12px;align-items:center;min-width:0}
-.logo{flex:none;width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.16);display:grid;place-items:center}
-.logo svg{width:22px;height:22px}
-.marca h1{font-size:1.2rem;font-weight:800}
-.marca p{margin:0;font-size:.82rem;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#sesion{display:flex;gap:10px;align-items:center;font-size:.85rem;flex:none}
-#sesion button{background:rgba(255,255,255,.16);color:inherit;padding:8px 14px}
-#sesion button:hover{background:rgba(255,255,255,.26)}
-/*
- * CONTENEDOR Y DISTRIBUCIÓN
- * En computadora (#appBox): resumen arriba a todo lo ancho; abajo dos columnas:
- *   izquierda = inventario (.col-main), derecha = alertas, compras y herramientas (.col-side).
- * En celular todo va en una sola columna y se reordena con "order" (alertas primero).
- */
-main{max-width:1180px;margin:0 auto;padding:20px 16px 32px}
-#appBox{display:grid;gap:20px;grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"resumen resumen" "main side";align-items:start}
+.ic{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:15px;height:15px}
+
+/* =====================================================================
+ * 3) ENCABEZADO
+ * Barra morada oscura fija arriba (sticky) con una línea de degradado "atardecer" abajo.
+ * .marca = logo + nombre. #sesion = botón de perfil (foto, nombre del negocio y correo).
+ * ===================================================================== */
+.top{position:sticky;top:0;z-index:30;background:var(--top-bg);color:#fff}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,#7c3aed,#db2777,#fb923c);opacity:.9}
+.top-in{max-width:1200px;margin:0 auto;padding:12px 20px;display:flex;gap:14px;align-items:center;justify-content:space-between}
+.marca{display:flex;gap:11px;align-items:center;text-decoration:none;color:inherit}
+.marca svg{width:38px;height:38px;filter:drop-shadow(0 4px 10px rgba(236,72,153,.35))}
+.marca .nombre{font-size:1.25rem;font-weight:800;letter-spacing:-.03em}
+.marca .nombre span{background:linear-gradient(90deg,#d8b4fe,#f9a8d4);-webkit-background-clip:text;background-clip:text;color:transparent}
+#sesion{display:flex;align-items:center}
+.btn-perfil{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#fff;
+  padding:5px 12px 5px 5px;border-radius:999px;cursor:pointer;font:inherit;box-shadow:none;transition:background .2s}
+.btn-perfil:hover{background:rgba(255,255,255,.16);box-shadow:none}
+.btn-perfil .txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;text-align:left;max-width:190px}
+.btn-perfil .txt b{font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.btn-perfil .txt small{color:rgba(255,255,255,.65);font-size:.72rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* =====================================================================
+ * 4) FOTO DE PERFIL (.avatar)
+ * Círculo con la foto del usuario. Si no hay foto, muestra sus iniciales sobre el degradado de marca.
+ * ===================================================================== */
+.avatar{--t:34px;width:var(--t);height:var(--t);border-radius:50%;flex:none;overflow:hidden;display:grid;place-items:center;
+  background:var(--grad);color:#fff;font-weight:800;font-size:calc(var(--t)*.38);letter-spacing:.02em;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar.xl{--t:104px;box-shadow:0 0 0 4px var(--surface),0 0 0 6px var(--lila)}
+
+/* =====================================================================
+ * 5) CONTENEDOR Y DISTRIBUCIÓN
+ * Computadora: saludo + resumen arriba; abajo 2 columnas: inventario (izq.) y panel lateral (der.).
+ * Celular (ver sección 17): una columna, con "Requiere atención" primero.
+ * ===================================================================== */
+main{max-width:1200px;margin:0 auto;padding:24px 20px 40px}
+#appBox{display:grid;gap:22px;grid-template-columns:minmax(0,1fr) 370px;grid-template-areas:"saludo saludo" "resumen resumen" "main side";align-items:start}
+.saludo{grid-area:saludo}
 #resumen{grid-area:resumen}
 .col-main{grid-area:main;min-width:0}
-.col-side{grid-area:side;display:grid;gap:20px;min-width:0}
-/*
- * TARJETAS
- * .card = caja con fondo, borde fino, esquinas redondeadas y sombra suave. Se usa en casi todo.
- * .sec-tit = título de sección con algo a la derecha (contador, botones).
- */
+.col-side{grid-area:side;display:grid;gap:22px;min-width:0}
+
+/* =====================================================================
+ * 6) TARJETAS Y TÍTULOS DE SECCIÓN
+ * .card = caja blanca redondeada con sombra suave. .sec-tit = título con algo a la derecha.
+ * .contador = pastilla con un número (ej. cuántas alertas hay).
+ * ===================================================================== */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-.sec-tit{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.sec-tit .cuenta{font-size:.85rem;color:var(--muted);font-weight:500}
-/*
- * BOTONES
- * Normal = verde (acción principal). .sec = secundario con borde. .ghost = sin borde (iconos).
- * .sm = pequeño. :disabled = gris mientras se guarda en la base de datos.
- */
-button{font:inherit;font-weight:600;border:1px solid transparent;border-radius:var(--radius-sm);padding:10px 16px;cursor:pointer;
-  background:var(--brand);color:var(--on-brand);transition:background .15s, border-color .15s, transform .05s}
-button:hover{background:var(--brand-2)}
-button:active{transform:translateY(1px)}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 35%,transparent);outline-offset:2px}
-button.sec{background:var(--surface);color:var(--text);border-color:var(--line)}
-button.sec:hover{background:var(--surface-2)}
-button.ghost{background:transparent;color:var(--muted);border-color:transparent}
-button.ghost:hover{background:var(--surface-2);color:var(--text)}
-button.sm{padding:7px 12px;font-size:.85rem}
-button.icono{padding:7px 8px;line-height:0}
-button.icono[data-a="del"]:hover{color:var(--crit);background:var(--crit-bg)}
-button:disabled{opacity:.55;cursor:wait}
-/*
- * CAMPOS DE FORMULARIO
- * .bar = fila de controles que baja de renglón si no cabe. .row2/.row3 = rejillas de 2 o 3 columnas.
- * .hint = texto de ayuda pequeño.
- */
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.bar input,.bar select{flex:1 1 160px}
-input,select{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);width:100%}
-input:focus,select:focus{border-color:var(--brand)}
-label{display:block;font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:12px}
-label input,label select{margin-top:5px;font-weight:400}
+.sec-tit{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.sec-tit h2{display:flex;align-items:center;gap:9px}
+.sec-tit h2 .ic{color:var(--brand)}
+.contador{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 8px;border-radius:999px;font-size:.75rem;font-weight:800;background:var(--brand-soft);color:var(--brand-text)}
+.contador.crit{background:var(--crit-bg);color:var(--crit)}
+
+/* =====================================================================
+ * 7) BOTONES
+ * Normal  = degradado de marca (acción principal, ej. "Vendí", "Guardar").
+ * .sec    = secundario blanco con borde.  .ghost = sin fondo (iconos).  .peligro = rojo (borrar).
+ * .sm     = pequeño.  .icono = solo icono, cuadrado.  :disabled = mientras se guarda en la base de datos.
+ * Al pasar el mouse se elevan un poco y al presionar "se hunden" (sensación de botón físico).
+ * ===================================================================== */
+button{font:inherit;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;
+  border-radius:var(--radius-sm);padding:10px 16px;cursor:pointer;color:#fff;background:var(--grad);background-size:140% 140%;
+  box-shadow:0 4px 14px rgba(124,58,237,.28);transition:transform .15s var(--ease),box-shadow .2s,background-position .4s,background-color .2s,border-color .2s,color .2s}
+button:hover{background-position:100% 0;box-shadow:0 6px 20px rgba(162,28,175,.35);transform:translateY(-1px)}
+button:active{transform:translateY(1px) scale(.98)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 40%,transparent);outline-offset:2px}
+button.sec{background:var(--surface);color:var(--text);border-color:var(--line);box-shadow:none}
+button.sec:hover{background:var(--surface-2);border-color:color-mix(in srgb,var(--brand) 30%,var(--line))}
+button.ghost{background:transparent;color:var(--muted);box-shadow:none}
+button.ghost:hover{background:var(--surface-2);color:var(--text);transform:none}
+button.peligro{background:transparent;color:var(--crit);box-shadow:none;border-color:transparent}
+button.peligro:hover{background:var(--crit-bg);transform:none}
+button.sm{padding:8px 13px;font-size:.84rem;border-radius:10px}
+button.icono{padding:8px;aspect-ratio:1}
+button:disabled{opacity:.5;cursor:wait;transform:none}
+
+/* =====================================================================
+ * 8) CAMPOS DE FORMULARIO
+ * label = texto del campo arriba del input. .row2/.row3 = rejillas de 2 o 3 columnas.
+ * .buscar = buscador con lupa dentro. .hint = ayuda pequeña. .fieldset = grupo con subtítulo.
+ * ===================================================================== */
+input,select{font:inherit;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);width:100%;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 15%,transparent)}
+label{display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:12px}
+label input,label select{margin-top:6px;font-weight:500}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.hint{font-size:.8rem;color:var(--muted);margin:-4px 0 14px}
-/*
- * AVISOS SIMPLES (.banner)
- * Caja de color para mensajes cortos (aviso de configuración, total del formulario, mensaje flotante).
- */
-.banner{border-radius:var(--radius-sm);padding:12px 14px;font-weight:600;margin-bottom:12px;border:1px solid}
-.banner.crit{background:var(--crit-bg);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 35%,transparent)}
-.banner.low{background:var(--low-bg);color:var(--low);border-color:color-mix(in srgb,var(--low) 35%,transparent)}
-.banner.ok{background:var(--ok-bg);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
-#aviso{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:60;width:min(520px,92vw);margin:0;box-shadow:var(--shadow-lg)}
-/*
- * ETIQUETAS (.badge) Y PUNTOS DE COLOR (.dot)
- * Pastilla con un punto de color + texto (ej. "Por acabarse"). El color sale de la clase ok / low / crit.
- */
-.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.75rem;font-weight:700;white-space:nowrap}
+.hint{font-size:.8rem;color:var(--muted);margin:-2px 0 14px}
+.fieldset{border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
+.fieldset h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--brand-text);display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.buscar{position:relative;margin-bottom:12px}
+.buscar .ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.buscar input{padding-left:40px}
+
+/* =====================================================================
+ * 9) MENSAJES (.banner y #aviso)
+ * .banner = caja de color para avisos fijos (ej. falta configurar Supabase).
+ * #aviso  = notificación flotante (toast) que baja desde arriba y se va sola.
+ *           .ok = verde (todo salió bien), .error = rojo.
+ * ===================================================================== */
+.banner{display:flex;gap:10px;align-items:flex-start;border-radius:var(--radius-sm);padding:12px 14px;font-weight:600;font-size:.9rem;margin-bottom:14px;border:1px solid}
+.banner.low{background:var(--low-bg);color:var(--low);border-color:color-mix(in srgb,var(--low) 30%,transparent)}
+#aviso{position:fixed;left:50%;top:16px;z-index:80;transform:translateX(-50%);width:min(460px,92vw);display:flex;gap:12px;align-items:center;
+  padding:12px 16px;border-radius:14px;background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:var(--shadow-lg);font-weight:600;font-size:.9rem;
+  animation:toast .35s var(--ease)}
+#aviso .ico-aviso{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none}
+#aviso.ok .ico-aviso{background:var(--ok-bg);color:var(--ok)}
+#aviso.error .ico-aviso{background:var(--crit-bg);color:var(--crit)}
+
+/* =====================================================================
+ * 10) ETIQUETAS DE ESTADO (.badge) Y PUNTOS (.dot)
+ * Pastilla con punto de color + texto. El color sale de la clase: ok / low / crit.
+ * El punto de los críticos "late" (animación pulso) para llamar la atención sin ser molesto.
+ * ===================================================================== */
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.72rem;font-weight:800;white-space:nowrap;letter-spacing:.01em}
 .badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .badge.ok{background:var(--ok-bg);color:var(--ok)} .badge.low{background:var(--low-bg);color:var(--low)} .badge.crit{background:var(--crit-bg);color:var(--crit)}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none}
+.badge.cad{gap:5px} .badge.cad::before{display:none}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none;position:relative}
 .dot.ok{background:var(--ok)} .dot.low{background:var(--low)} .dot.crit{background:var(--crit)}
-/*
- * RESUMEN (tarjetas con números)
- * .stat = número grande con su etiqueta. Las de alerta (.crit / .low) se pintan del color del semáforo si son > 0.
- */
-.stats{display:grid;gap:12px;grid-template-columns:repeat(5,minmax(0,1fr))}
-.stat{padding:14px 16px;display:flex;flex-direction:column;gap:2px}
-.stat span{font-size:.8rem;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:7px}
-.stat b{font-size:1.65rem;font-weight:800;letter-spacing:-.02em}
-.stat.crit.activo{background:var(--crit-bg);border-color:transparent} .stat.crit.activo b{color:var(--crit)}
-.stat.low.activo{background:var(--low-bg);border-color:transparent} .stat.low.activo b{color:var(--low)}
-/*
- * PANEL DE ALERTAS (columna derecha)
- * Agrupa lo urgente en tres bloques: se acaba, por acabarse y caducidad. Cada renglón: nombre + detalle.
- */
-.alertas{padding:16px}
-.grupo + .grupo{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
-.grupo h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dot.crit::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--crit);animation:pulso 1.8s ease-out infinite}
+
+/* =====================================================================
+ * 11) SALUDO Y RESUMEN
+ * .saludo = "Hola, <negocio>" con la fecha y el botón para agregar productos.
+ * .stat   = tarjeta de un número con su icono en un cuadro de color.
+ *           Las de alerta se tiñen con el color del semáforo cuando su número es mayor que 0 (.activo).
+ * ===================================================================== */
+.saludo{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.saludo h1{font-size:1.65rem;font-weight:800;letter-spacing:-.03em}
+.saludo h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.saludo p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.stats{display:grid;gap:14px;grid-template-columns:repeat(5,minmax(0,1fr))}
+.stat{padding:16px;display:flex;gap:12px;align-items:center;transition:transform .2s var(--ease),box-shadow .2s}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+.stat .ico-stat{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none;background:var(--brand-soft);color:var(--brand-text)}
+.stat .ico-stat .ic{width:20px;height:20px}
+.stat.crit .ico-stat{background:var(--crit-bg);color:var(--crit)} .stat.low .ico-stat{background:var(--low-bg);color:var(--low)}
+.stat div{min-width:0}
+.stat span.et{display:block;font-size:.76rem;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat b{display:block;font-size:1.45rem;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.stat.crit.activo{border-color:color-mix(in srgb,var(--crit) 35%,var(--line))} .stat.crit.activo b{color:var(--crit)}
+.stat.low.activo{border-color:color-mix(in srgb,var(--low) 35%,var(--line))} .stat.low.activo b{color:var(--low)}
+
+/* =====================================================================
+ * 12) PANEL "REQUIERE ATENCIÓN"
+ * Tres grupos: se acaba, pronto hay que comprar y caducidad. Cada renglón es un botón:
+ * al tocarlo, la página baja hasta ese producto y lo resalta (ver JS "irAProducto").
+ * ===================================================================== */
+.alertas{padding:18px}
+.grupo + .grupo{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+.grupo h3{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px;margin-bottom:9px}
 .grupo.crit h3{color:var(--crit)} .grupo.low h3{color:var(--low)}
 .grupo ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.grupo li{display:flex;justify-content:space-between;gap:10px;font-size:.9rem;padding:8px 10px;border-radius:var(--radius-sm);background:var(--surface-2)}
-.grupo li b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.grupo li span{color:var(--muted);font-size:.82rem;white-space:nowrap}
-.todo-bien{display:flex;gap:12px;align-items:center;padding:16px}
-.todo-bien .ico{font-size:1.6rem}
-.bienvenida{padding:20px}
-.bienvenida p{color:var(--muted);margin:6px 0 14px}
-/*
- * INVENTARIO: buscador + tarjetas de producto
- * .prod = tarjeta de un producto. La franja izquierda (::before) toma el color del semáforo.
- * .nivel = barra de stock: qué tan lleno está respecto a lo que quieres tener; la rayita marca el mínimo.
- *          Su color es el del semáforo de CANTIDAD (un producto caducado puede tener la barra verde).
- * .lote = pastilla con piezas y fecha de caducidad de cada lote.
- */
-.filtros{margin-bottom:12px}
-.list{display:grid;gap:10px}
-.prod{position:relative;overflow:hidden;padding:14px 16px 14px 20px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;align-items:center}
+.fila-alerta{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;
+  background:var(--surface-2);color:var(--text);border:1px solid transparent;box-shadow:none;font-weight:600;font-size:.88rem;text-align:left}
+.fila-alerta:hover{background:var(--brand-soft);border-color:color-mix(in srgb,var(--brand) 25%,transparent);box-shadow:none;transform:translateX(3px)}
+.fila-alerta b{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fila-alerta span{color:var(--muted);font-size:.8rem;font-weight:600;white-space:nowrap}
+.estado-vacio{display:flex;gap:14px;align-items:center;padding:18px}
+.estado-vacio .ico-grande{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--ok-bg);color:var(--ok)}
+.bienvenida{padding:22px;position:relative;overflow:hidden}
+.bienvenida::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--grad)}
+.bienvenida h2{display:flex;align-items:center;gap:10px}
+.bienvenida h2 .ic{color:var(--brand)}
+.pasos{list-style:none;padding:0;margin:14px 0 18px;display:grid;gap:10px;counter-reset:paso}
+.pasos li{display:flex;gap:10px;align-items:flex-start;font-size:.88rem;color:var(--muted)}
+.pasos li::before{counter-increment:paso;content:counter(paso);flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:800;background:var(--brand-soft);color:var(--brand-text)}
+.bienvenida button{width:100%}
+
+/* =====================================================================
+ * 13) INVENTARIO: buscador, filtros y tarjetas de producto
+ * .chip   = botón de filtro (Todos / Urgentes / Atención / Bien surtidos) con su contador.
+ * .prod   = tarjeta de producto. La franja de la izquierda (::before) es del color de su estado.
+ * .nivel  = barra de stock: qué tan lleno está respecto a lo que quieres tener; la rayita marca el mínimo.
+ *           Su color es el del semáforo de CANTIDAD (un producto caducado puede tener la barra verde).
+ * .lote   = pastilla con piezas y caducidad de cada lote.
+ * .resaltar = brillo morado temporal cuando llegas a la tarjeta desde el panel de alertas.
+ * ===================================================================== */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+  color:var(--muted);font-weight:700;font-size:.82rem;box-shadow:none}
+.chip:hover{color:var(--text);background:var(--surface-2);transform:none;box-shadow:none}
+.chip .n{font-size:.72rem;padding:1px 7px;border-radius:999px;background:var(--surface-2)}
+.chip.activo{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(124,58,237,.25)}
+.chip.activo .n{background:rgba(255,255,255,.22)}
+.list{display:grid;gap:12px}
+.prod{position:relative;overflow:hidden;padding:16px 18px 16px 22px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 18px;align-items:center;
+  transition:transform .2s var(--ease),box-shadow .2s;scroll-margin-top:100px}
+.prod:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
 .prod::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--line)}
 .prod.ok::before{background:var(--ok)} .prod.low::before{background:var(--low)} .prod.crit::before{background:var(--crit)}
+.prod.resaltar{animation:resaltar 1.6s var(--ease)}
 .prod-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
-.prod-top h3{font-size:1.02rem;font-weight:700;margin-right:2px}
-.prod-meta{font-size:.8rem;color:var(--muted);margin-top:2px}
-.prod-stock{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-top:10px}
-.prod-stock .total{font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
-.prod-stock .eq{font-size:.82rem;color:var(--muted)}
-.prod-stock .dias{font-size:.82rem;font-weight:600}
-.nivel{position:relative;height:8px;border-radius:99px;background:var(--surface-2);margin-top:8px;max-width:420px}
-.nivel i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--ok)}
+.prod-top h3{font-size:1.03rem;font-weight:800;margin-right:2px}
+.prod-meta{font-size:.79rem;color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.prod-meta span{display:inline-flex;align-items:center;gap:5px}
+.prod-stock{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-top:12px}
+.prod-stock .total{font-size:1.35rem;font-weight:800;letter-spacing:-.02em}
+.prod-stock .total small{font-size:.8rem;font-weight:700}
+.prod-stock .eq{font-size:.8rem;color:var(--muted)}
+.prod-stock .dias{font-size:.8rem;font-weight:700;color:var(--brand-text);display:inline-flex;align-items:center;gap:5px;align-self:center}
+.nivel{position:relative;height:8px;border-radius:99px;background:var(--surface-2);margin-top:9px;max-width:440px}
+.nivel i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--ok);transform-origin:left}
 .nivel.low i{background:var(--low)} .nivel.crit i{background:var(--crit)}
-.nivel u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);opacity:.35;border-radius:2px}
-.lotes{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.lote{font-size:.75rem;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.nivel u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--text);opacity:.3;border-radius:2px}
+.lotes{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.lote{display:inline-flex;align-items:center;gap:5px;font-size:.73rem;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.lote .ic{width:13px;height:13px}
 .lote.crit{background:var(--crit-bg);color:var(--crit)} .lote.low{background:var(--low-bg);color:var(--low)}
 .actions{display:flex;gap:6px;align-items:center;justify-content:flex-end}
-.empty{text-align:center;padding:32px 16px;color:var(--muted)}
-/*
- * LISTA DE COMPRAS
- * Un renglón por producto: nombre a la izquierda y cuántos paquetes pedir a la derecha.
- */
-.compras{padding:16px}
-.compras ul{list-style:none;margin:0 0 14px;padding:0}
-.compras li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.vacio-lista{text-align:center;padding:36px 16px;color:var(--muted);display:grid;justify-items:center;gap:8px}
+.vacio-lista .ic{width:34px;height:34px;color:var(--lila)}
+/* Tarjetas "fantasma" con un brillo que pasa, mientras se cargan los datos (skeleton). */
+.esqueleto{height:118px;border-radius:var(--radius);background:linear-gradient(90deg,var(--surface) 0%,var(--surface-2) 40%,var(--surface) 80%);background-size:200% 100%;
+  border:1px solid var(--line);animation:brillo 1.3s linear infinite}
+
+/* =====================================================================
+ * 14) LISTA DE COMPRAS Y HERRAMIENTAS (columna derecha)
+ * Cada renglón: punto de color + producto, y a la derecha cuántos paquetes pedir.
+ * ===================================================================== */
+.compras,.herr{padding:18px}
+.compras ul{list-style:none;margin:0 0 16px;padding:0}
+.compras li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.9rem}
 .compras li:last-child{border-bottom:0}
-.compras li .cant{font-weight:700;white-space:nowrap}
-.compras li .cant small{font-weight:500}
-.compras .bar button{flex:1 1 auto}
-.herr{padding:16px}
-.herr .bar button{flex:1 1 auto}
-/*
- * INICIO DE SESIÓN
- * Dos columnas: a la izquierda qué hace la app, a la derecha el formulario. En celular se apilan.
- */
-.login{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:center;max-width:980px;margin:24px auto}
-.pill{display:inline-block;font-size:.75rem;font-weight:700;padding:5px 11px;border-radius:999px;background:var(--brand-soft);color:var(--brand)}
-.login-info h2{font-size:2.1rem;font-weight:800;letter-spacing:-.03em;margin:14px 0 10px;line-height:1.15}
-.login-info > p{color:var(--muted);font-size:1.02rem;margin:0 0 20px}
-.beneficios{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.beneficios li{display:flex;gap:12px;align-items:flex-start;font-size:.92rem}
-.beneficios .ico{flex:none;width:34px;height:34px;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center}
-.beneficios b{display:block}
-.beneficios span{color:var(--muted);font-size:.85rem}
-.login-form{padding:24px}
-.login-form h3{font-size:1.2rem;margin-bottom:4px}
-.login-form > p{color:var(--muted);font-size:.88rem;margin:0 0 18px}
-.login-form .bar button{flex:1 1 auto}
-/*
- * VENTANAS EMERGENTES (<dialog>)
- * Formulario de producto y de movimiento. ::backdrop = fondo oscuro detrás de la ventana.
- */
-dialog{border:0;border-radius:20px;padding:22px;width:min(540px,94vw);background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg)}
-dialog::backdrop{background:rgba(10,16,12,.55);backdrop-filter:blur(2px)}
-dialog h2{font-size:1.2rem;margin-bottom:16px}
-.dlg-acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
-#prevTotal{display:flex;justify-content:space-between}
-/*
- * PIE DE PÁGINA
- */
-.foot{color:var(--muted);font-size:.78rem;text-align:center;padding:8px 16px 28px}
-/*
- * PANTALLAS MEDIANAS Y CELULARES
- * < 980px: una sola columna; las secciones se ordenan: alertas, resumen, inventario, compras, herramientas.
- *          (.col-main y .col-side usan display:contents para que sus secciones se acomoden sueltas.)
- * < 560px: resumen en 2 columnas, botones de producto debajo del nombre y formularios más angostos.
- */
-@media (max-width:980px){
-  #appBox{display:flex;flex-direction:column;gap:16px}
+.compras li .prodc{display:flex;align-items:center;gap:9px;min-width:0}
+.compras li .prodc b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.compras li .cant{font-weight:800;white-space:nowrap;padding:3px 10px;border-radius:999px;background:var(--brand-soft);color:var(--brand-text);font-size:.8rem}
+.compras .acciones{display:grid;grid-template-columns:1fr 1.3fr auto;gap:8px}
+.vacio-mini{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:.88rem;padding:4px 0 16px}
+.vacio-mini .ic{color:var(--ok)}
+.herr .acciones{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.herr .acciones .peligro{grid-column:1 / -1}
+
+/* =====================================================================
+ * 15) INICIO DE SESIÓN (pantalla de bienvenida)
+ * Fondo con degradado de "atardecer" y dos manchas de luz que flotan lentamente (animación "flotar").
+ * Izquierda: qué hace EarlyStock. Derecha: tarjeta del formulario.
+ * ===================================================================== */
+.login{position:relative;overflow:hidden;border-radius:28px;background:var(--grad-hero);color:#fff;padding:48px;display:grid;
+  grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;box-shadow:var(--shadow-lg);isolation:isolate;animation:aparecer .5s ease}
+.login::before,.login::after{content:"";position:absolute;border-radius:50%;filter:blur(60px);z-index:-1;animation:flotar 14s ease-in-out infinite alternate}
+.login::before{width:380px;height:380px;background:#7c3aed;top:-120px;left:-80px;opacity:.65}
+.login::after{width:340px;height:340px;background:#fb923c;bottom:-140px;right:-60px;opacity:.5;animation-delay:-6s}
+.marca-grande{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+.marca-grande svg{width:56px;height:56px;filter:drop-shadow(0 8px 24px rgba(0,0,0,.3))}
+.marca-grande b{font-size:1.7rem;font-weight:800;letter-spacing:-.03em}
+.login-info h2{font-size:2.3rem;font-weight:800;letter-spacing:-.035em;line-height:1.1;margin-bottom:14px}
+.login-info > p{color:rgba(255,255,255,.82);font-size:1.02rem;margin:0 0 26px;max-width:46ch}
+.beneficios{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.beneficios li{display:flex;gap:11px;align-items:flex-start;padding:12px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(6px)}
+.beneficios .ico-b{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.14)}
+.beneficios b{display:block;font-size:.88rem}
+.beneficios span{color:rgba(255,255,255,.72);font-size:.78rem;line-height:1.4;display:block}
+.login-form{padding:28px;color:var(--text);border-color:rgba(255,255,255,.4)}
+.login-form h3{font-size:1.3rem;font-weight:800;margin-bottom:4px}
+.login-form > p{color:var(--muted);font-size:.88rem;margin:0 0 20px}
+.login-form .acciones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.login-form .seguro{display:flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted);margin-top:16px}
+
+/* =====================================================================
+ * 16) VENTANAS EMERGENTES (<dialog>)
+ * Producto, movimiento (venta/llegada) y perfil. Se abren con una animación "pop" y el fondo se difumina.
+ * .dlg-cab = título con icono y botón de cerrar.  .previa = caja que muestra el resultado antes de guardar.
+ * .stepper = campo de cantidad con botones − y +.  .rapidos = atajos de cantidad (1, 5, 10, 1 paquete…).
+ * ===================================================================== */
+dialog{border:0;border-radius:24px;padding:0;width:min(560px,94vw);max-height:92vh;background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg)}
+dialog[open]{animation:pop .28s var(--ease)}
+dialog::backdrop{background:rgba(15,8,30,.55);backdrop-filter:blur(4px)}
+dialog form{padding:24px}
+.dlg-cab{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.dlg-cab .ico-dlg{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none;background:var(--grad);color:#fff}
+.dlg-cab h2{font-size:1.2rem;flex:1;min-width:0}
+.dlg-cab h2 small{display:block;font-size:.8rem;font-weight:600;margin-top:2px}
+.dlg-acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.previa{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 16px;border-radius:14px;margin-bottom:14px;
+  background:var(--brand-soft);color:var(--brand-text);font-weight:700;font-size:.9rem}
+.previa b{font-size:1.2rem;font-weight:800;color:var(--text)}
+.stepper{display:grid;grid-template-columns:auto 1fr auto;gap:8px;margin-top:6px}
+.stepper input{text-align:center;font-size:1.2rem;font-weight:800;margin:0}
+.stepper button{width:48px}
+.rapidos{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 14px}
+.perfil-foto{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:18px;text-align:center}
+.perfil-foto .botones{display:flex;gap:8px}
+
+/* =====================================================================
+ * 17) PANTALLAS MEDIANAS Y CELULARES
+ * < 1000px: una sola columna. .col-main y .col-side usan display:contents para que sus secciones
+ *           se acomoden sueltas y se ordenen con "order": saludo, alertas, resumen, inventario, compras, herramientas.
+ * < 600px : resumen en 2 columnas, botones del producto abajo, login más compacto.
+ * ===================================================================== */
+@media (max-width:1000px){
+  #appBox{display:flex;flex-direction:column;gap:18px}
   .col-main,.col-side{display:contents}
-  #alertas{order:1} #resumen{order:2} #inventario{order:3} #compras{order:4} #herramientas{order:5}
+  .saludo{order:0} #alertas{order:1} #resumen{order:2} #inventario{order:3} #compras{order:4} #herramientas{order:5}
   .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .login{grid-template-columns:1fr;gap:20px;margin-top:8px}
-  .login-info h2{font-size:1.7rem}
-  .marca p{display:none}
+  .login{grid-template-columns:1fr;padding:32px 24px;gap:28px}
 }
-@media (max-width:560px){
-  main{padding:14px 12px 24px}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:600px){
+  main{padding:16px 12px 28px}
+  .top-in{padding:10px 14px}
+  .btn-perfil .txt{display:none}
+  .btn-perfil{padding:4px}
+  .saludo h1{font-size:1.35rem}
+  .saludo button{width:100%}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .stat{padding:12px}
   .stat:last-child{grid-column:1 / -1}
-  .prod{grid-template-columns:1fr}
-  .actions{justify-content:flex-start}
+  .prod{grid-template-columns:1fr;padding:14px 14px 14px 18px}
   .actions .principal{flex:1 1 auto}
-  .filtros input,.filtros select{flex-basis:100%}
   .row3{grid-template-columns:1fr 1fr}
-  #correo{display:none}
+  .login{padding:26px 18px;border-radius:22px}
+  .login-info h2{font-size:1.75rem}
+  .beneficios{grid-template-columns:1fr}
+  dialog form{padding:18px}
 }
-/*
- * IMPRESIÓN
- * Solo se imprime la lista de compras (sin encabezado, inventario, alertas ni botones).
- */
+
+/* =====================================================================
+ * 18) ANIMACIONES
+ * subir    = las tarjetas entran desde abajo, una tras otra (retraso con la variable --i).
+ * llenar   = la barra de nivel se llena de izquierda a derecha.
+ * pop      = las ventanas aparecen creciendo un poco.   aparecer = fundido simple.
+ * toast    = la notificación baja desde arriba.        pulso = latido del punto crítico.
+ * brillo   = destello de las tarjetas "cargando".       flotar = manchas de luz del login.
+ * resaltar = brillo morado alrededor de una tarjeta.
+ * Las de entrada solo corren al cargar datos (clase .anim que pone JavaScript), no cada vez que escribes en el buscador.
+ * ===================================================================== */
+.anim .prod,.anim .stat{animation:subir .5s var(--ease) both;animation-delay:calc(var(--i,0) * 45ms)}
+.anim .nivel i{animation:llenar .9s var(--ease) both;animation-delay:calc(var(--i,0) * 45ms + .15s)}
+@keyframes subir{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes llenar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes aparecer{from{opacity:0}to{opacity:1}}
+@keyframes toast{from{opacity:0;transform:translate(-50%,-14px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes pulso{from{transform:scale(1);opacity:.6}to{transform:scale(2.6);opacity:0}}
+@keyframes brillo{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes flotar{from{transform:translate(0,0) scale(1)}to{transform:translate(60px,40px) scale(1.15)}}
+@keyframes resaltar{0%,100%{box-shadow:var(--shadow)}25%{box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 45%,transparent),var(--shadow-hover)}}
+/* Accesibilidad: si la persona pidió "reducir movimiento" en su sistema, se apagan las animaciones. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
+/* =====================================================================
+ * 19) PIE DE PÁGINA E IMPRESIÓN
+ * Al imprimir solo sale la lista de compras (sin encabezado, inventario, alertas ni botones).
+ * ===================================================================== */
+.foot{color:var(--muted);font-size:.78rem;text-align:center;padding:4px 16px 30px;display:flex;justify-content:center;align-items:center;gap:8px;margin:0}
+.foot svg{width:18px;height:18px}
 @media print{
-  .top,#inventario,#resumen,#alertas,#herramientas,.noprint,.foot{display:none!important}
-  #appBox{display:block} body{background:#fff} .card{box-shadow:none}
+  .top,.saludo,#inventario,#resumen,#alertas,#herramientas,.noprint,.foot{display:none!important}
+  #appBox{display:block} body{background:#fff} .card{box-shadow:none;border:0}
 }
 </style>
 </head>
 <body>
 <!--
-     ENCABEZADO: logo, nombre de la app y la frase que resume qué resuelve.
-     A la derecha, el correo de la cuenta y el botón "Salir" (solo con sesión iniciada).
+     ICONOS (sprite SVG)
+     Todos los iconos se dibujan aquí UNA vez como <symbol> y se reutilizan con <svg><use href="#i-nombre"/></svg>.
+     Son dibujos de línea que toman el color del texto (currentColor). "logo" es el logo de EarlyStock
+     (el mismo de assets/logo.svg): una "E" hecha de barras de stock que bajan y un punto dorado de alerta.
+-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="es-fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4c1d95"/><stop offset=".55" stop-color="#a21caf"/><stop offset="1" stop-color="#ec4899"/></linearGradient>
+    <radialGradient id="es-sol" cx=".9" cy=".95" r=".65"><stop offset="0" stop-color="#fb923c" stop-opacity=".85"/><stop offset="1" stop-color="#fb923c" stop-opacity="0"/></radialGradient>
+  </defs>
+  <symbol id="logo" viewBox="0 0 64 64">
+    <rect width="64" height="64" rx="16" fill="url(#es-fondo)"/><rect width="64" height="64" rx="16" fill="url(#es-sol)"/>
+    <rect x="15" y="16" width="7" height="32" rx="3.5" fill="#fff"/><rect x="15" y="16" width="34" height="7" rx="3.5" fill="#fff"/>
+    <rect x="15" y="28.5" width="25" height="7" rx="3.5" fill="#fff" fill-opacity=".9"/><rect x="15" y="41" width="15" height="7" rx="3.5" fill="#fff" fill-opacity=".8"/>
+    <circle cx="40" cy="44.5" r="5" fill="#fde68a"/>
+  </symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M22 17l-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15v13H5a2 2 0 0 1-2-2V5"/><path d="M16 14h.01"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L22 7H6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M1 4h13v12H1z"/><path d="M14 9h4l4 4v3h-8"/><circle cx="6" cy="18.5" r="2"/><circle cx="18" cy="18.5" r="2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17l.8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8z"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.8"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2l10 5-10 5L2 7z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></symbol>
+</svg>
+
+<!--
+     ENCABEZADO: logo y nombre a la izquierda; a la derecha el botón de perfil
+     (foto, nombre del negocio y correo). Al tocarlo se abre la ventana "Mi perfil".
 -->
 <header class="top">
   <div class="top-in">
-    <div class="marca">
-      <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
-      <div>
-        <h1>StockAlerta</h1>
-        <p>¿Cómo saber que se te está acabando? Con avisos claros antes de quedarte sin producto.</p>
-      </div>
+    <a class="marca" href="#" aria-label="EarlyStock, inicio">
+      <svg aria-hidden="true"><use href="#logo"/></svg>
+      <span class="nombre">Early<span>Stock</span></span>
+    </a>
+    <div id="sesion" hidden>
+      <button type="button" class="btn-perfil" id="btnPerfil" aria-label="Abrir mi perfil">
+        <span class="avatar" id="avatarTop"></span>
+        <span class="txt"><b id="nombreTop">Mi negocio</b><small id="correo"></small></span>
+      </button>
     </div>
-    <div id="sesion" hidden><span id="correo"></span><button type="button" id="btnSalir">Salir</button></div>
   </div>
 </header>
 
-<!-- Mensaje flotante: JavaScript lo muestra unos segundos con avisar("texto") -->
-<div id="aviso" class="banner crit" role="alert" hidden></div>
+<!-- NOTIFICACIÓN FLOTANTE (toast): JavaScript la muestra unos segundos con avisar("texto", "ok" | "error"). -->
+<div id="aviso" role="status" aria-live="polite" hidden></div>
 
-<!--
-     CONTENIDO PRINCIPAL
-     Las secciones vacías (alertas, stats, lista, compras) se llenan desde JavaScript en la función render().
--->
 <main>
   <!--
-       INICIO DE SESIÓN: se muestra mientras no haya sesión. Cada negocio entra con su correo y contraseña
-       y Supabase solo le deja ver SUS datos. Si falta configurar Supabase, aquí aparece el aviso (#configAviso).
-       Izquierda: qué hace la app (para la demo). Derecha: el formulario.
+       INICIO DE SESIÓN: se ve mientras no haya sesión. Cada negocio entra con su correo y contraseña,
+       y Supabase solo le deja ver SUS datos. Si falta configurar Supabase, aparece el aviso #configAviso.
+       Izquierda: qué hace EarlyStock (sirve para la presentación). Derecha: el formulario.
   -->
   <section id="authBox" class="login" hidden>
     <div class="login-info">
-      <span class="pill">Hackathon ITD 2026 · Comercio local</span>
-      <h2>Sabe qué se te está acabando antes de que pase.</h2>
-      <p>El inventario de tu tiendita en el celular: cuenta por paquetes, recibe avisos y arma tu pedido en segundos.</p>
+      <div class="marca-grande"><svg aria-hidden="true"><use href="#logo"/></svg><b>EarlyStock</b></div>
+      <h2>Tu inventario te avisa antes de que algo se acabe.</h2>
+      <p>Controla tu negocio desde el celular: cuenta por paquetes, recibe alertas a tiempo y arma tu pedido en segundos.</p>
       <ul class="beneficios">
-        <li><span class="ico">🚦</span><div><b>Semáforo de stock</b><span>Verde, ámbar o rojo según tu mínimo y lo que vendes al día.</span></div></li>
-        <li><span class="ico">📦</span><div><b>Cuenta por paquetes</b><span>Paquetes × piezas + sueltas: sin contar pieza por pieza.</span></div></li>
-        <li><span class="ico">⏳</span><div><b>Caducidad por lote</b><span>Te avisa 7 días antes y vende primero lo que caduca antes.</span></div></li>
-        <li><span class="ico">🛒</span><div><b>Lista de compras</b><span>Lista para mandar por WhatsApp a tu proveedor.</span></div></li>
+        <li><span class="ico-b"><svg class="ic"><use href="#i-bell"/></svg></span><div><b>Alertas de stock</b><span>Según tu mínimo y lo que vendes al día.</span></div></li>
+        <li><span class="ico-b"><svg class="ic"><use href="#i-layers"/></svg></span><div><b>Cuenta por paquetes</b><span>Paquetes × piezas + sueltas, sin contar una por una.</span></div></li>
+        <li><span class="ico-b"><svg class="ic"><use href="#i-clock"/></svg></span><div><b>Caducidad por lote</b><span>Aviso 7 días antes; se vende primero lo más próximo.</span></div></li>
+        <li><span class="ico-b"><svg class="ic"><use href="#i-cart"/></svg></span><div><b>Lista de compras</b><span>Lista para enviar por WhatsApp a tu proveedor.</span></div></li>
       </ul>
     </div>
     <div class="card login-form">
-      <h3>Entra a tu negocio</h3>
-      <p>Tus datos se guardan en tu cuenta y solo tú los ves.</p>
-      <div class="banner low" id="configAviso" hidden>⚙️ Falta conectar Supabase: pega tu URL y tu publishable key al inicio del script (mira el README).</div>
+      <h3>Bienvenido</h3>
+      <p>Entra o crea la cuenta de tu negocio.</p>
+      <div class="banner low" id="configAviso" hidden><svg class="ic"><use href="#i-sliders"/></svg><span>Falta conectar Supabase: pega tu URL y tu publishable key al inicio del script (mira el README).</span></div>
       <form id="formAuth">
-        <label>Correo <input name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></label>
-        <label>Contraseña (mínimo 6 caracteres) <input name="password" type="password" required minlength="6" autocomplete="current-password"></label>
-        <div class="bar">
+        <label>Correo electrónico <input name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></label>
+        <label>Contraseña <input name="password" type="password" required minlength="6" autocomplete="current-password" placeholder="Mínimo 6 caracteres"></label>
+        <div class="acciones">
           <button type="submit" id="btnEntrar">Entrar</button>
           <button type="button" class="sec" id="btnRegistro">Crear cuenta</button>
         </div>
       </form>
+      <div class="seguro"><svg class="ic sm"><use href="#i-lock"/></svg>Tus datos están protegidos: solo tu cuenta puede verlos.</div>
     </div>
   </section>
 
   <!--
-       APP (solo con sesión iniciada). Distribución:
-         #resumen arriba · .col-main = inventario · .col-side = alertas, compras y herramientas.
+       APP (solo con sesión iniciada). Distribución en computadora:
+         saludo y resumen arriba · .col-main = inventario · .col-side = alertas, compras y herramientas.
   -->
   <div id="appBox" hidden>
-    <!-- RESUMEN: tarjetas con números (productos, críticos, por acabarse, por caducar, valor). -->
-    <section id="resumen">
+    <!-- SALUDO: "Hola, <negocio>", la fecha de hoy y el botón para agregar productos. -->
+    <div class="saludo">
+      <div>
+        <h1 id="saludo">Hola</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <button id="btnNuevo"><svg class="ic"><use href="#i-plus"/></svg>Nuevo producto</button>
+    </div>
+
+    <!-- RESUMEN: tarjetas con números (productos, críticos, por acabarse, por caducar y valor). -->
+    <section id="resumen" aria-label="Resumen">
       <div class="stats" id="stats"></div>
     </section>
 
     <div class="col-main">
-      <!--
-           INVENTARIO: buscador, filtro por estado, botón para agregar producto y la lista de tarjetas (#lista).
-      -->
-      <section id="inventario">
-        <div class="sec-tit"><h2>Inventario <span class="cuenta" id="cuenta"></span></h2><button id="btnNuevo">+ Producto</button></div>
-        <div class="bar filtros">
-          <input id="q" type="search" placeholder="Buscar producto o categoría…" aria-label="Buscar producto">
-          <select id="fEstado" aria-label="Filtrar por estado">
-            <option value="">Todos los estados</option>
-            <option value="crit">🔴 Críticos / caducados</option>
-            <option value="low">🟡 Por acabarse / por caducar</option>
-            <option value="ok">🟢 Bien surtidos</option>
-          </select>
-        </div>
+      <!-- INVENTARIO: buscador, filtros por estado (chips) y la lista de tarjetas de producto (#lista). -->
+      <section id="inventario" aria-label="Inventario">
+        <div class="sec-tit"><h2><svg class="ic"><use href="#i-box"/></svg>Inventario</h2></div>
+        <div class="buscar"><svg class="ic"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Buscar producto o categoría" aria-label="Buscar producto"></div>
+        <div class="chips" id="chips" role="group" aria-label="Filtrar por estado"></div>
         <div class="list" id="lista"></div>
       </section>
     </div>
 
     <aside class="col-side">
-      <!--
-           ALERTAS: JavaScript arma aquí el panel de "Atención" (aria-live hace que lectores de pantalla lo anuncien).
-      -->
+      <!-- ALERTAS: JavaScript arma aquí el panel "Requiere atención" (o el de bienvenida si no hay productos). -->
       <section id="alertas" aria-live="polite"></section>
 
-      <!--
-           LISTA DE COMPRAS: qué pedir y cuántos paquetes. Los botones la copian, la mandan por WhatsApp o la imprimen.
-      -->
+      <!-- LISTA DE COMPRAS: qué pedir y cuántos paquetes. Se puede copiar, mandar por WhatsApp o imprimir. -->
       <section id="compras" class="card compras">
-        <div class="sec-tit"><h2>🛒 Lista de compras</h2></div>
+        <div class="sec-tit"><h2><svg class="ic"><use href="#i-cart"/></svg>Lista de compras</h2><span class="contador" id="nCompras">0</span></div>
         <div id="comprasBox"></div>
-        <div class="bar noprint">
-          <button class="sec sm" id="btnCopiar">Copiar</button>
-          <button class="sm" id="btnWA">WhatsApp</button>
-          <button class="sec sm" id="btnPrint">Imprimir</button>
+        <div class="acciones noprint">
+          <button class="sec sm" id="btnCopiar"><svg class="ic sm"><use href="#i-copy"/></svg>Copiar</button>
+          <button class="sm" id="btnWA"><svg class="ic sm"><use href="#i-chat"/></svg>WhatsApp</button>
+          <button class="sec sm icono" id="btnPrint" aria-label="Imprimir" title="Imprimir"><svg class="ic sm"><use href="#i-print"/></svg></button>
         </div>
       </section>
 
-      <!--
-           HERRAMIENTAS: cargar un ejemplo para probar, exportar el inventario a CSV (Excel) o borrar todo.
-      -->
+      <!-- HERRAMIENTAS: cargar un ejemplo, exportar a CSV (Excel) o borrar todo. -->
       <section id="herramientas" class="card herr noprint">
-        <div class="sec-tit"><h2>Herramientas</h2></div>
-        <div class="bar">
-          <button class="sec sm" id="btnDemo">Cargar ejemplo</button>
-          <button class="sec sm" id="btnCSV">Exportar CSV</button>
-          <button class="ghost sm" id="btnReset">Borrar todo</button>
+        <div class="sec-tit"><h2><svg class="ic"><use href="#i-sliders"/></svg>Herramientas</h2></div>
+        <div class="acciones">
+          <button class="sec sm" id="btnDemo"><svg class="ic sm"><use href="#i-spark"/></svg>Cargar ejemplo</button>
+          <button class="sec sm" id="btnCSV"><svg class="ic sm"><use href="#i-download"/></svg>Exportar CSV</button>
+          <button class="peligro sm" id="btnReset"><svg class="ic sm"><use href="#i-trash"/></svg>Borrar todo el inventario</button>
         </div>
       </section>
     </aside>
   </div><!-- fin de #appBox -->
 </main>
-<p class="foot">Hackathon ITD 2026 · Comercio y emprendimiento local · Tus datos se guardan en tu cuenta (Supabase).</p>
+<p class="foot"><svg aria-hidden="true"><use href="#logo"/></svg>EarlyStock · Hackathon ITD 2026 · Comercio y emprendimiento local</p>
 
 <!--
-     VENTANAS EMERGENTES (<dialog>): están ocultas hasta que JavaScript las abre con showModal().
-     Esta es para crear o editar un producto. El cuadro verde "Total" se actualiza solo al escribir paquetes y piezas.
+     VENTANA: NUEVO / EDITAR PRODUCTO
+     Agrupada en partes: datos, "¿cuánto tienes ahora?" (con el total calculado en vivo) y avisos/precios.
 -->
-<dialog id="dlgProd">
+<dialog id="dlgProd" aria-labelledby="dlgTitulo">
   <form method="dialog" id="formProd">
-    <h2 id="dlgTitulo">Nuevo producto</h2>
-    <div class="row2">
-      <label>Nombre
-        <input name="nombre" required maxlength="60" placeholder="Ej. Refresco 600 ml">
-      </label>
-      <label>Categoría (opcional)
-        <input name="categoria" maxlength="30" placeholder="Ej. Bebidas">
-      </label>
-    </div>
-    <div class="row3">
-      <label>Paquetes en stock <input name="paquetes" type="number" min="0" step="1" value="0" required></label>
-      <label>Piezas por paquete <input name="porPaquete" type="number" min="1" step="1" value="1" required></label>
-      <label>Piezas sueltas <input name="sueltas" type="number" min="0" step="1" value="0" required></label>
-    </div>
-    <div class="banner ok" id="prevTotal">Total: 0 piezas</div>
-    <p class="hint">No cuentes pieza por pieza: escribe cuántos paquetes tienes y cuántas piezas trae cada uno. Si no vendes por paquete, deja "1".</p>
-    <label id="cadLabel">Caducidad del stock actual (opcional) <input name="cad" type="date"></label>
-    <div class="row2">
-      <label>Avisarme cuando queden (paquetes) <input name="minimo" type="number" min="0" step="0.5" value="1" required></label>
-      <label>Quiero tener (paquetes) <input name="objetivo" type="number" min="0" step="0.5" value="4" required></label>
+    <div class="dlg-cab">
+      <span class="ico-dlg"><svg class="ic"><use href="#i-box"/></svg></span>
+      <h2 id="dlgTitulo">Nuevo producto</h2>
+      <button type="button" class="ghost icono" id="cancelProd" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
     </div>
     <div class="row2">
-      <label>Costo por pieza (opcional) <input name="costo" type="number" min="0" step="0.01"></label>
-      <label>Precio de venta (opcional) <input name="precio" type="number" min="0" step="0.01"></label>
+      <label>Nombre del producto <input name="nombre" required maxlength="60" placeholder="Ej. Refresco 600 ml"></label>
+      <label>Categoría (opcional) <input name="categoria" maxlength="30" placeholder="Ej. Bebidas"></label>
+    </div>
+    <div class="fieldset">
+      <h3><svg class="ic sm"><use href="#i-layers"/></svg>¿Cuánto tienes ahora?</h3>
+      <div class="row3">
+        <label>Paquetes <input name="paquetes" type="number" min="0" step="1" value="0" required></label>
+        <label>Piezas por paquete <input name="porPaquete" type="number" min="1" step="1" value="1" required></label>
+        <label>Piezas sueltas <input name="sueltas" type="number" min="0" step="1" value="0" required></label>
+      </div>
+      <div class="previa" id="prevTotal">Total en tienda <b>0 piezas</b></div>
+      <p class="hint">No cuentes pieza por pieza: escribe cuántos paquetes tienes y cuántas piezas trae cada uno. Si lo vendes por pieza, deja "1".</p>
+      <label id="cadLabel">Caducidad de este stock (opcional) <input name="cad" type="date"></label>
+    </div>
+    <div class="fieldset">
+      <h3><svg class="ic sm"><use href="#i-bell"/></svg>Avisos y precios</h3>
+      <div class="row2">
+        <label>Avisarme cuando queden (paquetes) <input name="minimo" type="number" min="0" step="0.5" value="1" required></label>
+        <label>Quiero tener (paquetes) <input name="objetivo" type="number" min="0" step="0.5" value="4" required></label>
+      </div>
+      <div class="row2">
+        <label>Costo por pieza (opcional) <input name="costo" type="number" min="0" step="0.01" placeholder="$0.00"></label>
+        <label>Precio de venta (opcional) <input name="precio" type="number" min="0" step="0.01" placeholder="$0.00"></label>
+      </div>
     </div>
     <div class="dlg-acciones">
-      <button type="button" class="sec" id="cancelProd">Cancelar</button>
-      <button type="submit">Guardar</button>
+      <button type="submit">Guardar producto</button>
     </div>
   </form>
 </dialog>
 
 <!--
-     Ventana para anotar un movimiento: una VENTA (piezas) o la LLEGADA de paquetes (con fecha de caducidad opcional del lote).
+     VENTANA: REGISTRAR VENTA o LLEGADA DE MERCANCÍA
+     Campo de cantidad con botones − / +, atajos rápidos y una vista previa de cuánto quedará.
 -->
-<dialog id="dlgMov">
+<dialog id="dlgMov" aria-labelledby="movTitulo">
   <form method="dialog" id="formMov">
-    <h2 id="movTitulo"></h2>
-    <label id="movLabel">Cantidad <input name="cant" type="number" min="1" step="1" value="1" required></label>
+    <div class="dlg-cab">
+      <span class="ico-dlg" id="movIco"></span>
+      <h2 id="movTitulo"></h2>
+      <button type="button" class="ghost icono" id="cancelMov" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <label id="movLabel">Cantidad
+      <span class="stepper">
+        <button type="button" class="sec" data-paso="-1" aria-label="Menos"><svg class="ic"><use href="#i-minus"/></svg></button>
+        <input name="cant" type="number" min="1" step="1" value="1" required>
+        <button type="button" class="sec" data-paso="1" aria-label="Más"><svg class="ic"><use href="#i-plus"/></svg></button>
+      </span>
+    </label>
+    <div class="rapidos" id="rapidos"></div>
+    <div class="previa" id="movPrevia"></div>
     <label id="movCadLabel">Fecha de caducidad de este lote (opcional) <input name="cad" type="date"></label>
     <p class="hint" id="movHint"></p>
     <div class="dlg-acciones">
-      <button type="button" class="sec" id="cancelMov">Cancelar</button>
-      <button type="submit">Registrar</button>
+      <button type="submit" id="movOk">Registrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!--
+     VENTANA: MI PERFIL
+     Foto de perfil (se sube a Supabase Storage), nombre del negocio y cerrar sesión.
+-->
+<dialog id="dlgPerfil" aria-labelledby="perfilTitulo">
+  <form method="dialog" id="formPerfil">
+    <div class="dlg-cab">
+      <span class="ico-dlg"><svg class="ic"><use href="#i-user"/></svg></span>
+      <h2 id="perfilTitulo">Mi perfil <small id="perfilCorreo"></small></h2>
+      <button type="button" class="ghost icono" id="cerrarPerfil" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="perfil-foto">
+      <span class="avatar xl" id="avatarGrande"></span>
+      <div class="botones">
+        <button type="button" class="sec sm" id="btnFoto"><svg class="ic sm"><use href="#i-camera"/></svg>Cambiar foto</button>
+        <button type="button" class="ghost sm" id="btnQuitarFoto">Quitar</button>
+      </div>
+      <input type="file" id="archivoFoto" accept="image/png,image/jpeg,image/webp" hidden>
+      <small>JPG, PNG o WebP. Se recorta en cuadrado automáticamente.</small>
+    </div>
+    <label>Nombre del negocio <input name="negocio" maxlength="40" placeholder="Ej. Abarrotes Don Pepe"></label>
+    <div class="dlg-acciones" style="justify-content:space-between">
+      <button type="button" class="peligro" id="btnSalir"><svg class="ic sm"><use href="#i-logout"/></svg>Cerrar sesión</button>
+      <button type="submit">Guardar</button>
     </div>
   </form>
 </dialog>
@@ -458,44 +695,59 @@ dialog h2{font-size:1.2rem;margin-bottom:16px}
 // Así las variables no se mezclan con otras de la página (no son globales). Termina al final con })();
 (function(){
 'use strict';
-// CONEXIÓN CON SUPABASE
-// Pega aquí los dos datos de tu proyecto (Supabase -> Project Settings -> API):
-//   SUPABASE_URL      = "Project URL"
-//   SUPABASE_ANON_KEY = "anon public key" o "publishable key" (sb_publishable_…)
-// La anon key es PÚBLICA por diseño: la seguridad real la dan las reglas RLS de supabase/schema.sql.
-// NUNCA pegues aquí la "service_role key": esa sí es secreta y daría acceso total a la base.
+
+/* =====================================================================
+ * A) CONEXIÓN CON SUPABASE
+ * SUPABASE_URL      = "Project URL"   (Supabase -> Project Settings -> API)
+ * SUPABASE_ANON_KEY = "publishable key" (sb_publishable_…) o "anon public key".
+ * Estas dos son PÚBLICAS por diseño: la seguridad real la dan las reglas RLS de supabase/schema.sql.
+ * NUNCA pegues aquí la "secret key" ni la "service_role key".
+ * ===================================================================== */
 const SUPABASE_URL = 'https://nfmanfduefulqwzuoueh.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_LWuugii57u_iu30WsqVlfA_3369oPG6';   // publishable key (pública, segura en el navegador)
-// "configurado" es falso mientras sigan los textos de ejemplo; entonces la app muestra un aviso en vez de fallar.
+const SUPABASE_ANON_KEY = 'sb_publishable_LWuugii57u_iu30WsqVlfA_3369oPG6';
+// "configurado" es falso si siguen textos de ejemplo o no cargó la librería: entonces se muestra un aviso en vez de fallar.
 const configurado = !SUPABASE_URL.startsWith('TU_') && !SUPABASE_ANON_KEY.startsWith('TU_') && !!window.supabase;
-// sb = cliente de Supabase: con él leemos y escribimos las tablas y manejamos el inicio de sesión.
+// sb = cliente de Supabase: con él leemos/escribimos tablas, subimos fotos y manejamos la sesión.
 const sb = configurado ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// Carpeta (bucket) de Supabase Storage donde se guardan las fotos de perfil.
+const BUCKET_FOTOS = 'avatars';
 
-// ESTADO EN MEMORIA
-// state es una copia de lo que hay en la base de datos para esta sesión; render() dibuja a partir de ella.
-//   productos   = inventario (cada producto trae su lista de lotes)
-//   movimientos = historial reciente de ventas/llegadas (sirve para calcular cuánto se vende al día)
+/* =====================================================================
+ * B) ESTADO EN MEMORIA
+ * state = copia de lo que hay en la base de datos para esta sesión; render() dibuja a partir de ella.
+ *   productos   = inventario (cada producto trae su lista de lotes)
+ *   movimientos = ventas y llegadas recientes (para calcular cuánto se vende al día)
+ * ===================================================================== */
 let state = {productos:[], movimientos:[]};
-// editId = id del producto que se está editando (null = se está creando uno nuevo).
-// movCtx = qué producto y qué tipo de movimiento (venta o llegada) tiene abierta la ventana de movimiento.
+// editId = producto que se está editando (null = nuevo).  movCtx = producto y tipo del movimiento abierto.
 let editId = null, movCtx = null;
-// cargando = true mientras se leen los datos (para mostrar "Cargando…"). usuarioActual = id del usuario con sesión.
+// cargando = true mientras llegan los datos (se muestran tarjetas "fantasma"). usuarioActual = id del usuario.
 let cargando = false, usuarioActual = null;
+// filtroEstado = chip seleccionado ('' = todos, 'crit', 'low', 'ok').  animar = true para que la próxima
+// vez que se dibuje la lista las tarjetas entren con animación (solo al cargar datos, no al buscar).
+let filtroEstado = '', animar = false;
+// perfil = datos del usuario guardados en su cuenta de Supabase (nombre del negocio y foto).
+let perfil = {negocio:'', avatar:null, email:''};
+// Atajo para buscar elementos por id.
+const $ = id => document.getElementById(id);
+// Atajo para escribir un icono del sprite: ico('cart') -> <svg class="ic"><use href="#i-cart"/></svg>
+const ico = (n, cls='') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 
-/* ---------- datos (Supabase) ---------- */
-// Traducción entre la base de datos (nombres con guion bajo, ej. por_paquete) y la app (camelCase, ej. porPaquete).
-// deDB: fila de la tabla productos -> objeto que usa la app (con su lista de lotes vacía, se llena en cargarTodo).
+/* =====================================================================
+ * C) DATOS: leer y guardar en Supabase
+ * La base usa nombres con guion bajo (por_paquete) y la app camelCase (porPaquete): deDB y aDB traducen.
+ * ===================================================================== */
+// deDB: fila de la tabla productos -> objeto de la app (los lotes se agregan después en cargarTodo).
 const deDB = r => ({id:r.id, nombre:r.nombre, categoria:r.categoria||'', paquetes:r.paquetes, porPaquete:r.por_paquete,
   sueltas:r.sueltas, minimo:Number(r.minimo), objetivo:Number(r.objetivo),
   costo:r.costo==null?null:Number(r.costo), precio:r.precio==null?null:Number(r.precio), lotes:[]});
-// aDB: objeto de la app -> columnas de la tabla productos (sin id ni user_id: los pone la base de datos).
+// aDB: objeto de la app -> columnas de la tabla (sin id ni user_id: los pone la base de datos).
 const aDB = p => ({nombre:p.nombre, categoria:p.categoria, paquetes:p.paquetes, por_paquete:p.porPaquete,
   sueltas:p.sueltas, minimo:p.minimo, objetivo:p.objetivo, costo:p.costo, precio:p.precio});
-// chk: toda llamada a Supabase devuelve {data, error}. Si hay error lo lanzamos para que lo atrape el try/catch de guardar().
+// chk: cada llamada a Supabase devuelve {data, error}; si hay error lo lanzamos para que lo atrape guardar().
 function chk(r){ if(r.error) throw r.error; return r; }
 
-// Lee las 3 tablas y arma "state". Solo pide los movimientos de los últimos 8 días porque
-// el cálculo de consumo diario solo usa 7 (así se baja menos información).
+// Lee las 3 tablas y arma "state". De movimientos solo pide los últimos 8 días (el consumo diario usa 7).
 async function cargarTodo(){
   const desde = new Date(Date.now() - 8*DAY).toISOString();
   const [rp, rl, rm] = await Promise.all([
@@ -506,7 +758,7 @@ async function cargarTodo(){
   [rp, rl, rm].forEach(chk);
   const prods = rp.data.map(deDB);
   const porId = new Map(prods.map(p => [p.id, p]));
-  // Cada lote se cuelga de su producto; "cad" es la fecha de caducidad en formato AAAA-MM-DD.
+  // Cada lote se cuelga de su producto; "cad" es la fecha de caducidad (AAAA-MM-DD).
   rl.data.forEach(l => { const p = porId.get(l.producto_id); if(p) p.lotes.push({id:l.id, piezas:l.piezas, cad:l.caducidad}); });
   state = {
     productos: prods,
@@ -514,36 +766,41 @@ async function cargarTodo(){
   };
 }
 
-// Mensaje flotante de aviso (errores o confirmaciones). Se oculta solo a los 5 segundos.
+// avisar(texto, tipo): notificación flotante. tipo 'ok' (verde, palomita) o 'error' (rojo). Se va a los 4.5 s.
 let avisoT = null;
-function avisar(texto){
-  const a = document.getElementById('aviso');
-  a.textContent = texto; a.hidden = false;
-  clearTimeout(avisoT); avisoT = setTimeout(()=>{ a.hidden = true; }, 5000);
+function avisar(texto, tipo='error'){
+  const a = $('aviso');
+  a.className = tipo;
+  a.innerHTML = `<span class="ico-aviso">${ico(tipo==='ok'?'check':'alert','sm')}</span><span></span>`;
+  a.lastChild.textContent = texto;            // textContent: el texto nunca se interpreta como HTML
+  a.hidden = false;
+  a.style.animation = 'none'; void a.offsetWidth; a.style.animation = '';   // reinicia la animación de entrada
+  clearTimeout(avisoT); avisoT = setTimeout(()=>{ a.hidden = true; }, 4500);
 }
 // Mientras se guarda, se desactivan los botones de la app para evitar doble clic (ventas duplicadas).
 function setOcupado(on){ document.querySelectorAll('#appBox button').forEach(b => { b.disabled = on; }); }
 
-// guardar(fn): envoltorio para TODA acción que cambia datos:
-//   1) bloquea los botones  2) ejecuta fn (las escrituras a Supabase)
-//   3) vuelve a leer todo de la base de datos  4) dibuja la pantalla.
-// Si algo falla (sin internet, sin permiso...) muestra el error y vuelve a leer para no dejar datos a medias en pantalla.
-async function guardar(fn){
+// guardar(fn, okMsg, conAnim): envoltorio para TODA acción que cambia datos:
+//   1) bloquea botones  2) ejecuta fn (escrituras a Supabase)  3) vuelve a leer todo  4) dibuja  5) avisa "listo".
+// Si algo falla muestra el error y vuelve a leer para no dejar datos a medias en pantalla.
+async function guardar(fn, okMsg, conAnim=false){
   setOcupado(true);
+  let ok = true;
   try{ await fn(); await cargarTodo(); }
   catch(e){
+    ok = false;
     const msg = e && e.message ? e.message : 'revisa tu conexión';
-    // "permission denied" = faltan los GRANT de supabase/schema.sql (paso 4 del archivo): hay que volver a ejecutarlo en el SQL Editor.
-    avisar('No se pudo guardar: ' + msg + (/permission denied/i.test(msg) ? ' — Ejecuta de nuevo supabase/schema.sql en Supabase (incluye los permisos).' : ''));
+    // "permission denied" = faltan los permisos (GRANT) de supabase/schema.sql: hay que volver a ejecutarlo.
+    avisar('No se pudo guardar: ' + msg + (/permission denied/i.test(msg) ? '. Ejecuta de nuevo supabase/schema.sql en Supabase.' : ''));
     try{ await cargarTodo(); }catch(_){}
   }
-  render(); setOcupado(false);
+  animar = conAnim; render(); setOcupado(false);
+  if(ok && okMsg) avisar(okMsg, 'ok');
 }
 
-// Foto de los lotes de un producto ANTES de cambiarlos en memoria (id y piezas), para saber después qué actualizar o borrar.
+// Foto de los lotes ANTES de cambiarlos en memoria (id y piezas), para saber después qué actualizar o borrar.
 const fotoLotes = p => (p.lotes||[]).map(l => ({id:l.id, piezas:l.piezas}));
-// Compara la foto con los lotes de ahora y refleja la diferencia en la base de datos:
-// lote que quedó en 0 piezas -> se borra; lote con menos piezas -> se actualiza.
+// Compara la foto con los lotes de ahora y lo refleja en la base: lote en 0 -> se borra; con menos piezas -> se actualiza.
 async function sincronizarLotes(antes, p){
   const ahora = new Map((p.lotes||[]).map(l => [l.id, l.piezas]));
   for(const a of antes){
@@ -553,57 +810,46 @@ async function sincronizarLotes(antes, p){
     else chk(await sb.from('lotes').update({piezas:n}).eq('id', a.id));
   }
 }
-// fechaISO: milisegundos -> texto AAAA-MM-DD (formato que entiende la columna date de Supabase).
+// fechaISO: milisegundos -> "AAAA-MM-DD" (formato de la columna date).  DAY = milisegundos de un día.
 const fechaISO = ms => { const f = new Date(ms); return f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0')+'-'+String(f.getDate()).padStart(2,'0'); };
-// DAY = milisegundos que tiene un día (para calcular fechas).
 const DAY = 86400000;
 
-// LÓGICA DEL INVENTARIO
-// Cada producto se guarda así:
-// { id, nombre, categoria,
-//     paquetes (cajas completas), porPaquete (piezas por caja), sueltas (piezas fuera de caja),
-//     minimo y objetivo (en PAQUETES), costo, precio, lotes (fechas de caducidad) }
-/* ---------- lógica de inventario ---------- */
-// totalPiezas = cuántas piezas hay en total, sin contar una por una.
-// Ejemplo: 5 paquetes × 12 piezas + 3 sueltas = 63 piezas.
+/* =====================================================================
+ * D) LÓGICA DEL INVENTARIO
+ * Cada producto: { id, nombre, categoria, paquetes (cajas completas), porPaquete (piezas por caja),
+ *                  sueltas (piezas fuera de caja), minimo y objetivo (en PAQUETES), costo, precio, lotes }
+ * ===================================================================== */
+// Total de piezas sin contar una por una. Ejemplo: 5 paquetes × 12 + 3 sueltas = 63 piezas.
 const totalPiezas = p => p.paquetes * p.porPaquete + p.sueltas;
 
-// Descuenta n piezas; abre paquetes automáticamente cuando las sueltas no alcanzan.
-// Resta n piezas vendidas.
-// Primero gasta las sueltas; si no alcanzan, "abre" los paquetes necesarios y las piezas que sobran pasan a ser sueltas.
-// Ejemplo: hay 2 paquetes de 12 y 0 sueltas, vendes 5 -> se abre 1 paquete: queda 1 paquete y 7 sueltas.
+// Resta n piezas vendidas: primero de las sueltas; si no alcanzan, "abre" los paquetes necesarios
+// y lo que sobra del paquete abierto queda como sueltas.
+// Ejemplo: 2 paquetes de 12 y 0 sueltas, vendes 5 -> se abre 1 paquete: queda 1 paquete y 7 sueltas.
 function descontar(p, n){
   let falta = n;
-  // 1) Gasta primero lo que haya en sueltas.
-  const deSueltas = Math.min(p.sueltas, falta);
+  const deSueltas = Math.min(p.sueltas, falta);      // 1) gasta las sueltas
   p.sueltas -= deSueltas; falta -= deSueltas;
-  // 2) Si aún falta, calcula cuántos paquetes hay que abrir (redondeando hacia arriba).
-  if(falta > 0){
+  if(falta > 0){                                      // 2) abre los paquetes que hagan falta
     const abrir = Math.ceil(falta / p.porPaquete);
     p.paquetes -= abrir;
-    // Las piezas del paquete abierto que no se vendieron quedan como sueltas.
-    p.sueltas += abrir * p.porPaquete - falta;
+    p.sueltas += abrir * p.porPaquete - falta;        //    lo no vendido queda suelto
   }
 }
-// Consumo diario = promedio de piezas vendidas por día en los últimos 7 días.
-// Ejemplo: 70 piezas vendidas en la semana -> 10 al día. Solo cuenta los movimientos de tipo "salida" (ventas) de este producto.
+// Consumo diario = piezas vendidas en los últimos 7 días ÷ 7. Ejemplo: 70 en la semana -> 10 al día.
 function consumoDiario(p){
   const desde = Date.now() - 7*DAY;
   const vend = state.movimientos.filter(m => m.pid===p.id && m.tipo==='salida' && m.t>=desde)
                                 .reduce((a,m)=>a+m.piezas,0);
   return vend/7;
 }
-// Cuántos días alcanza el stock al ritmo actual de ventas: piezas que hay ÷ piezas que se venden por día.
-// Si todavía no hay ventas registradas devuelve null (no se puede estimar).
+// Días que alcanza el stock al ritmo actual (null si aún no hay ventas para estimar).
 function diasRestantes(p){
   const c = consumoDiario(p);
   return c>0 ? totalPiezas(p)/c : null;
 }
-// Semáforo según la CANTIDAD que queda (la caducidad se revisa aparte, más abajo):
-// 🔴 crit = agotado o en/bajo el mínimo que el dueño definió.
-// 🟡 low  = ya casi llega al mínimo (hasta 1.5 veces el mínimo) o le quedan 2 días o menos al ritmo de venta.
-// 🟢 ok   = hay suficiente.
-// Ejemplo: mínimo 1 paquete de 12 = 12 piezas. Con 12 o menos -> rojo; de 13 a 18 -> amarillo.
+// Semáforo por CANTIDAD:
+//   crit = agotado o en/bajo el mínimo.   low = hasta 1.5 veces el mínimo o le quedan ≤ 2 días.   ok = suficiente.
+// Ejemplo: mínimo 1 paquete de 12 = 12 piezas -> con 12 o menos rojo; de 13 a 18 ámbar.
 function estado(p){
   const tot = totalPiezas(p), min = p.minimo*p.porPaquete;
   if(tot<=0) return 'crit';
@@ -612,212 +858,212 @@ function estado(p){
   if(tot<=min*1.5 || (d!==null && d<=2)) return 'low';
   return 'ok';
 }
-// Cuántos paquetes comprar para llegar al "objetivo" (lo que el dueño quiere tener).
-// Ejemplo: objetivo 4 paq. × 12 = 48 piezas; hay 15 -> faltan 33 -> 3 paquetes (redondeado hacia arriba). Si ya llegó al objetivo devuelve 0.
+// Paquetes a comprar para llegar al objetivo (redondeado hacia arriba). Ej.: objetivo 48 pzas, hay 15 -> 3 paquetes de 12.
 function paquetesAPedir(p){
   const falta = p.objetivo*p.porPaquete - totalPiezas(p);
   return falta>0 ? Math.ceil(falta/p.porPaquete) : 0;
 }
-// CADUCIDAD POR LOTE
-// Un lote es un grupo de piezas que llegó junto y comparte fecha de caducidad: {id, piezas, cad:"AAAA-MM-DD"}.
-// Las piezas que no están en ningún lote se consideran sin fecha de caducidad.
-/* ---------- caducidad por lote ---------- */
-// p.lotes = [{id, piezas, cad:'YYYY-MM-DD'}]. Las piezas sin lote se consideran sin fecha.
-// DIAS_AVISO = con cuántos días de anticipación se avisa que un lote está por caducar (cámbialo si quieres más o menos tiempo).
+
+/* =====================================================================
+ * E) CADUCIDAD POR LOTE
+ * Un lote = piezas que llegaron juntas con la misma fecha de caducidad: {id, piezas, cad:"AAAA-MM-DD"}.
+ * ===================================================================== */
+// Días de anticipación para avisar que un lote está por caducar.
 const DIAS_AVISO = 7;
-// Funciones de fechas:
-// hoy0()  = hoy a las 00:00 (para comparar días completos y no horas).
-// diasA() = días que faltan para una fecha. Positivo = futuro, 0 = hoy, negativo = ya caducó.
-// lotesDe() = lotes con piezas, ordenados del que caduca primero al último.
+// hoy0 = hoy a las 00:00.  diasA = días que faltan para una fecha (negativo = ya caducó).
 const hoy0 = () => { const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); };
 const diasA = cad => Math.round((new Date(cad+'T00:00:00').getTime()-hoy0())/DAY);
+// Lotes con piezas, ordenados del que caduca primero al último.
 const lotesDe = p => (p.lotes||[]).filter(l=>l.piezas>0).sort((a,b)=>a.cad<b.cad?-1:a.cad>b.cad?1:0);
-// Primero en caducar, primero en venderse (FEFO). Los lotes nunca pueden sumar más que el stock real.
-// Al vender, se gasta primero el lote que caduca antes (sistema "FEFO": el primero en caducar es el primero en salir).
-// Así se evita que el producto viejo se eche a perder.
+// Al vender se gasta primero el lote que caduca antes ("FEFO"), para no dejar que se eche a perder.
 function consumirLotes(p,n){
   for(const l of lotesDe(p)){ if(n<=0) break; const t=Math.min(l.piezas,n); l.piezas-=t; n-=t; }
   p.lotes = lotesDe(p);
 }
-// Si el dueño edita la cantidad a mano, los lotes no pueden sumar más piezas que las que hay en realidad.
-// Si sobran, se quitan primero del lote que caduca más tarde (el más lejano).
+// Si se edita el stock a mano, los lotes no pueden sumar más que lo real: se recortan primero los que caducan más tarde.
 function ajustarLotes(p){
   let exceso = (p.lotes||[]).reduce((a,l)=>a+l.piezas,0) - totalPiezas(p);
   if(exceso>0) for(const l of lotesDe(p).reverse()){ const t=Math.min(l.piezas,exceso); l.piezas-=t; exceso-=t; if(exceso<=0) break; }
   p.lotes = lotesDe(p);
 }
-// Semáforo según la CADUCIDAD del lote más próximo:
-// 🔴 crit = ya caducó (días < 0)
-// 🟡 low  = caduca en DIAS_AVISO días o menos
-// 🟢 ok   = falta mucho o no hay fechas registradas
+// Semáforo por CADUCIDAD (según el lote más próximo): crit = ya caducó, low = caduca en ≤ 7 días.
 function estadoCad(p){
   const ls = lotesDe(p); if(!ls.length) return 'ok';
   const d = diasA(ls[0].cad);
   return d<0 ? 'crit' : d<=DIAS_AVISO ? 'low' : 'ok';
 }
-// Un producto muestra el PEOR de sus dos semáforos (cantidad y caducidad).
-// Ejemplo: stock en verde pero un lote caducado -> el producto se ve en rojo.
+// El producto muestra el PEOR de sus dos semáforos (cantidad y caducidad).
 const peor = (a,b) => ({ok:0,low:1,crit:2}[a] >= {ok:0,low:1,crit:2}[b] ? a : b);
 const estadoTotal = p => peor(estado(p), estadoCad(p));
-// Funciones de formato (solo cambian cómo se ve algo en pantalla):
-// cadTxt = convierte días en frase: "caduca en 3 días" / "caducó hace 2 días".
-// fechaCorta = "22 nov".   ETIQ = textos del semáforo.   fmt = número sin decimales inútiles.
-// esc = protege el texto escrito por el usuario para que no se interprete como código HTML (seguridad).   money = formato de dinero.
+
+/* =====================================================================
+ * F) TEXTOS Y FORMATOS (solo cambian cómo se ve algo)
+ * ===================================================================== */
 function cadTxt(d){ return d<0 ? `caducó hace ${-d} día${d===-1?'':'s'}` : d===0 ? 'caduca hoy' : `caduca en ${d} día${d===1?'':'s'}`; }
 const fechaCorta = cad => new Date(cad+'T00:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'});
-const ETIQ = {ok:'🟢 Bien',low:'🟡 Por acabarse',crit:'🔴 Crítico'};
-// ETIQ_CORTA = mismos estados sin emoji, para las etiquetas de color de las tarjetas (el punto de color lo pone el CSS).
-const ETIQ_CORTA = {ok:'Bien surtido',low:'Por acabarse',crit:'Crítico'};
+// ETIQ = nombre de cada estado (se usa en las etiquetas y en el CSV).
+const ETIQ = {ok:'Bien surtido',low:'Por acabarse',crit:'Crítico'};
 const fmt = n => Number.isInteger(n)?String(n):n.toFixed(1);
+// esc protege lo que escribe el usuario para que no se interprete como código HTML (seguridad).
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = n => '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-
-/* ---------- render ---------- */
-// Arma el texto que muestra la equivalencia: "5 paq. × 12 + 3 sueltas = 63 pzas".
-function eqTexto(p){
-  const partes = [];
-  if(p.porPaquete>1) partes.push(`${p.paquetes} paq. × ${p.porPaquete}`);
-  if(p.sueltas>0 || p.porPaquete===1) partes.push(`${p.sueltas} ${p.porPaquete>1?'sueltas':'pzas'}`);
-  const tot = totalPiezas(p);
-  return (p.porPaquete>1 ? partes.join(' + ')+' = ' : '') + `<b>${tot} pzas</b>`;
-}
-// RENDER: dibuja toda la pantalla a partir de "state".
-// Se llama al abrir la página y después de cada cambio. Ninguna otra función toca la pantalla directamente.
-function render(){
-  const prods = state.productos;
-  // Separa los productos por estado de cantidad (rojos y amarillos) para las alertas.
-  const crit = prods.filter(p=>estado(p)==='crit');
-  const low = prods.filter(p=>estado(p)==='low');
-  // Junta los lotes que ya caducaron o caducan pronto, el más urgente primero.
-  const lotesAlerta = [];
-  prods.forEach(p=>lotesDe(p).forEach(l=>{ const d=diasA(l.cad); if(d<=DIAS_AVISO) lotesAlerta.push({p,l,d}); }));
-  lotesAlerta.sort((a,b)=>a.d-b.d);
-  // nCad = cuántos productos distintos tienen algún lote en alerta.
-  const nCad = new Set(lotesAlerta.map(x=>x.p.id)).size;
-
-  // ---- ALERTAS (arriba de la página) ----
-  // Si no hay productos muestra un mensaje de bienvenida; si hay, arma un aviso por cada nivel que aplique.
-  // Al final el título de la pestaña lleva el número de productos con problemas, ej. "(3) StockAlerta".
-  // alertas
-  const A = document.getElementById('alertas');
-  // Un renglón de alerta: nombre a la izquierda, detalle (piezas, días) a la derecha.
-  const fila = (nombre, detalle) => `<li><b>${esc(nombre)}</b><span>${detalle}</span></li>`;
-  if(!prods.length){
-    // Sin productos: tarjeta de bienvenida con un botón que carga el ejemplo (data-accion="demo").
-    A.innerHTML = cargando ? '' : `<div class="card bienvenida"><h2>👋 ¡Bienvenido!</h2>
-      <p>Agrega tus productos con "+ Producto" o prueba la app con una tiendita de ejemplo.</p>
-      <button type="button" data-accion="demo">Cargar ejemplo</button></div>`;
-  } else {
-    // Un bloque (.grupo) por cada tipo de alerta que tenga algo.
-    let h='';
-    if(crit.length) h+=`<div class="grupo crit"><h3><span class="dot crit"></span>Se acaba o se acabó · ${crit.length}</h3><ul>${crit.map(p=>fila(p.nombre, `${totalPiezas(p)} pzas${diasCorto(p)}`)).join('')}</ul></div>`;
-    if(low.length) h+=`<div class="grupo low"><h3><span class="dot low"></span>Pronto hay que comprar · ${low.length}</h3><ul>${low.map(p=>fila(p.nombre, `${totalPiezas(p)} pzas${diasCorto(p)}`)).join('')}</ul></div>`;
-    if(lotesAlerta.length) h+=`<div class="grupo ${lotesAlerta[0].d<0?'crit':'low'}"><h3>⏳ Caducidad · ${lotesAlerta.length}</h3><ul>${lotesAlerta.map(x=>fila(x.p.nombre, `${x.l.piezas} pzas · ${cadTxt(x.d)}`)).join('')}</ul></div>`;
-    A.innerHTML = h
-      ? `<div class="card alertas"><div class="sec-tit"><h2>Atención</h2></div>${h}</div>`
-      : `<div class="card todo-bien"><span class="ico">✅</span><div><b>Todo en orden</b><br><small>Nada por acabarse ni por caducar.</small></div></div>`;
-  }
-  document.title = (new Set([...crit,...low,...lotesAlerta.map(x=>x.p)]).size ? `(${new Set([...crit,...low,...lotesAlerta.map(x=>x.p)]).size}) ` : '') + 'StockAlerta – Inventario para tu negocio';
-
-  // ---- RESUMEN ---- valor del inventario = suma de (costo por pieza × piezas) de cada producto.
-  // stats
-  const valor = prods.reduce((a,p)=>a+(p.costo||0)*totalPiezas(p),0);
-  // Cada tarjeta: [número, etiqueta, color]. Las de color se resaltan (clase "activo") solo si su número es mayor que 0.
-  document.getElementById('stats').innerHTML = [
-    [prods.length,'Productos',''],[crit.length,'Críticos','crit'],[low.length,'Por acabarse','low'],[nCad,'Por caducar','low'],[money(valor),'Valor del inventario','']
-  ].map(([n,l,c])=>`<div class="card stat ${c} ${c && n>0 ? 'activo':''}"><span>${c?`<i class="dot ${c}"></i>`:''}${l}</span><b>${n}</b></div>`).join('');
-  document.getElementById('cuenta').textContent = prods.length ? `· ${prods.length}` : '';
-
-  // ---- LISTA DE PRODUCTOS ----
-  // 1) Filtra por lo escrito en el buscador y por el estado elegido.
-  // 2) Ordena: primero los urgentes (rojos), luego amarillos, luego verdes; dentro de cada grupo, alfabético.
-  // 3) Dibuja una tarjeta por producto con su semáforo, piezas, lotes y botones (data-a dice qué hace cada botón).
-  // lista
-  const q = document.getElementById('q').value.trim().toLowerCase();
-  const fe = document.getElementById('fEstado').value;
-  const orden = {crit:0,low:1,ok:2};
-  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!fe || estadoTotal(p)===fe))
-                   .sort((a,b)=>orden[estadoTotal(a)]-orden[estadoTotal(b)] || a.nombre.localeCompare(b.nombre));
-  const L = document.getElementById('lista');
-  L.innerHTML = vis.length ? vis.map(p=>{
-    const e = estadoTotal(p), es = estado(p), ec = estadoCad(p);
-    // Lotes con su fecha; cada pastilla se pinta según qué tan cerca está de caducar.
-    const lotes = lotesDe(p);
-    const lotesHtml = lotes.length ? `<div class="lotes">${lotes.map(l=>{const d=diasA(l.cad); const c=d<0?'crit':d<=DIAS_AVISO?'low':''; return `<span class="lote ${c}">${l.piezas} pzas · ${fechaCorta(l.cad)} · ${cadTxt(d)}</span>`;}).join('')}</div>` : '';
-    // Barra de nivel: % del stock actual respecto al objetivo; la rayita (u) marca dónde está el mínimo.
-    const obj = p.objetivo*p.porPaquete, pct = obj>0 ? Math.min(100, totalPiezas(p)/obj*100) : 0, pctMin = obj>0 ? Math.min(100, p.minimo/p.objetivo*100) : 0;
-    const nivel = obj>0 ? `<div class="nivel ${es}" title="Nivel de stock respecto a lo que quieres tener"><i style="width:${pct.toFixed(1)}%"></i><u style="left:${pctMin.toFixed(1)}%"></u></div>` : '';
-    return `<article class="card prod ${e}">
-      <div>
-        <div class="prod-top"><h3>${esc(p.nombre)}</h3><span class="badge ${es}">${ETIQ_CORTA[es]}</span>${ec!=='ok'?`<span class="badge ${ec}">${ec==='crit'?'Caducado':'Por caducar'}</span>`:''}</div>
-        <div class="prod-meta">${esc(p.categoria||'Sin categoría')} · avisar con ${fmt(p.minimo)} paq. (${fmt(p.minimo*p.porPaquete)} pzas)</div>
-        <div class="prod-stock"><span class="total">${totalPiezas(p)} pzas</span>${p.porPaquete>1?`<span class="eq">${p.paquetes} paq. × ${p.porPaquete}${p.sueltas?` + ${p.sueltas} sueltas`:''}</span>`:''}${diasRestantes(p)!==null?`<span class="dias">${diasTxt(p).replace(' · ','')}</span>`:''}</div>
-        ${nivel}${lotesHtml}
-      </div>
-      <div class="actions">
-        <button class="sm principal" data-a="sale" data-id="${p.id}">− Vendí</button>
-        <button class="sm sec principal" data-a="buy" data-id="${p.id}">+ Llegó</button>
-        <button class="sm ghost icono" data-a="edit" data-id="${p.id}" aria-label="Editar" title="Editar"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-        <button class="sm ghost icono" data-a="del" data-id="${p.id}" aria-label="Eliminar" title="Eliminar"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-      </div></article>`;
-  }).join('') : `<div class="card empty">${cargando?'Cargando…':prods.length?'Nada coincide con tu búsqueda.':'Aún no hay productos.'}</div>`;
-
-  // ---- LISTA DE COMPRAS (pantalla) ---- tabla con los productos que no están en verde y cuántos paquetes pedir.
-  // compras
-  const C = document.getElementById('comprasBox');
-  const compras = comprasLista();
-  C.innerHTML = compras.length
-    ? `<ul>${compras.map(c=>`<li><span><span class="dot ${estado(c.p)}"></span> ${esc(c.p.nombre)}</span><span class="cant">${c.paq} paq. <small>(${c.paq*c.p.porPaquete} pzas)</small></span></li>`).join('')}</ul>`
-    : '<div class="empty">No hace falta comprar nada por ahora. 🎉</div>';
-}
-// Versión corta para el panel de alertas: " · ~3 días".
+// "~3 días" que alcanza el stock (vacío si no hay ventas para estimar).
 function diasCorto(p){
   const d = diasRestantes(p);
   if(d===null) return '';
-  return d<1 ? ' · <1 día' : ` · ~${Math.floor(d)} día${Math.floor(d)===1?'':'s'}`;
+  return d<1 ? 'menos de 1 día' : `~${Math.floor(d)} día${Math.floor(d)===1?'':'s'}`;
 }
-// Texto "te alcanza ~N días" que se muestra junto al stock. No muestra nada si aún no hay ventas para estimar.
-function diasTxt(p){
-  const d = diasRestantes(p);
-  if(d===null) return '';
-  return d<1 ? ' · te alcanza menos de 1 día' : ` · te alcanza ~${Math.floor(d)} día${Math.floor(d)===1?'':'s'}`;
+// Iniciales para el avatar sin foto: "Abarrotes Don Pepe" -> "AD"; si no hay nombre, se toman del correo.
+function iniciales(){
+  const base = (perfil.negocio || perfil.email || '?').replace(/@.*/,'').trim();
+  const partes = base.split(/[\s._-]+/).filter(Boolean);
+  return ((partes[0]||'?')[0] + (partes[1]? partes[1][0] : '')).toUpperCase();
+}
+// HTML del avatar: la foto si existe; si no, las iniciales.
+const avatarHTML = () => perfil.avatar ? `<img src="${esc(perfil.avatar)}" alt="">` : esc(iniciales());
+
+/* =====================================================================
+ * G) RENDER: dibuja toda la pantalla a partir de "state"
+ * Se llama al cargar y después de cada cambio. Ninguna otra función toca la lista directamente.
+ * ===================================================================== */
+function render(){
+  const prods = state.productos;
+  // Separa por estado de cantidad (para alertas) y junta los lotes por caducar (el más urgente primero).
+  const crit = prods.filter(p=>estado(p)==='crit');
+  const low = prods.filter(p=>estado(p)==='low');
+  const lotesAlerta = [];
+  prods.forEach(p=>lotesDe(p).forEach(l=>{ const d=diasA(l.cad); if(d<=DIAS_AVISO) lotesAlerta.push({p,l,d}); }));
+  lotesAlerta.sort((a,b)=>a.d-b.d);
+  const nCad = new Set(lotesAlerta.map(x=>x.p.id)).size;
+  const nAtencion = new Set([...crit,...low,...lotesAlerta.map(x=>x.p)]).size;
+
+  // ---- PANEL "REQUIERE ATENCIÓN" ----
+  // Cada renglón es un botón con data-ir = id del producto (al tocarlo baja hasta su tarjeta).
+  const A = $('alertas');
+  const fila = (p, detalle) => `<li><button type="button" class="fila-alerta" data-ir="${p.id}"><b>${esc(p.nombre)}</b><span>${detalle}</span></button></li>`;
+  const detalleStock = p => `${totalPiezas(p)} pzas${diasCorto(p)?' · '+diasCorto(p):''}`;
+  if(!prods.length){
+    // Sin productos: tarjeta de bienvenida con pasos y botón para cargar el ejemplo (data-accion="demo").
+    A.innerHTML = cargando ? '<div class="esqueleto" style="height:180px"></div>' : `<div class="card bienvenida"><h2>${ico('spark')}Empecemos</h2>
+      <ol class="pasos">
+        <li>Agrega tus productos con "Nuevo producto" (cuéntalos por paquetes).</li>
+        <li>Registra lo que vendes con "Vendí" y lo que te llega con "Llegó".</li>
+        <li>EarlyStock te avisará aquí antes de que algo se acabe o caduque.</li>
+      </ol>
+      <button type="button" data-accion="demo">${ico('spark','sm')}Probar con una tienda de ejemplo</button></div>`;
+  } else {
+    let h='';
+    if(crit.length) h+=`<div class="grupo crit"><h3><span class="dot crit"></span>Se acaba o se acabó</h3><ul>${crit.map(p=>fila(p, detalleStock(p))).join('')}</ul></div>`;
+    if(low.length) h+=`<div class="grupo low"><h3><span class="dot low"></span>Pronto hay que comprar</h3><ul>${low.map(p=>fila(p, detalleStock(p))).join('')}</ul></div>`;
+    if(lotesAlerta.length) h+=`<div class="grupo ${lotesAlerta[0].d<0?'crit':'low'}"><h3>${ico('clock','sm')}Caducidad</h3><ul>${lotesAlerta.map(x=>fila(x.p, `${x.l.piezas} pzas · ${cadTxt(x.d)}`)).join('')}</ul></div>`;
+    A.innerHTML = h
+      ? `<div class="card alertas"><div class="sec-tit"><h2>${ico('bell')}Requiere atención</h2><span class="contador crit">${nAtencion}</span></div>${h}</div>`
+      : `<div class="card estado-vacio"><span class="ico-grande">${ico('check')}</span><div><b>Todo en orden</b><br><small>Nada por acabarse ni por caducar.</small></div></div>`;
+  }
+  // El título de la pestaña lleva cuántos productos necesitan atención, ej. "(3) EarlyStock".
+  document.title = (nAtencion ? `(${nAtencion}) ` : '') + 'EarlyStock · Inventario inteligente';
+
+  // ---- RESUMEN ---- cada tarjeta: [icono, etiqueta, número, color]. Las de color se resaltan si su número es > 0.
+  const valor = prods.reduce((a,p)=>a+(p.costo||0)*totalPiezas(p),0);
+  const S = $('stats');
+  S.innerHTML = [
+    ['box','Productos',prods.length,''],['alert','Críticos',crit.length,'crit'],['down','Por acabarse',low.length,'low'],
+    ['clock','Por caducar',nCad,'low'],['wallet','Valor del inventario',money(valor),'']
+  ].map(([i,l,n,c],k)=>`<div class="card stat ${c} ${c && n>0 ? 'activo':''}" style="--i:${k}"><span class="ico-stat">${ico(i)}</span><div><span class="et">${l}</span><b>${n}</b></div></div>`).join('');
+  S.classList.toggle('anim', animar);
+
+  // ---- FILTROS (chips) ---- con el número de productos de cada estado.
+  const cuenta = {'':prods.length, crit:0, low:0, ok:0};
+  prods.forEach(p=>cuenta[estadoTotal(p)]++);
+  $('chips').innerHTML = [['','Todos'],['crit','Urgentes'],['low','Atención'],['ok','Bien surtidos']]
+    .map(([v,t])=>`<button type="button" class="chip ${filtroEstado===v?'activo':''}" data-f="${v}" aria-pressed="${filtroEstado===v}">${v?`<span class="dot ${v}"></span>`:''}${t}<span class="n">${cuenta[v]}</span></button>`).join('');
+
+  // ---- LISTA DE PRODUCTOS ----
+  // 1) Filtra por buscador y chip.  2) Ordena: rojos, ámbar, verdes (y alfabético).  3) Dibuja cada tarjeta.
+  const q = $('q').value.trim().toLowerCase();
+  const orden = {crit:0,low:1,ok:2};
+  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!filtroEstado || estadoTotal(p)===filtroEstado))
+                   .sort((a,b)=>orden[estadoTotal(a)]-orden[estadoTotal(b)] || a.nombre.localeCompare(b.nombre));
+  const L = $('lista');
+  L.classList.toggle('anim', animar);
+  if(cargando && !prods.length){
+    L.innerHTML = '<div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>';
+  } else if(!vis.length){
+    L.innerHTML = `<div class="card vacio-lista">${ico(prods.length?'search':'box')}<div>${prods.length?'Nada coincide con tu búsqueda o filtro.':'Aún no tienes productos. Agrega el primero con "Nuevo producto".'}</div></div>`;
+  } else {
+    L.innerHTML = vis.map((p,k)=>{
+      const e = estadoTotal(p), es = estado(p), ec = estadoCad(p);
+      // Lotes con fecha; cada pastilla se pinta según qué tan cerca está de caducar.
+      const lotes = lotesDe(p);
+      const lotesHtml = lotes.length ? `<div class="lotes">${lotes.map(l=>{const d=diasA(l.cad); const c=d<0?'crit':d<=DIAS_AVISO?'low':''; return `<span class="lote ${c}">${ico('clock')}${l.piezas} pzas · ${fechaCorta(l.cad)} · ${cadTxt(d)}</span>`;}).join('')}</div>` : '';
+      // Barra de nivel: % del stock respecto al objetivo; la rayita (u) marca el mínimo.
+      const obj = p.objetivo*p.porPaquete, pct = obj>0 ? Math.min(100, totalPiezas(p)/obj*100) : 0, pctMin = obj>0 ? Math.min(100, p.minimo/p.objetivo*100) : 0;
+      const nivel = obj>0 ? `<div class="nivel ${es}" title="Nivel de stock respecto a lo que quieres tener (la rayita es tu mínimo)"><i style="width:${pct.toFixed(1)}%"></i><u style="left:${pctMin.toFixed(1)}%"></u></div>` : '';
+      const dias = diasCorto(p);
+      return `<article class="card prod ${e}" data-id="${p.id}" style="--i:${Math.min(k,10)}">
+        <div>
+          <div class="prod-top"><h3>${esc(p.nombre)}</h3><span class="badge ${es}">${ETIQ[es]}</span>${ec!=='ok'?`<span class="badge cad ${ec}">${ico('clock','sm')}${ec==='crit'?'Caducado':'Por caducar'}</span>`:''}</div>
+          <div class="prod-meta"><span>${ico('tag','sm')}${esc(p.categoria||'Sin categoría')}</span><span>${ico('bell','sm')}Aviso con ${fmt(p.minimo)} paq. (${fmt(p.minimo*p.porPaquete)} pzas)</span></div>
+          <div class="prod-stock"><span class="total">${totalPiezas(p)} <small>pzas</small></span>${p.porPaquete>1?`<span class="eq">${p.paquetes} paq. × ${p.porPaquete}${p.sueltas?` + ${p.sueltas} sueltas`:''}</span>`:''}${dias?`<span class="dias">${ico('clock','sm')}Alcanza ${dias}</span>`:''}</div>
+          ${nivel}${lotesHtml}
+        </div>
+        <div class="actions">
+          <button class="sm principal" data-a="sale" data-id="${p.id}">${ico('minus','sm')}Vendí</button>
+          <button class="sm sec principal" data-a="buy" data-id="${p.id}">${ico('truck','sm')}Llegó</button>
+          <button class="sm ghost icono" data-a="edit" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ico('edit','sm')}</button>
+          <button class="sm ghost icono" data-a="del" data-id="${p.id}" aria-label="Eliminar ${esc(p.nombre)}" title="Eliminar">${ico('trash','sm')}</button>
+        </div></article>`;
+    }).join('');
+  }
+
+  // ---- LISTA DE COMPRAS ---- productos que no están en verde y cuántos paquetes pedir.
+  const compras = comprasLista();
+  $('nCompras').textContent = compras.length;
+  $('comprasBox').innerHTML = compras.length
+    ? `<ul>${compras.map(c=>`<li><span class="prodc"><span class="dot ${estado(c.p)}"></span><b>${esc(c.p.nombre)}</b></span><span class="cant">${c.paq} paq. · ${c.paq*c.p.porPaquete} pzas</span></li>`).join('')}</ul>`
+    : `<div class="vacio-mini">${ico('check')}No hace falta comprar nada por ahora.</div>`;
+  animar = false;
 }
 // Lista de compras: todo producto que no esté en verde, con los paquetes a pedir (mínimo 1).
-// comprasTexto() la convierte en texto simple para copiarla o mandarla por WhatsApp.
 function comprasLista(){
   return state.productos.filter(p=>estado(p)!=='ok').map(p=>({p,paq:Math.max(paquetesAPedir(p),1)}));
 }
+// La misma lista en texto simple (para copiar o mandar por WhatsApp). Los * ponen el título en negritas en WhatsApp.
 function comprasTexto(){
   const c = comprasLista();
   if(!c.length) return 'No hace falta comprar nada.';
-  return '🛒 Lista de compras\n'+c.map(x=>`- ${x.p.nombre}: ${x.paq} paq. (${x.paq*x.p.porPaquete} pzas)`).join('\n');
+  return `*Lista de compras${perfil.negocio?' · '+perfil.negocio:''}*\n`+c.map(x=>`• ${x.p.nombre}: ${x.paq} paq. (${x.paq*x.p.porPaquete} pzas)`).join('\n');
+}
+// Baja hasta la tarjeta de un producto y la resalta un momento (se usa desde el panel de alertas).
+function irAProducto(id){
+  // Si un filtro o una búsqueda la esconde, se quitan para que aparezca.
+  if(!document.querySelector(`.prod[data-id="${id}"]`)){ filtroEstado=''; $('q').value=''; render(); }
+  const el = document.querySelector(`.prod[data-id="${id}"]`); if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.remove('resaltar'); void el.offsetWidth; el.classList.add('resaltar');
 }
 
-// FORMULARIO DE PRODUCTO (crear y editar)
-/* ---------- formulario de producto ---------- */
-const dlgProd = document.getElementById('dlgProd'), formProd = document.getElementById('formProd');
-// Actualiza el cuadro verde "Total: N piezas" mientras se escriben paquetes, piezas por paquete y sueltas.
+/* =====================================================================
+ * H) VENTANA DE PRODUCTO (crear y editar)
+ * ===================================================================== */
+const dlgProd = $('dlgProd'), formProd = $('formProd');
+// Muestra "Total en tienda: N piezas" mientras se escriben paquetes, piezas por paquete y sueltas.
 function prevTotal(){
   const f = formProd.elements;
   const t = (+f.paquetes.value||0)*(+f.porPaquete.value||1)+(+f.sueltas.value||0);
-  document.getElementById('prevTotal').textContent = `Total: ${t} piezas`;
+  $('prevTotal').innerHTML = `Total en tienda <b>${t} pieza${t===1?'':'s'}</b>`;
 }
 ['paquetes','porPaquete','sueltas'].forEach(n=>formProd.elements[n].addEventListener('input',prevTotal));
-// Abre el formulario. Si recibe un producto lo llena con sus datos (editar); si no, lo deja vacío (nuevo).
-// La caducidad del stock inicial solo se pide al crear; después las fechas se agregan al registrar llegadas.
+// Abre la ventana vacía (nuevo) o con los datos del producto (editar). La caducidad inicial solo se pide al crear.
 function abrirProd(p){
   editId = p ? p.id : null;
-  document.getElementById('dlgTitulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
+  $('dlgTitulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
   formProd.reset();
   if(p) ['nombre','categoria','paquetes','porPaquete','sueltas','minimo','objetivo','costo','precio'].forEach(k=>formProd.elements[k].value = p[k] ?? '');
-  document.getElementById('cadLabel').style.display = p ? 'none' : '';
+  $('cadLabel').style.display = p ? 'none' : '';
   prevTotal(); dlgProd.showModal();
 }
-// Al pulsar "Guardar":
-// 1) Lee los campos y los limpia (números enteros, nada negativo, mínimo 1 pieza por paquete).
-// 2) Si se está editando: actualiza el producto en Supabase y recorta los lotes que sobren.
-//    Si es nuevo: lo inserta y, si puso fecha de caducidad, crea un lote con todo el stock inicial.
-// 3) guardar() vuelve a leer la base de datos y dibuja la pantalla.
+// Al guardar: limpia los números, actualiza (y recorta lotes) o crea el producto (con lote si trae fecha).
 formProd.addEventListener('submit',()=>{
   const f = formProd.elements, num=(k,d=0)=>f[k].value===''?d:+f[k].value;
   const data = {nombre:f.nombre.value.trim(), categoria:f.categoria.value.trim(),
@@ -825,12 +1071,12 @@ formProd.addEventListener('submit',()=>{
     sueltas:Math.max(0,Math.floor(num('sueltas'))), minimo:Math.max(0,num('minimo')), objetivo:Math.max(0,num('objetivo')),
     costo:f.costo.value===''?null:+f.costo.value, precio:f.precio.value===''?null:+f.precio.value};
   if(!data.nombre) return;
-  const cad = f.cad.value, id = editId;   // se leen ahora porque el formulario se cierra enseguida
+  const cad = f.cad.value, id = editId;   // se leen ahora porque la ventana se cierra enseguida
   guardar(async()=>{
     if(id){
       const p = state.productos.find(x=>x.id===id);
       const antes = fotoLotes(p);
-      Object.assign(p, data); ajustarLotes(p);          // ajustarLotes: los lotes no pueden sumar más que el stock
+      Object.assign(p, data); ajustarLotes(p);
       chk(await sb.from('productos').update(aDB(p)).eq('id', id));
       await sincronizarLotes(antes, p);
     } else {
@@ -838,35 +1084,59 @@ formProd.addEventListener('submit',()=>{
       if(cad && totalPiezas(data)>0)
         chk(await sb.from('lotes').insert({producto_id:r.data.id, piezas:totalPiezas(data), caducidad:cad}));
     }
-  });
+  }, id ? 'Producto actualizado' : `"${data.nombre}" agregado al inventario`);
 });
-document.getElementById('cancelProd').onclick = ()=>dlgProd.close();
-document.getElementById('btnNuevo').onclick = ()=>abrirProd(null);
+$('cancelProd').onclick = ()=>dlgProd.close();
+$('btnNuevo').onclick = ()=>abrirProd(null);
 
-// MOVIMIENTOS: ventas y llegadas de mercancía
-/* ---------- movimientos ---------- */
-const dlgMov = document.getElementById('dlgMov'), formMov = document.getElementById('formMov');
-// Abre la ventana de movimiento. "sale" = venta (se escriben PIEZAS); "buy" = llegada (se escriben PAQUETES y puede llevar fecha de caducidad).
+/* =====================================================================
+ * I) VENTANA DE MOVIMIENTO: venta (piezas) o llegada (paquetes, con caducidad opcional)
+ * ===================================================================== */
+const dlgMov = $('dlgMov'), formMov = $('formMov');
+// Vista previa: cuánto quedará después de registrar (se recalcula con cada cambio de cantidad).
+function prevMov(){
+  if(!movCtx) return;
+  const p = state.productos.find(x=>x.id===movCtx.id); if(!p) return;
+  const n = Math.max(0, Math.floor(+formMov.elements.cant.value||0));
+  const despues = movCtx.tipo==='sale' ? Math.max(0, totalPiezas(p)-n) : totalPiezas(p) + n*p.porPaquete;
+  $('movPrevia').innerHTML = `${movCtx.tipo==='sale'?'Quedarán en tienda':'Tendrás en tienda'} <b>${despues} pzas</b>`;
+}
+// Abre la ventana. "sale" = venta (se escriben PIEZAS). "buy" = llegada (se escriben PAQUETES y puede llevar fecha).
+// Los atajos rápidos cambian según el caso (en venta incluye "1 paquete" si el producto viene en paquetes).
 function abrirMov(tipo,p){
   movCtx = {tipo,id:p.id};
-  document.getElementById('movTitulo').textContent = (tipo==='sale'?'Registrar venta: ':'Llegada de paquetes: ')+p.nombre;
-  document.getElementById('movLabel').firstChild.textContent = tipo==='sale' ? 'Piezas vendidas ' : 'Paquetes que llegaron ';
-  document.getElementById('movHint').textContent = tipo==='sale'
-    ? `Hay ${totalPiezas(p)} piezas. Si hace falta, se abre un paquete solo.`
+  const venta = tipo==='sale';
+  $('movIco').innerHTML = ico(venta?'minus':'truck');
+  $('movTitulo').innerHTML = `${venta?'Registrar venta':'Llegó mercancía'}<small>${esc(p.nombre)} · hay ${totalPiezas(p)} pzas</small>`;
+  $('movLabel').firstChild.textContent = venta ? 'Piezas vendidas ' : 'Paquetes que llegaron ';
+  $('movHint').textContent = venta
+    ? 'Si no alcanzan las piezas sueltas, se abre un paquete automáticamente.'
     : `Cada paquete trae ${p.porPaquete} pieza${p.porPaquete===1?'':'s'}.`;
+  const atajos = venta ? [1,5,10].concat(p.porPaquete>1 && ![1,5,10].includes(p.porPaquete) ? [p.porPaquete] : []) : [1,2,5,10];
+  $('rapidos').innerHTML = atajos.map(n=>`<button type="button" class="chip" data-n="${n}">${venta && n===p.porPaquete && p.porPaquete>1 ? `1 paquete (${n})` : n}</button>`).join('');
+  $('movOk').textContent = venta ? 'Registrar venta' : 'Registrar llegada';
   formMov.elements.cant.value = 1; formMov.elements.cad.value = '';
-  document.getElementById('movCadLabel').style.display = tipo==='buy' ? '' : 'none';
-  dlgMov.showModal();
+  $('movCadLabel').style.display = venta ? 'none' : '';
+  prevMov(); dlgMov.showModal();
 }
-// Al pulsar "Registrar":
-// VENTA: descuenta piezas (abre paquetes si hace falta), gasta primero el lote que caduca antes y no permite vender más de lo que hay.
-//        En Supabase: actualiza el producto, los lotes que cambiaron y guarda el movimiento "salida".
-// LLEGADA: suma paquetes completos y, si se puso fecha, crea un lote nuevo con esas piezas. Guarda el movimiento "entrada".
-// Los movimientos son el historial que sirve para estimar cuántos días alcanza el producto.
+// Botones − / + del campo de cantidad y atajos rápidos.
+formMov.addEventListener('click', e=>{
+  const paso = e.target.closest('[data-paso]'), rap = e.target.closest('[data-n]');
+  const c = formMov.elements.cant;
+  if(paso) c.value = Math.max(1, (Math.floor(+c.value)||0) + +paso.dataset.paso);
+  if(rap) c.value = rap.dataset.n;
+  if(paso || rap) prevMov();
+});
+formMov.elements.cant.addEventListener('input', prevMov);
+// Al registrar:
+//   VENTA: descuenta piezas (abre paquetes), gasta primero el lote que caduca antes y guarda el movimiento "salida".
+//   LLEGADA: suma paquetes, crea lote si hay fecha y guarda el movimiento "entrada".
 formMov.addEventListener('submit',()=>{
-  const ctx = movCtx; if(!ctx) return;                 // se copia porque movCtx puede cambiar mientras se espera a la base de datos
+  const ctx = movCtx; if(!ctx) return;                 // copia: movCtx puede cambiar mientras se espera a la base
   const n = Math.floor(+formMov.elements.cant.value); if(!(n>0)) return;
   const cad = formMov.elements.cad.value;
+  const prod = state.productos.find(x=>x.id===ctx.id); if(!prod) return;
+  const nombre = prod.nombre;
   guardar(async()=>{
     const p = state.productos.find(x=>x.id===ctx.id); if(!p) return;
     if(ctx.tipo==='sale'){
@@ -882,63 +1152,70 @@ formMov.addEventListener('submit',()=>{
       if(cad) chk(await sb.from('lotes').insert({producto_id:p.id, piezas:n*p.porPaquete, caducidad:cad}));
       chk(await sb.from('movimientos').insert({producto_id:p.id, tipo:'entrada', piezas:n*p.porPaquete}));
     }
-  });
+  }, ctx.tipo==='sale' ? `Venta registrada: ${nombre}` : `Llegada registrada: ${nombre}`);
 });
-document.getElementById('cancelMov').onclick = ()=>dlgMov.close();
+$('cancelMov').onclick = ()=>dlgMov.close();
 
-// Un solo "oyente" para todos los botones de las tarjetas (se llama delegación de eventos).
-// Mira qué botón se pulsó con data-a: editar, vender (sale), llegada (buy) o eliminar (del, pide confirmación).
-document.getElementById('lista').addEventListener('click',e=>{
+/* =====================================================================
+ * J) CLICS EN LA PÁGINA (delegación de eventos: un solo "oyente" por zona)
+ * ===================================================================== */
+// Botones de cada tarjeta: data-a dice qué hacer (vender, llegada, editar o eliminar con confirmación).
+$('lista').addEventListener('click',e=>{
   const b = e.target.closest('button[data-a]'); if(!b) return;
   const p = state.productos.find(x=>x.id===b.dataset.id); if(!p) return;
   const a = b.dataset.a;
   if(a==='edit') abrirProd(p);
   else if(a==='sale') abrirMov('sale',p);
   else if(a==='buy') abrirMov('buy',p);
-  else if(a==='del' && confirm(`¿Eliminar "${p.nombre}"?`)){
-    // Al borrar el producto, la base de datos borra sola sus lotes y movimientos (on delete cascade).
-    guardar(async()=>{ chk(await sb.from('productos').delete().eq('id', p.id)); });
+  else if(a==='del' && confirm(`¿Eliminar "${p.nombre}" y su historial?`)){
+    guardar(async()=>{ chk(await sb.from('productos').delete().eq('id', p.id)); }, 'Producto eliminado');
   }
 });
-// Botón "Cargar ejemplo" de la tarjeta de bienvenida (está dentro del panel de alertas): hace lo mismo que el de Herramientas.
-document.getElementById('alertas').addEventListener('click', e=>{
-  if(e.target.closest('[data-accion="demo"]')) document.getElementById('btnDemo').click();
+// Panel de alertas: renglón -> ir al producto; botón de bienvenida -> cargar ejemplo.
+$('alertas').addEventListener('click', e=>{
+  const ir = e.target.closest('[data-ir]');
+  if(ir) irAProducto(ir.dataset.ir);
+  if(e.target.closest('[data-accion="demo"]')) $('btnDemo').click();
 });
-// Buscador y filtro: cada vez que cambian, se vuelve a dibujar la lista.
-document.getElementById('q').addEventListener('input',render);
-document.getElementById('fEstado').addEventListener('change',render);
+// Chips de filtro y buscador: cambian lo que se muestra y vuelven a dibujar.
+$('chips').addEventListener('click', e=>{
+  const c = e.target.closest('[data-f]'); if(!c) return;
+  filtroEstado = c.dataset.f; render();
+});
+$('q').addEventListener('input',render);
 
-// LISTA DE COMPRAS: copiar al portapapeles, enviar por WhatsApp (abre wa.me con el texto) o imprimir.
-/* ---------- compras ---------- */
-document.getElementById('btnCopiar').onclick = async ()=>{
-  try{ await navigator.clipboard.writeText(comprasTexto()); alert('Lista copiada ✔'); }
+/* =====================================================================
+ * K) LISTA DE COMPRAS: copiar, WhatsApp (abre wa.me con el texto) e imprimir
+ * ===================================================================== */
+$('btnCopiar').onclick = async ()=>{
+  try{ await navigator.clipboard.writeText(comprasTexto()); avisar('Lista copiada al portapapeles', 'ok'); }
   catch(e){ prompt('Copia tu lista:',comprasTexto()); }
 };
-document.getElementById('btnWA').onclick = ()=>window.open('https://wa.me/?text='+encodeURIComponent(comprasTexto()),'_blank','noopener');
-document.getElementById('btnPrint').onclick = ()=>window.print();
+$('btnWA').onclick = ()=>window.open('https://wa.me/?text='+encodeURIComponent(comprasTexto()),'_blank','noopener');
+$('btnPrint').onclick = ()=>window.print();
 
-// HERRAMIENTAS: exportar CSV, borrar todo y cargar datos de ejemplo.
-/* ---------- herramientas ---------- */
-// Exporta el inventario como archivo CSV que abre Excel. El carácter especial del inicio (BOM) hace que se vean bien los acentos.
-document.getElementById('btnCSV').onclick = ()=>{
+/* =====================================================================
+ * L) HERRAMIENTAS: exportar CSV, borrar todo y cargar el ejemplo
+ * ===================================================================== */
+// CSV que abre Excel. El carácter especial del inicio (BOM) hace que se vean bien los acentos.
+$('btnCSV').onclick = ()=>{
   const rows = [['Producto','Categoria','Paquetes','Piezas por paquete','Sueltas','Total piezas','Minimo (paq)','Objetivo (paq)','Estado','Proxima caducidad']]
-    .concat(state.productos.map(p=>[p.nombre,p.categoria||'',p.paquetes,p.porPaquete,p.sueltas,totalPiezas(p),p.minimo,p.objetivo,ETIQ[estado(p)].slice(3),(lotesDe(p)[0]||{}).cad||'']));
+    .concat(state.productos.map(p=>[p.nombre,p.categoria||'',p.paquetes,p.porPaquete,p.sueltas,totalPiezas(p),p.minimo,p.objetivo,ETIQ[estado(p)],(lotesDe(p)[0]||{}).cad||'']));
   const csv = '﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  a.download = 'inventario.csv'; a.click(); URL.revokeObjectURL(a.href);
+  a.download = 'earlystock-inventario.csv'; a.click(); URL.revokeObjectURL(a.href);
 };
-// Borra todos los productos del usuario (y por cascada sus lotes y movimientos), pero antes pide confirmación.
-// delete() exige un filtro; "created_at >= 1970" coincide con todas las filas del usuario (RLS ya limita a las suyas).
+// Borra todos los productos del usuario (y por cascada lotes y movimientos). delete() exige un filtro:
+// "created_at >= 1970" coincide con todas sus filas (las reglas RLS ya limitan a las suyas).
 const borrarTodo = async () => chk(await sb.from('productos').delete().gte('created_at','1970-01-01'));
-document.getElementById('btnReset').onclick = ()=>{
-  if(confirm('¿Borrar todos los productos y movimientos?')) guardar(borrarTodo);
+$('btnReset').onclick = ()=>{
+  if(confirm('¿Borrar todos los productos y su historial? Esta acción no se puede deshacer.')) guardar(borrarTodo, 'Inventario borrado');
 };
-// Carga una tiendita de ejemplo para demostrar la app sin escribir nada.
-// Cada fila de "demo" es: nombre, categoría, paquetes, piezas por paquete, sueltas, mínimo (paq), objetivo (paq), costo, precio y las ventas de cada uno de los últimos 7 días.
-document.getElementById('btnDemo').onclick = ()=>{
-  if(state.productos.length && !confirm('Esto reemplazará tus datos actuales con el ejemplo. ¿Continuar?')) return;
-  // [nombre, categoría, paquetes, porPaquete, sueltas, mín(paq), objetivo(paq), costo, precio, vendidas por día]
+// Tienda de ejemplo para la demo. Cada fila: nombre, categoría, paquetes, piezas por paquete, sueltas,
+// mínimo (paq), objetivo (paq), costo, precio y las ventas de cada uno de los últimos 7 días.
+$('btnDemo').onclick = ()=>{
+  if(state.productos.length && !confirm('Esto reemplazará tu inventario actual con el ejemplo. ¿Continuar?')) return;
   const demo = [
     ['Refresco 600 ml','Bebidas',1,12,3,1.5,5,11,16,[9,8,10,7,9,11,8]],
     ['Galletas Marías','Botanas',6,10,2,1,4,6,10,[2,3,1,2,2,3,2]],
@@ -949,7 +1226,7 @@ document.getElementById('btnDemo').onclick = ()=>{
     ['Papel higiénico 4 pzas','Limpieza',5,12,0,1,3,28,38,[2,2,3,2,2,3,2]],
     ['Sopa instantánea','Botanas',1,24,6,1,3,9,14,[4,5,4,6,5,5,4]]
   ];
-  // CAD = lotes de ejemplo por producto: [piezas, días para caducar]. Un número negativo significa que ya caducó.
+  // CAD = lotes de ejemplo: [piezas, días para caducar]. Negativo = ya caducó.
   const CAD = {'Leche 1 L':[[10,3],[14,20]], 'Galletas Marías':[[20,-2],[42,60]], 'Huevo (cartón 30)':[[26,5]], 'Sopa instantánea':[[30,120]]};
   guardar(async()=>{
     // 1) Limpia lo anterior y crea los productos (select() devuelve las filas nuevas con su id).
@@ -957,7 +1234,7 @@ document.getElementById('btnDemo').onclick = ()=>{
     const filas = demo.map(d=>({nombre:d[0], categoria:d[1], paquetes:d[2], por_paquete:d[3], sueltas:d[4], minimo:d[5], objetivo:d[6], costo:d[7], precio:d[8]}));
     const nuevos = chk(await sb.from('productos').insert(filas).select()).data;
     const idDe = {}; nuevos.forEach(r => { idDe[r.nombre] = r.id; });
-    // 2) Lotes con caducidad y ventas de días pasados (así "te alcanza N días" funciona desde el primer momento).
+    // 2) Lotes con caducidad y ventas de días pasados (así "Alcanza ~N días" funciona desde el inicio).
     const lotes = [], movs = [], now = Date.now();
     demo.forEach(d=>{
       (CAD[d[0]]||[]).forEach(([piezas,dias]) => lotes.push({producto_id:idDe[d[0]], piezas, caducidad:fechaISO(hoy0()+dias*DAY)}));
@@ -965,29 +1242,110 @@ document.getElementById('btnDemo').onclick = ()=>{
     });
     chk(await sb.from('lotes').insert(lotes));
     chk(await sb.from('movimientos').insert(movs));
-  });
+  }, 'Tienda de ejemplo cargada', true);
 };
 
-// SESIÓN: INICIAR, CREAR CUENTA Y SALIR
-// Muestra el login o la app según haya sesión. Si es un usuario nuevo, carga sus datos desde Supabase.
-// (La carga va dentro de setTimeout porque no se debe llamar a Supabase directamente dentro de onAuthStateChange.)
+/* =====================================================================
+ * M) PERFIL: nombre del negocio y foto
+ * Se guardan en la cuenta del usuario (user_metadata de Supabase Auth):
+ *   negocio    = nombre del negocio (aparece en el saludo, el encabezado y la lista de WhatsApp)
+ *   avatar_url = dirección pública de la foto subida al bucket "avatars" de Supabase Storage
+ * ===================================================================== */
+// Lee los datos del usuario y actualiza encabezado, saludo y la ventana de perfil.
+function pintarPerfil(user){
+  const meta = (user && user.user_metadata) || {};
+  perfil = {negocio: meta.negocio || '', avatar: meta.avatar_url || null, email: (user && user.email) || ''};
+  $('avatarTop').innerHTML = avatarHTML();
+  $('avatarGrande').innerHTML = avatarHTML();
+  $('nombreTop').textContent = perfil.negocio || 'Mi negocio';
+  $('correo').textContent = perfil.email;
+  $('perfilCorreo').textContent = perfil.email;
+  $('btnQuitarFoto').hidden = !perfil.avatar;
+  $('saludo').innerHTML = perfil.negocio ? `Hola, <span>${esc(perfil.negocio)}</span>` : 'Hola, <span>bienvenido</span>';
+}
+// Recorta la imagen elegida a un cuadrado de 256×256 (centrado) y la convierte a JPG: pesa poco y carga rápido.
+function recortarFoto(archivo, lado=256){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const c = document.createElement('canvas'); c.width = c.height = lado;
+      const m = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx = (img.naturalWidth - m)/2, sy = (img.naturalHeight - m)/2;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,lado,lado);     // fondo blanco por si el PNG es transparente
+      ctx.drawImage(img, sx, sy, m, m, 0, 0, lado, lado);
+      URL.revokeObjectURL(img.src);
+      c.toBlob(b => b ? resolve(b) : reject(new Error('No se pudo procesar la imagen')), 'image/jpeg', 0.9);
+    };
+    img.onerror = ()=> reject(new Error('El archivo no es una imagen válida'));
+    img.src = URL.createObjectURL(archivo);
+  });
+}
+// Sube la foto a avatars/<id-del-usuario>/avatar.jpg (reemplaza la anterior) y guarda su dirección en la cuenta.
+// El "?v=" con la hora obliga al navegador a mostrar la foto nueva y no una guardada en caché.
+async function subirFoto(archivo){
+  if(!archivo) return;
+  if(archivo.size > 8*1024*1024) return avisar('La imagen pesa más de 8 MB. Elige una más ligera.');
+  $('btnFoto').disabled = true;
+  try{
+    const blob = await recortarFoto(archivo);
+    const ruta = `${usuarioActual}/avatar.jpg`;
+    chk(await sb.storage.from(BUCKET_FOTOS).upload(ruta, blob, {upsert:true, contentType:'image/jpeg', cacheControl:'3600'}));
+    const url = sb.storage.from(BUCKET_FOTOS).getPublicUrl(ruta).data.publicUrl + '?v=' + Date.now();
+    const r = await sb.auth.updateUser({data:{avatar_url:url}}); if(r.error) throw r.error;
+    pintarPerfil(r.data.user);
+    avisar('Foto de perfil actualizada', 'ok');
+  }catch(e){
+    const m = (e && e.message) || 'revisa tu conexión';
+    avisar('No se pudo subir la foto: ' + m + (/bucket|not found|policy|security/i.test(m) ? '. Ejecuta de nuevo supabase/schema.sql (crea el espacio para fotos).' : ''));
+  }
+  $('btnFoto').disabled = false;
+}
+// Quita la foto: la borra de Storage y limpia la dirección en la cuenta (vuelven las iniciales).
+async function quitarFoto(){
+  try{
+    await sb.storage.from(BUCKET_FOTOS).remove([`${usuarioActual}/avatar.jpg`]);
+    const r = await sb.auth.updateUser({data:{avatar_url:null}}); if(r.error) throw r.error;
+    pintarPerfil(r.data.user); avisar('Foto eliminada', 'ok');
+  }catch(e){ avisar('No se pudo quitar la foto: ' + ((e && e.message) || 'revisa tu conexión')); }
+}
+const dlgPerfil = $('dlgPerfil'), formPerfil = $('formPerfil');
+$('btnPerfil').onclick = ()=>{ formPerfil.elements.negocio.value = perfil.negocio; dlgPerfil.showModal(); };
+$('cerrarPerfil').onclick = ()=>dlgPerfil.close();
+$('btnFoto').onclick = ()=>$('archivoFoto').click();
+$('archivoFoto').onchange = e=>{ subirFoto(e.target.files[0]); e.target.value=''; };
+$('btnQuitarFoto').onclick = quitarFoto;
+// Guardar el nombre del negocio.
+formPerfil.addEventListener('submit', async ()=>{
+  const negocio = formPerfil.elements.negocio.value.trim();
+  const r = await sb.auth.updateUser({data:{negocio}});
+  if(r.error) return avisar('No se pudo guardar el perfil: ' + r.error.message);
+  pintarPerfil(r.data.user); avisar('Perfil guardado', 'ok');
+});
+
+/* =====================================================================
+ * N) SESIÓN: mostrar login o app, entrar, crear cuenta y salir
+ * ===================================================================== */
+// Muestra el login o la app según haya sesión; si es un usuario nuevo, carga sus datos.
+// (La carga va en setTimeout porque no se debe llamar a Supabase directamente dentro de onAuthStateChange.)
 function pintarSesion(sesion){
+  if(sesion) pintarPerfil(sesion.user);                     // la foto o el nombre pudieron cambiar
   const id = sesion ? sesion.user.id : null;
-  if(id === usuarioActual && (id || !document.getElementById('authBox').hidden)) return;   // nada cambió
+  if(id === usuarioActual && (id || !$('authBox').hidden)) return;   // mismo usuario: nada más que hacer
   usuarioActual = id;
-  document.getElementById('authBox').hidden = !!sesion;
-  document.getElementById('appBox').hidden = !sesion;
-  document.getElementById('sesion').hidden = !sesion;
-  document.getElementById('correo').textContent = sesion ? sesion.user.email : '';
+  $('authBox').hidden = !!sesion;
+  $('appBox').hidden = !sesion;
+  $('sesion').hidden = !sesion;
   state = {productos:[], movimientos:[]};
-  if(!sesion){ render(); return; }
+  if(!sesion){ if(dlgPerfil.open) dlgPerfil.close(); render(); return; }
+  $('fechaHoy').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long', day:'numeric', month:'long'}).replace(/^./, c=>c.toUpperCase());
   cargando = true; render();
   setTimeout(async()=>{
-    try{ await cargarTodo(); }catch(e){ avisar('No se pudieron cargar tus datos: ' + (e.message||'revisa tu conexión')); }
-    cargando = false; render();
+    try{ await cargarTodo(); }catch(e){ avisar('No se pudieron cargar tus datos: ' + ((e && e.message)||'revisa tu conexión')); }
+    cargando = false; animar = true; render();
   },0);
 }
-// Convierte los errores de Supabase (en inglés) en mensajes claros para el usuario.
+// Convierte los errores de Supabase (en inglés) en mensajes claros.
 function msgAuth(e){
   const m = (e && e.message) || '';
   if(/Invalid login/i.test(m)) return 'Correo o contraseña incorrectos.';
@@ -995,29 +1353,32 @@ function msgAuth(e){
   if(/Email not confirmed/i.test(m)) return 'Confirma tu correo (revisa tu bandeja) y vuelve a entrar.';
   return m || 'No se pudo conectar. Revisa tu internet.';
 }
-// "Entrar": inicia sesión con correo y contraseña. El cambio de pantalla lo hace onAuthStateChange.
-// "Crear cuenta": registra al usuario; si el proyecto exige confirmar el correo, no hay sesión todavía y se avisa.
-function datosAuth(){ const f = document.getElementById('formAuth').elements; return {email:f.email.value.trim(), password:f.password.value}; }
-document.getElementById('formAuth').addEventListener('submit', async e=>{
+// "Entrar" inicia sesión; "Crear cuenta" registra (si el proyecto pide confirmar el correo, se avisa).
+function datosAuth(){ const f = $('formAuth').elements; return {email:f.email.value.trim(), password:f.password.value}; }
+$('formAuth').addEventListener('submit', async e=>{
   e.preventDefault(); if(!sb) return;
+  $('btnEntrar').disabled = true;
   const r = await sb.auth.signInWithPassword(datosAuth());
+  $('btnEntrar').disabled = false;
   if(r.error) avisar(msgAuth(r.error));
 });
-document.getElementById('btnRegistro').onclick = async ()=>{
+$('btnRegistro').onclick = async ()=>{
   if(!sb) return;
-  const f = document.getElementById('formAuth'); if(!f.reportValidity()) return;
+  const f = $('formAuth'); if(!f.reportValidity()) return;
   const r = await sb.auth.signUp(datosAuth());
   if(r.error) avisar(msgAuth(r.error));
-  else if(!r.data.session) avisar('Cuenta creada. Revisa tu correo para confirmarla y luego pulsa "Entrar".');
+  else if(!r.data.session) avisar('Cuenta creada. Revisa tu correo para confirmarla y luego pulsa "Entrar".', 'ok');
 };
-document.getElementById('btnSalir').onclick = async ()=>{ if(sb) await sb.auth.signOut(); };
+$('btnSalir').onclick = async ()=>{ dlgPerfil.close(); if(sb) await sb.auth.signOut(); };
 
-// ARRANQUE
-// Sin configurar: se muestra el login con el aviso de configuración. Configurado: onAuthStateChange avisa
-// cuando hay (o no) sesión guardada y también cuando alguien entra o sale; getSession cubre el caso de recargar la página.
+/* =====================================================================
+ * O) ARRANQUE
+ * Sin configurar: se muestra el login con el aviso. Configurado: onAuthStateChange avisa si hay sesión
+ * (y cuando alguien entra, sale o cambia su perfil); getSession cubre el caso de recargar la página.
+ * ===================================================================== */
 if(!sb){
-  document.getElementById('authBox').hidden = false;
-  document.getElementById('configAviso').hidden = false;
+  $('authBox').hidden = false;
+  $('configAviso').hidden = false;
 } else {
   sb.auth.onAuthStateChange((evento, sesion)=> pintarSesion(sesion));
   sb.auth.getSession().then(r => pintarSesion(r.data.session));
