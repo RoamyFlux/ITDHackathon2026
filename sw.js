@@ -9,7 +9,7 @@
  *     así los datos del inventario siempre están al día.
  * Si cambias archivos de la app, sube el número de CACHE (v1 -> v2) para que se renueve la caché.
  * ===================================================================== */
-const CACHE = 'earlystock-v1';
+const CACHE = 'earlystock-v2';
 const ARCHIVOS = ['./', './index.html', './manifest.webmanifest', './assets/logo.svg',
                   './assets/icon-192.png', './assets/icon-512.png', './assets/apple-touch-icon.png'];
 
