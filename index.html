@@ -107,6 +107,17 @@ dialog{border:0;border-radius:14px;padding:18px;width:min(520px,94vw);background
 dialog::backdrop{background:rgba(0,0,0,.5)}
 dialog h2{margin-top:0}
 .empty{text-align:center;padding:26px;color:var(--muted)}
+/*
+ * SESIÓN Y AVISOS
+ * [hidden] = oculta un elemento (lo usa JS para alternar entre login y app).
+ * #sesion = correo y botón "Salir" dentro del encabezado. #aviso = mensaje flotante (errores y confirmaciones).
+ */
+[hidden]{display:none!important}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+#sesion{display:flex;gap:10px;align-items:center;font-size:.85rem}
+#sesion button{background:rgba(255,255,255,.18)}
+#aviso{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:50;width:min(520px,92vw);margin:0;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.login{max-width:420px;margin:20px auto}
 .foot{color:var(--muted);font-size:.8rem;text-align:center;padding:10px 0 30px}
 /*
  * CELULARES
@@ -130,13 +141,37 @@ dialog h2{margin-top:0}
 <header>
   <h1>📦 StockAlerta</h1>
   <p>¿Cómo puede un negocio pequeño saber que se le está acabando? <b>Con avisos claros antes de quedarse sin producto.</b></p>
+  <!-- Correo de la cuenta y botón para cerrar sesión (solo se ven con sesión iniciada) -->
+  <div id="sesion" hidden><span id="correo"></span><button type="button" id="btnSalir">Salir</button></div>
 </header>
+
+<!-- Mensaje flotante: JavaScript lo muestra unos segundos con avisar("texto") -->
+<div id="aviso" class="banner crit" role="alert" hidden></div>
 
 <!--
      CONTENIDO PRINCIPAL: cada <section> es un bloque de la pantalla.
      Las secciones vacías (alertas, stats, lista...) se llenan desde JavaScript en la función render().
 -->
 <main>
+  <!--
+       INICIO DE SESIÓN: se muestra mientras no haya sesión. Cada negocio entra con su correo y contraseña
+       y Supabase solo le deja ver SUS datos. Si falta configurar Supabase, aquí aparece el aviso (#configAviso).
+  -->
+  <section id="authBox" class="card login" hidden>
+    <h2>Entra a tu negocio</h2>
+    <div class="banner low" id="configAviso" hidden>⚙️ Falta conectar Supabase: pega tu URL y tu anon key al inicio del script (mira el README).</div>
+    <form id="formAuth">
+      <label>Correo <input name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></label>
+      <label>Contraseña (mínimo 6 caracteres) <input name="password" type="password" required minlength="6" autocomplete="current-password"></label>
+      <div class="bar">
+        <button type="submit" id="btnEntrar">Entrar</button>
+        <button type="button" class="sec" id="btnRegistro">Crear cuenta</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- TODA la app (alertas, inventario, compras...) vive aquí y solo se muestra con sesión iniciada. -->
+  <div id="appBox" hidden>
   <!--
        ALERTAS: aquí JavaScript escribe los avisos de "se acaba", "caduca pronto", etc. (aria-live hace que lectores de pantalla los anuncien).
   -->
@@ -191,7 +226,8 @@ dialog h2{margin-top:0}
       <button class="sec" id="btnReset">Borrar todo</button>
     </div>
   </section>
-  <p class="foot">Hackathon ITD 2026 · Comercio y emprendimiento local · Tus datos se guardan solo en este dispositivo.</p>
+  </div><!-- fin de #appBox -->
+  <p class="foot">Hackathon ITD 2026 · Comercio y emprendimiento local · Tus datos se guardan en tu cuenta (Supabase).</p>
 </main>
 
 <!--
@@ -248,31 +284,113 @@ dialog h2{margin-top:0}
   </form>
 </dialog>
 
+<!--
+     LIBRERÍA DE SUPABASE (supabase-js), cargada desde una CDN con versión fija.
+     Define el objeto global "supabase" que usamos abajo para crear el cliente.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+
 <script>
 // TODO EL CÓDIGO VA DENTRO DE ESTA FUNCIÓN
 // Así las variables no se mezclan con otras de la página (no son globales). Termina al final con })();
 (function(){
 'use strict';
-// DATOS GUARDADOS
-// KEY = nombre con el que se guarda todo en el navegador (localStorage). Los datos viven solo en este dispositivo.
-// state tiene dos listas: productos (el inventario) y movimientos (historial de ventas/llegadas, sirve para calcular cuánto se vende al día).
-const KEY = 'stockalerta.v1';
-let state = load();
+// CONEXIÓN CON SUPABASE
+// Pega aquí los dos datos de tu proyecto (Supabase -> Project Settings -> API):
+//   SUPABASE_URL      = "Project URL"
+//   SUPABASE_ANON_KEY = "anon public key"
+// La anon key es PÚBLICA por diseño: la seguridad real la dan las reglas RLS de supabase/schema.sql.
+// NUNCA pegues aquí la "service_role key": esa sí es secreta y daría acceso total a la base.
+const SUPABASE_URL = 'TU_URL_DE_SUPABASE';
+const SUPABASE_ANON_KEY = 'TU_ANON_KEY';
+// "configurado" es falso mientras sigan los textos de ejemplo; entonces la app muestra un aviso en vez de fallar.
+const configurado = !SUPABASE_URL.startsWith('TU_') && !SUPABASE_ANON_KEY.startsWith('TU_') && !!window.supabase;
+// sb = cliente de Supabase: con él leemos y escribimos las tablas y manejamos el inicio de sesión.
+const sb = configurado ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+// ESTADO EN MEMORIA
+// state es una copia de lo que hay en la base de datos para esta sesión; render() dibuja a partir de ella.
+//   productos   = inventario (cada producto trae su lista de lotes)
+//   movimientos = historial reciente de ventas/llegadas (sirve para calcular cuánto se vende al día)
+let state = {productos:[], movimientos:[]};
 // editId = id del producto que se está editando (null = se está creando uno nuevo).
 // movCtx = qué producto y qué tipo de movimiento (venta o llegada) tiene abierta la ventana de movimiento.
 let editId = null, movCtx = null;
+// cargando = true mientras se leen los datos (para mostrar "Cargando…"). usuarioActual = id del usuario con sesión.
+let cargando = false, usuarioActual = null;
 
-/* ---------- datos ---------- */
-// Lee los datos guardados. Si no hay nada (primera vez) o están dañados, empieza con listas vacías.
-function load(){
-  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.productos) return s; }catch(e){}
-  return {productos:[], movimientos:[]};
+/* ---------- datos (Supabase) ---------- */
+// Traducción entre la base de datos (nombres con guion bajo, ej. por_paquete) y la app (camelCase, ej. porPaquete).
+// deDB: fila de la tabla productos -> objeto que usa la app (con su lista de lotes vacía, se llena en cargarTodo).
+const deDB = r => ({id:r.id, nombre:r.nombre, categoria:r.categoria||'', paquetes:r.paquetes, porPaquete:r.por_paquete,
+  sueltas:r.sueltas, minimo:Number(r.minimo), objetivo:Number(r.objetivo),
+  costo:r.costo==null?null:Number(r.costo), precio:r.precio==null?null:Number(r.precio), lotes:[]});
+// aDB: objeto de la app -> columnas de la tabla productos (sin id ni user_id: los pone la base de datos).
+const aDB = p => ({nombre:p.nombre, categoria:p.categoria, paquetes:p.paquetes, por_paquete:p.porPaquete,
+  sueltas:p.sueltas, minimo:p.minimo, objetivo:p.objetivo, costo:p.costo, precio:p.precio});
+// chk: toda llamada a Supabase devuelve {data, error}. Si hay error lo lanzamos para que lo atrape el try/catch de guardar().
+function chk(r){ if(r.error) throw r.error; return r; }
+
+// Lee las 3 tablas y arma "state". Solo pide los movimientos de los últimos 8 días porque
+// el cálculo de consumo diario solo usa 7 (así se baja menos información).
+async function cargarTodo(){
+  const desde = new Date(Date.now() - 8*DAY).toISOString();
+  const [rp, rl, rm] = await Promise.all([
+    sb.from('productos').select('*').order('created_at'),
+    sb.from('lotes').select('*'),
+    sb.from('movimientos').select('*').gte('created_at', desde)
+  ]);
+  [rp, rl, rm].forEach(chk);
+  const prods = rp.data.map(deDB);
+  const porId = new Map(prods.map(p => [p.id, p]));
+  // Cada lote se cuelga de su producto; "cad" es la fecha de caducidad en formato AAAA-MM-DD.
+  rl.data.forEach(l => { const p = porId.get(l.producto_id); if(p) p.lotes.push({id:l.id, piezas:l.piezas, cad:l.caducidad}); });
+  state = {
+    productos: prods,
+    movimientos: rm.data.map(m => ({pid:m.producto_id, tipo:m.tipo, piezas:m.piezas, t:Date.parse(m.created_at)}))
+  };
 }
-// Guarda el estado en el navegador. El try/catch evita que la app falle si el navegador bloquea el almacenamiento.
-// Se llama cada vez que algo cambia (nuevo producto, venta, llegada, etc.).
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
-// uid() = genera un id corto al azar para identificar cada producto o lote. DAY = milisegundos que tiene un día (para calcular fechas).
-const uid = () => Math.random().toString(36).slice(2,10);
+
+// Mensaje flotante de aviso (errores o confirmaciones). Se oculta solo a los 5 segundos.
+let avisoT = null;
+function avisar(texto){
+  const a = document.getElementById('aviso');
+  a.textContent = texto; a.hidden = false;
+  clearTimeout(avisoT); avisoT = setTimeout(()=>{ a.hidden = true; }, 5000);
+}
+// Mientras se guarda, se desactivan los botones de la app para evitar doble clic (ventas duplicadas).
+function setOcupado(on){ document.querySelectorAll('#appBox button').forEach(b => { b.disabled = on; }); }
+
+// guardar(fn): envoltorio para TODA acción que cambia datos:
+//   1) bloquea los botones  2) ejecuta fn (las escrituras a Supabase)
+//   3) vuelve a leer todo de la base de datos  4) dibuja la pantalla.
+// Si algo falla (sin internet, sin permiso...) muestra el error y vuelve a leer para no dejar datos a medias en pantalla.
+async function guardar(fn){
+  setOcupado(true);
+  try{ await fn(); await cargarTodo(); }
+  catch(e){
+    avisar('No se pudo guardar: ' + (e && e.message ? e.message : 'revisa tu conexión'));
+    try{ await cargarTodo(); }catch(_){}
+  }
+  render(); setOcupado(false);
+}
+
+// Foto de los lotes de un producto ANTES de cambiarlos en memoria (id y piezas), para saber después qué actualizar o borrar.
+const fotoLotes = p => (p.lotes||[]).map(l => ({id:l.id, piezas:l.piezas}));
+// Compara la foto con los lotes de ahora y refleja la diferencia en la base de datos:
+// lote que quedó en 0 piezas -> se borra; lote con menos piezas -> se actualiza.
+async function sincronizarLotes(antes, p){
+  const ahora = new Map((p.lotes||[]).map(l => [l.id, l.piezas]));
+  for(const a of antes){
+    const n = ahora.get(a.id) ?? 0;
+    if(n === a.piezas) continue;
+    if(n <= 0) chk(await sb.from('lotes').delete().eq('id', a.id));
+    else chk(await sb.from('lotes').update({piezas:n}).eq('id', a.id));
+  }
+}
+// fechaISO: milisegundos -> texto AAAA-MM-DD (formato que entiende la columna date de Supabase).
+const fechaISO = ms => { const f = new Date(ms); return f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0')+'-'+String(f.getDate()).padStart(2,'0'); };
+// DAY = milisegundos que tiene un día (para calcular fechas).
 const DAY = 86400000;
 
 // LÓGICA DEL INVENTARIO
@@ -298,7 +416,7 @@ function descontar(p, n){
   if(falta > 0){
     const abrir = Math.ceil(falta / p.porPaquete);
     p.paquetes -= abrir;
-    //     // Las piezas del paquete abierto que no se vendieron quedan como sueltas.
+    // Las piezas del paquete abierto que no se vendieron quedan como sueltas.
     p.sueltas += abrir * p.porPaquete - falta;
   }
 }
@@ -461,7 +579,7 @@ function render(){
         <button class="sm sec" data-a="edit" data-id="${p.id}">Editar</button>
         <button class="sm sec" data-a="del" data-id="${p.id}" aria-label="Eliminar">🗑</button>
       </div></div>`;
-  }).join('') : `<div class="card empty">${prods.length?'Nada coincide con tu búsqueda.':'Aún no hay productos.'}</div>`;
+  }).join('') : `<div class="card empty">${cargando?'Cargando…':prods.length?'Nada coincide con tu búsqueda.':'Aún no hay productos.'}</div>`;
 
   // ---- LISTA DE COMPRAS (pantalla) ---- tabla con los productos que no están en verde y cuántos paquetes pedir.
   // compras
@@ -510,9 +628,9 @@ function abrirProd(p){
 }
 // Al pulsar "Guardar":
 // 1) Lee los campos y los limpia (números enteros, nada negativo, mínimo 1 pieza por paquete).
-// 2) Si se está editando, actualiza el producto y recorta lotes sobrantes; si es nuevo, lo agrega.
-// 3) Si puso fecha de caducidad, crea un lote con todo el stock inicial.
-// 4) Guarda y vuelve a dibujar la pantalla.
+// 2) Si se está editando: actualiza el producto en Supabase y recorta los lotes que sobren.
+//    Si es nuevo: lo inserta y, si puso fecha de caducidad, crea un lote con todo el stock inicial.
+// 3) guardar() vuelve a leer la base de datos y dibuja la pantalla.
 formProd.addEventListener('submit',()=>{
   const f = formProd.elements, num=(k,d=0)=>f[k].value===''?d:+f[k].value;
   const data = {nombre:f.nombre.value.trim(), categoria:f.categoria.value.trim(),
@@ -520,13 +638,20 @@ formProd.addEventListener('submit',()=>{
     sueltas:Math.max(0,Math.floor(num('sueltas'))), minimo:Math.max(0,num('minimo')), objetivo:Math.max(0,num('objetivo')),
     costo:f.costo.value===''?null:+f.costo.value, precio:f.precio.value===''?null:+f.precio.value};
   if(!data.nombre) return;
-  if(editId){ const p = state.productos.find(p=>p.id===editId); Object.assign(p, data); ajustarLotes(p); }
-  else {
-    const np = {id:uid(), ...data, lotes:[]};
-    if(f.cad.value && totalPiezas(np)>0) np.lotes.push({id:uid(), piezas:totalPiezas(np), cad:f.cad.value});
-    state.productos.push(np);
-  }
-  save(); render();
+  const cad = f.cad.value, id = editId;   // se leen ahora porque el formulario se cierra enseguida
+  guardar(async()=>{
+    if(id){
+      const p = state.productos.find(x=>x.id===id);
+      const antes = fotoLotes(p);
+      Object.assign(p, data); ajustarLotes(p);          // ajustarLotes: los lotes no pueden sumar más que el stock
+      chk(await sb.from('productos').update(aDB(p)).eq('id', id));
+      await sincronizarLotes(antes, p);
+    } else {
+      const r = chk(await sb.from('productos').insert(aDB(data)).select().single());
+      if(cad && totalPiezas(data)>0)
+        chk(await sb.from('lotes').insert({producto_id:r.data.id, piezas:totalPiezas(data), caducidad:cad}));
+    }
+  });
 });
 document.getElementById('cancelProd').onclick = ()=>dlgProd.close();
 document.getElementById('btnNuevo').onclick = ()=>abrirProd(null);
@@ -548,20 +673,29 @@ function abrirMov(tipo,p){
 }
 // Al pulsar "Registrar":
 // VENTA: descuenta piezas (abre paquetes si hace falta), gasta primero el lote que caduca antes y no permite vender más de lo que hay.
-// LLEGADA: suma paquetes completos y, si se puso fecha, crea un lote nuevo con esas piezas.
-// En ambos casos se anota en el historial (movimientos), que luego sirve para estimar cuántos días alcanza el producto.
+//        En Supabase: actualiza el producto, los lotes que cambiaron y guarda el movimiento "salida".
+// LLEGADA: suma paquetes completos y, si se puso fecha, crea un lote nuevo con esas piezas. Guarda el movimiento "entrada".
+// Los movimientos son el historial que sirve para estimar cuántos días alcanza el producto.
 formMov.addEventListener('submit',()=>{
-  const p = state.productos.find(x=>x.id===movCtx.id); if(!p) return;
+  const ctx = movCtx; if(!ctx) return;                 // se copia porque movCtx puede cambiar mientras se espera a la base de datos
   const n = Math.floor(+formMov.elements.cant.value); if(!(n>0)) return;
-  if(movCtx.tipo==='sale'){
-    const n2 = Math.min(n,totalPiezas(p));
-    descontar(p,n2); consumirLotes(p,n2); state.movimientos.push({pid:p.id,tipo:'salida',piezas:n2,t:Date.now()});
-  } else {
-    p.paquetes += n;
-    if(formMov.elements.cad.value){ (p.lotes = p.lotes||[]).push({id:uid(), piezas:n*p.porPaquete, cad:formMov.elements.cad.value}); }
-    state.movimientos.push({pid:p.id,tipo:'entrada',piezas:n*p.porPaquete,t:Date.now()});
-  }
-  save(); render();
+  const cad = formMov.elements.cad.value;
+  guardar(async()=>{
+    const p = state.productos.find(x=>x.id===ctx.id); if(!p) return;
+    if(ctx.tipo==='sale'){
+      const antes = fotoLotes(p);
+      const n2 = Math.min(n,totalPiezas(p));
+      if(n2<=0) return;
+      descontar(p,n2); consumirLotes(p,n2);
+      chk(await sb.from('productos').update({paquetes:p.paquetes, sueltas:p.sueltas}).eq('id', p.id));
+      await sincronizarLotes(antes, p);
+      chk(await sb.from('movimientos').insert({producto_id:p.id, tipo:'salida', piezas:n2}));
+    } else {
+      chk(await sb.from('productos').update({paquetes:p.paquetes+n}).eq('id', p.id));
+      if(cad) chk(await sb.from('lotes').insert({producto_id:p.id, piezas:n*p.porPaquete, caducidad:cad}));
+      chk(await sb.from('movimientos').insert({producto_id:p.id, tipo:'entrada', piezas:n*p.porPaquete}));
+    }
+  });
 });
 document.getElementById('cancelMov').onclick = ()=>dlgMov.close();
 
@@ -575,9 +709,8 @@ document.getElementById('lista').addEventListener('click',e=>{
   else if(a==='sale') abrirMov('sale',p);
   else if(a==='buy') abrirMov('buy',p);
   else if(a==='del' && confirm(`¿Eliminar "${p.nombre}"?`)){
-    state.productos = state.productos.filter(x=>x.id!==p.id);
-    state.movimientos = state.movimientos.filter(m=>m.pid!==p.id);
-    save(); render();
+    // Al borrar el producto, la base de datos borra sola sus lotes y movimientos (on delete cascade).
+    guardar(async()=>{ chk(await sb.from('productos').delete().eq('id', p.id)); });
   }
 });
 // Buscador y filtro: cada vez que cambian, se vuelve a dibujar la lista.
@@ -604,9 +737,11 @@ document.getElementById('btnCSV').onclick = ()=>{
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   a.download = 'inventario.csv'; a.click(); URL.revokeObjectURL(a.href);
 };
-// Borra todos los productos y movimientos, pero antes pide confirmación.
+// Borra todos los productos del usuario (y por cascada sus lotes y movimientos), pero antes pide confirmación.
+// delete() exige un filtro; "created_at >= 1970" coincide con todas las filas del usuario (RLS ya limita a las suyas).
+const borrarTodo = async () => chk(await sb.from('productos').delete().gte('created_at','1970-01-01'));
 document.getElementById('btnReset').onclick = ()=>{
-  if(confirm('¿Borrar todos los productos y movimientos?')){ state={productos:[],movimientos:[]}; save(); render(); }
+  if(confirm('¿Borrar todos los productos y movimientos?')) guardar(borrarTodo);
 };
 // Carga una tiendita de ejemplo para demostrar la app sin escribir nada.
 // Cada fila de "demo" es: nombre, categoría, paquetes, piezas por paquete, sueltas, mínimo (paq), objetivo (paq), costo, precio y las ventas de cada uno de los últimos 7 días.
@@ -624,23 +759,78 @@ document.getElementById('btnDemo').onclick = ()=>{
     ['Sopa instantánea','Botanas',1,24,6,1,3,9,14,[4,5,4,6,5,5,4]]
   ];
   // CAD = lotes de ejemplo por producto: [piezas, días para caducar]. Un número negativo significa que ya caducó.
-  const now = Date.now();
-  // lotes de ejemplo: [piezas, días para caducar]
   const CAD = {'Leche 1 L':[[10,3],[14,20]], 'Galletas Marías':[[20,-2],[42,60]], 'Huevo (cartón 30)':[[26,5]], 'Sopa instantánea':[[30,120]]};
-  state = {productos:[],movimientos:[]};
-  // Convierte cada fila de "demo" en un producto real, con sus lotes y sus ventas de días pasados
-  // (así el cálculo de "te alcanza N días" ya funciona desde el primer momento).
-  demo.forEach(d=>{
-    const id = uid();
-    const lotes = (CAD[d[0]]||[]).map(([piezas,dias])=>{ const f=new Date(hoy0()+dias*DAY); const cad=f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0')+'-'+String(f.getDate()).padStart(2,'0'); return {id:uid(),piezas,cad}; });
-    state.productos.push({id,lotes,nombre:d[0],categoria:d[1],paquetes:d[2],porPaquete:d[3],sueltas:d[4],minimo:d[5],objetivo:d[6],costo:d[7],precio:d[8]});
-    d[9].forEach((v,i)=>{ if(v>0) state.movimientos.push({pid:id,tipo:'salida',piezas:v,t:now-(i+0.5)*DAY}); });
+  guardar(async()=>{
+    // 1) Limpia lo anterior y crea los productos (select() devuelve las filas nuevas con su id).
+    await borrarTodo();
+    const filas = demo.map(d=>({nombre:d[0], categoria:d[1], paquetes:d[2], por_paquete:d[3], sueltas:d[4], minimo:d[5], objetivo:d[6], costo:d[7], precio:d[8]}));
+    const nuevos = chk(await sb.from('productos').insert(filas).select()).data;
+    const idDe = {}; nuevos.forEach(r => { idDe[r.nombre] = r.id; });
+    // 2) Lotes con caducidad y ventas de días pasados (así "te alcanza N días" funciona desde el primer momento).
+    const lotes = [], movs = [], now = Date.now();
+    demo.forEach(d=>{
+      (CAD[d[0]]||[]).forEach(([piezas,dias]) => lotes.push({producto_id:idDe[d[0]], piezas, caducidad:fechaISO(hoy0()+dias*DAY)}));
+      d[9].forEach((v,i)=>{ if(v>0) movs.push({producto_id:idDe[d[0]], tipo:'salida', piezas:v, created_at:new Date(now-(i+0.5)*DAY).toISOString()}); });
+    });
+    chk(await sb.from('lotes').insert(lotes));
+    chk(await sb.from('movimientos').insert(movs));
   });
-  save(); render();
 };
 
-// ARRANQUE: dibuja la pantalla por primera vez al abrir la página.
-render();
+// SESIÓN: INICIAR, CREAR CUENTA Y SALIR
+// Muestra el login o la app según haya sesión. Si es un usuario nuevo, carga sus datos desde Supabase.
+// (La carga va dentro de setTimeout porque no se debe llamar a Supabase directamente dentro de onAuthStateChange.)
+function pintarSesion(sesion){
+  const id = sesion ? sesion.user.id : null;
+  if(id === usuarioActual && (id || !document.getElementById('authBox').hidden)) return;   // nada cambió
+  usuarioActual = id;
+  document.getElementById('authBox').hidden = !!sesion;
+  document.getElementById('appBox').hidden = !sesion;
+  document.getElementById('sesion').hidden = !sesion;
+  document.getElementById('correo').textContent = sesion ? sesion.user.email : '';
+  state = {productos:[], movimientos:[]};
+  if(!sesion){ render(); return; }
+  cargando = true; render();
+  setTimeout(async()=>{
+    try{ await cargarTodo(); }catch(e){ avisar('No se pudieron cargar tus datos: ' + (e.message||'revisa tu conexión')); }
+    cargando = false; render();
+  },0);
+}
+// Convierte los errores de Supabase (en inglés) en mensajes claros para el usuario.
+function msgAuth(e){
+  const m = (e && e.message) || '';
+  if(/Invalid login/i.test(m)) return 'Correo o contraseña incorrectos.';
+  if(/already registered/i.test(m)) return 'Ese correo ya tiene cuenta. Pulsa "Entrar".';
+  if(/Email not confirmed/i.test(m)) return 'Confirma tu correo (revisa tu bandeja) y vuelve a entrar.';
+  return m || 'No se pudo conectar. Revisa tu internet.';
+}
+// "Entrar": inicia sesión con correo y contraseña. El cambio de pantalla lo hace onAuthStateChange.
+// "Crear cuenta": registra al usuario; si el proyecto exige confirmar el correo, no hay sesión todavía y se avisa.
+function datosAuth(){ const f = document.getElementById('formAuth').elements; return {email:f.email.value.trim(), password:f.password.value}; }
+document.getElementById('formAuth').addEventListener('submit', async e=>{
+  e.preventDefault(); if(!sb) return;
+  const r = await sb.auth.signInWithPassword(datosAuth());
+  if(r.error) avisar(msgAuth(r.error));
+});
+document.getElementById('btnRegistro').onclick = async ()=>{
+  if(!sb) return;
+  const f = document.getElementById('formAuth'); if(!f.reportValidity()) return;
+  const r = await sb.auth.signUp(datosAuth());
+  if(r.error) avisar(msgAuth(r.error));
+  else if(!r.data.session) avisar('Cuenta creada. Revisa tu correo para confirmarla y luego pulsa "Entrar".');
+};
+document.getElementById('btnSalir').onclick = async ()=>{ if(sb) await sb.auth.signOut(); };
+
+// ARRANQUE
+// Sin configurar: se muestra el login con el aviso de configuración. Configurado: onAuthStateChange avisa
+// cuando hay (o no) sesión guardada y también cuando alguien entra o sale; getSession cubre el caso de recargar la página.
+if(!sb){
+  document.getElementById('authBox').hidden = false;
+  document.getElementById('configAviso').hidden = false;
+} else {
+  sb.auth.onAuthStateChange((evento, sesion)=> pintarSesion(sesion));
+  sb.auth.getSession().then(r => pintarSesion(r.data.session));
+}
 })();
 </script>
 </body>
