@@ -1,5 +1,5 @@
 -- =====================================================================
--- StockAlerta · Esquema de base de datos para Supabase
+-- EarlyStock · Esquema de base de datos para Supabase
 -- Cómo usarlo: Supabase -> SQL Editor -> New query -> pegar TODO esto -> Run.
 -- Se puede ejecutar más de una vez sin romper nada.
 -- =====================================================================
@@ -100,3 +100,40 @@ create policy "movimientos: solo el dueño" on public.movimientos
   with check (user_id = (select auth.uid())
               and exists (select 1 from public.productos p
                           where p.id = producto_id and p.user_id = (select auth.uid())));
+
+-- ---------------------------------------------------------------------
+-- 6) FOTOS DE PERFIL (Supabase Storage)
+--    Crea el "bucket" (carpeta) público "avatars" para las fotos de perfil:
+--      - público: cualquiera puede VER una foto si tiene su dirección (así se muestra en la app).
+--      - máximo 2 MB por archivo y solo imágenes JPG, PNG o WebP.
+--    Cada usuario guarda su foto en avatars/<su-id>/avatar.jpg.
+--    Las políticas de abajo permiten que cada usuario suba, cambie o borre SOLO archivos de su propia carpeta.
+--    (storage.foldername(name))[1] = primera carpeta de la ruta del archivo = id del usuario.
+-- ---------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "avatars: ver propias" on storage.objects;
+create policy "avatars: ver propias" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+drop policy if exists "avatars: subir propias" on storage.objects;
+create policy "avatars: subir propias" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+drop policy if exists "avatars: cambiar propias" on storage.objects;
+create policy "avatars: cambiar propias" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text)
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+drop policy if exists "avatars: borrar propias" on storage.objects;
+create policy "avatars: borrar propias" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
