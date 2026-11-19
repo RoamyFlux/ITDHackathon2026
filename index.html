@@ -136,6 +136,7 @@ dialog h2{margin-top:0}
       <label>Piezas por paquete <input name="porPaquete" type="number" min="1" step="1" value="1" required></label>
       <label>Piezas sueltas <input name="sueltas" type="number" min="0" step="1" value="0" required></label>
     </div>
+    <label id="cadLabel">Caducidad del stock actual (opcional) <input name="cad" type="date"></label>
     <div class="banner ok" id="prevTotal" style="font-weight:600">Total: 0 piezas</div>
     <p class="hint">No cuentes pieza por pieza: escribe cuántos paquetes tienes y cuántas piezas trae cada uno. Si no vendes por paquete, deja "1".</p>
     <div class="row2">
@@ -158,6 +159,7 @@ dialog h2{margin-top:0}
   <form method="dialog" id="formMov">
     <h2 id="movTitulo"></h2>
     <label id="movLabel">Cantidad <input name="cant" type="number" min="1" step="1" value="1" required></label>
+    <label id="movCadLabel">Fecha de caducidad de este lote (opcional) <input name="cad" type="date"></label>
     <p class="hint" id="movHint"></p>
     <div class="bar" style="justify-content:flex-end">
       <button type="button" class="sec" id="cancelMov">Cancelar</button>
@@ -218,6 +220,31 @@ function paquetesAPedir(p){
   const falta = p.objetivo*p.porPaquete - totalPiezas(p);
   return falta>0 ? Math.ceil(falta/p.porPaquete) : 0;
 }
+/* ---------- caducidad por lote ---------- */
+// p.lotes = [{id, piezas, cad:'YYYY-MM-DD'}]. Las piezas sin lote se consideran sin fecha.
+const DIAS_AVISO = 7;
+const hoy0 = () => { const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); };
+const diasA = cad => Math.round((new Date(cad+'T00:00:00').getTime()-hoy0())/DAY);
+const lotesDe = p => (p.lotes||[]).filter(l=>l.piezas>0).sort((a,b)=>a.cad<b.cad?-1:a.cad>b.cad?1:0);
+// Primero en caducar, primero en venderse (FEFO). Los lotes nunca pueden sumar más que el stock real.
+function consumirLotes(p,n){
+  for(const l of lotesDe(p)){ if(n<=0) break; const t=Math.min(l.piezas,n); l.piezas-=t; n-=t; }
+  p.lotes = lotesDe(p);
+}
+function ajustarLotes(p){
+  let exceso = (p.lotes||[]).reduce((a,l)=>a+l.piezas,0) - totalPiezas(p);
+  if(exceso>0) for(const l of lotesDe(p).reverse()){ const t=Math.min(l.piezas,exceso); l.piezas-=t; exceso-=t; if(exceso<=0) break; }
+  p.lotes = lotesDe(p);
+}
+function estadoCad(p){
+  const ls = lotesDe(p); if(!ls.length) return 'ok';
+  const d = diasA(ls[0].cad);
+  return d<0 ? 'crit' : d<=DIAS_AVISO ? 'low' : 'ok';
+}
+const peor = (a,b) => ({ok:0,low:1,crit:2}[a] >= {ok:0,low:1,crit:2}[b] ? a : b);
+const estadoTotal = p => peor(estado(p), estadoCad(p));
+function cadTxt(d){ return d<0 ? `caducó hace ${-d} día${d===-1?'':'s'}` : d===0 ? 'caduca hoy' : `caduca en ${d} día${d===1?'':'s'}`; }
+const fechaCorta = cad => new Date(cad+'T00:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'});
 const ETIQ = {ok:'🟢 Bien',low:'🟡 Por acabarse',crit:'🔴 Crítico'};
 const fmt = n => Number.isInteger(n)?String(n):n.toFixed(1);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -235,6 +262,10 @@ function render(){
   const prods = state.productos;
   const crit = prods.filter(p=>estado(p)==='crit');
   const low = prods.filter(p=>estado(p)==='low');
+  const lotesAlerta = [];
+  prods.forEach(p=>lotesDe(p).forEach(l=>{ const d=diasA(l.cad); if(d<=DIAS_AVISO) lotesAlerta.push({p,l,d}); }));
+  lotesAlerta.sort((a,b)=>a.d-b.d);
+  const nCad = new Set(lotesAlerta.map(x=>x.p.id)).size;
 
   // alertas
   const A = document.getElementById('alertas');
@@ -244,31 +275,34 @@ function render(){
     let h='';
     if(crit.length) h+=`<div class="banner crit">🔴 ¡Atención! Se te está acabando o ya se acabó:<ul>${crit.map(p=>`<li>${esc(p.nombre)} — quedan ${totalPiezas(p)} pzas${diasTxt(p)}</li>`).join('')}</ul></div>`;
     if(low.length) h+=`<div class="banner low">🟡 Pronto tendrás que comprar:<ul>${low.map(p=>`<li>${esc(p.nombre)} — quedan ${totalPiezas(p)} pzas${diasTxt(p)}</li>`).join('')}</ul></div>`;
-    if(!h) h=`<div class="banner ok">🟢 Todo bien surtido. No hay nada por acabarse.</div>`;
+    if(lotesAlerta.length) h+=`<div class="banner ${lotesAlerta[0].d<0?'crit':'low'}">⏳ Caducidad:<ul>${lotesAlerta.map(x=>`<li>${esc(x.p.nombre)} — ${x.l.piezas} pzas (${fechaCorta(x.l.cad)}): ${cadTxt(x.d)}</li>`).join('')}</ul></div>`;
+    if(!h) h=`<div class="banner ok">🟢 Todo bien surtido. No hay nada por acabarse ni por caducar.</div>`;
     A.innerHTML = h;
   }
-  document.title = (crit.length+low.length ? `(${crit.length+low.length}) ` : '') + 'StockAlerta – Inventario para tu negocio';
+  document.title = (new Set([...crit,...low,...lotesAlerta.map(x=>x.p)]).size ? `(${new Set([...crit,...low,...lotesAlerta.map(x=>x.p)]).size}) ` : '') + 'StockAlerta – Inventario para tu negocio';
 
   // stats
   const valor = prods.reduce((a,p)=>a+(p.costo||0)*totalPiezas(p),0);
   document.getElementById('stats').innerHTML = [
-    [prods.length,'Productos'],[crit.length,'Críticos / agotados'],[low.length,'Por acabarse'],[money(valor),'Valor del inventario']
+    [prods.length,'Productos'],[crit.length,'Críticos / agotados'],[low.length,'Por acabarse'],[nCad,'Por caducar / caducados'],[money(valor),'Valor del inventario']
   ].map(([n,l])=>`<div class="card stat"><b>${n}</b><span>${l}</span></div>`).join('');
 
   // lista
   const q = document.getElementById('q').value.trim().toLowerCase();
   const fe = document.getElementById('fEstado').value;
   const orden = {crit:0,low:1,ok:2};
-  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!fe || estado(p)===fe))
-                   .sort((a,b)=>orden[estado(a)]-orden[estado(b)] || a.nombre.localeCompare(b.nombre));
+  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!fe || estadoTotal(p)===fe))
+                   .sort((a,b)=>orden[estadoTotal(a)]-orden[estadoTotal(b)] || a.nombre.localeCompare(b.nombre));
   const L = document.getElementById('lista');
   L.innerHTML = vis.length ? vis.map(p=>{
-    const e = estado(p);
+    const e = estadoTotal(p), ec = estadoCad(p);
+    const lotes = lotesDe(p);
+    const lotesHtml = lotes.length ? `<div class="eq"><small>Lotes: ${lotes.map(l=>{const d=diasA(l.cad);return `${l.piezas} pzas · ${fechaCorta(l.cad)} (${cadTxt(d)})`;}).join(' | ')}</small></div>` : '';
     return `<div class="card prod ${e}">
       <div>
-        <h3>${esc(p.nombre)} <span class="badge ${e}">${ETIQ[e]}</span></h3>
+        <h3>${esc(p.nombre)} <span class="badge ${estado(p)}">${ETIQ[estado(p)]}</span>${ec!=='ok'?` <span class="badge ${ec}">${ec==='crit'?'⌛ Caducado':'⏳ Por caducar'}</span>`:''}</h3>
         <small>${esc(p.categoria||'Sin categoría')} · avisar con ${fmt(p.minimo)} paq. (${fmt(p.minimo*p.porPaquete)} pzas)</small>
-        <div class="eq">${eqTexto(p)}${diasTxt(p)}</div>
+        <div class="eq">${eqTexto(p)}${diasTxt(p)}</div>${lotesHtml}
       </div>
       <div class="actions">
         <button class="sm" data-a="sale" data-id="${p.id}">− Vendí</button>
@@ -312,6 +346,7 @@ function abrirProd(p){
   document.getElementById('dlgTitulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
   formProd.reset();
   if(p) ['nombre','categoria','paquetes','porPaquete','sueltas','minimo','objetivo','costo','precio'].forEach(k=>formProd.elements[k].value = p[k] ?? '');
+  document.getElementById('cadLabel').style.display = p ? 'none' : '';
   prevTotal(); dlgProd.showModal();
 }
 formProd.addEventListener('submit',()=>{
@@ -321,8 +356,12 @@ formProd.addEventListener('submit',()=>{
     sueltas:Math.max(0,Math.floor(num('sueltas'))), minimo:Math.max(0,num('minimo')), objetivo:Math.max(0,num('objetivo')),
     costo:f.costo.value===''?null:+f.costo.value, precio:f.precio.value===''?null:+f.precio.value};
   if(!data.nombre) return;
-  if(editId){ Object.assign(state.productos.find(p=>p.id===editId), data); }
-  else state.productos.push({id:uid(), ...data});
+  if(editId){ const p = state.productos.find(p=>p.id===editId); Object.assign(p, data); ajustarLotes(p); }
+  else {
+    const np = {id:uid(), ...data, lotes:[]};
+    if(f.cad.value && totalPiezas(np)>0) np.lotes.push({id:uid(), piezas:totalPiezas(np), cad:f.cad.value});
+    state.productos.push(np);
+  }
   save(); render();
 });
 document.getElementById('cancelProd').onclick = ()=>dlgProd.close();
@@ -337,16 +376,20 @@ function abrirMov(tipo,p){
   document.getElementById('movHint').textContent = tipo==='sale'
     ? `Hay ${totalPiezas(p)} piezas. Si hace falta, se abre un paquete solo.`
     : `Cada paquete trae ${p.porPaquete} pieza${p.porPaquete===1?'':'s'}.`;
-  formMov.elements.cant.value = 1; dlgMov.showModal();
+  formMov.elements.cant.value = 1; formMov.elements.cad.value = '';
+  document.getElementById('movCadLabel').style.display = tipo==='buy' ? '' : 'none';
+  dlgMov.showModal();
 }
 formMov.addEventListener('submit',()=>{
   const p = state.productos.find(x=>x.id===movCtx.id); if(!p) return;
   const n = Math.floor(+formMov.elements.cant.value); if(!(n>0)) return;
   if(movCtx.tipo==='sale'){
     const n2 = Math.min(n,totalPiezas(p));
-    descontar(p,n2); state.movimientos.push({pid:p.id,tipo:'salida',piezas:n2,t:Date.now()});
+    descontar(p,n2); consumirLotes(p,n2); state.movimientos.push({pid:p.id,tipo:'salida',piezas:n2,t:Date.now()});
   } else {
-    p.paquetes += n; state.movimientos.push({pid:p.id,tipo:'entrada',piezas:n*p.porPaquete,t:Date.now()});
+    p.paquetes += n;
+    if(formMov.elements.cad.value){ (p.lotes = p.lotes||[]).push({id:uid(), piezas:n*p.porPaquete, cad:formMov.elements.cad.value}); }
+    state.movimientos.push({pid:p.id,tipo:'entrada',piezas:n*p.porPaquete,t:Date.now()});
   }
   save(); render();
 });
@@ -378,8 +421,8 @@ document.getElementById('btnPrint').onclick = ()=>window.print();
 
 /* ---------- herramientas ---------- */
 document.getElementById('btnCSV').onclick = ()=>{
-  const rows = [['Producto','Categoria','Paquetes','Piezas por paquete','Sueltas','Total piezas','Minimo (paq)','Objetivo (paq)','Estado']]
-    .concat(state.productos.map(p=>[p.nombre,p.categoria||'',p.paquetes,p.porPaquete,p.sueltas,totalPiezas(p),p.minimo,p.objetivo,ETIQ[estado(p)].slice(3)]));
+  const rows = [['Producto','Categoria','Paquetes','Piezas por paquete','Sueltas','Total piezas','Minimo (paq)','Objetivo (paq)','Estado','Proxima caducidad']]
+    .concat(state.productos.map(p=>[p.nombre,p.categoria||'',p.paquetes,p.porPaquete,p.sueltas,totalPiezas(p),p.minimo,p.objetivo,ETIQ[estado(p)].slice(3),(lotesDe(p)[0]||{}).cad||'']));
   const csv = '﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
@@ -402,10 +445,13 @@ document.getElementById('btnDemo').onclick = ()=>{
     ['Sopa instantánea','Botanas',1,24,6,1,3,9,14,[4,5,4,6,5,5,4]]
   ];
   const now = Date.now();
+  // lotes de ejemplo: [piezas, días para caducar]
+  const CAD = {'Leche 1 L':[[10,3],[14,20]], 'Galletas Marías':[[20,-2],[42,60]], 'Huevo (cartón 30)':[[26,5]], 'Sopa instantánea':[[30,120]]};
   state = {productos:[],movimientos:[]};
   demo.forEach(d=>{
     const id = uid();
-    state.productos.push({id,nombre:d[0],categoria:d[1],paquetes:d[2],porPaquete:d[3],sueltas:d[4],minimo:d[5],objetivo:d[6],costo:d[7],precio:d[8]});
+    const lotes = (CAD[d[0]]||[]).map(([piezas,dias])=>{ const f=new Date(hoy0()+dias*DAY); const cad=f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0')+'-'+String(f.getDate()).padStart(2,'0'); return {id:uid(),piezas,cad}; });
+    state.productos.push({id,lotes,nombre:d[0],categoria:d[1],paquetes:d[2],porPaquete:d[3],sueltas:d[4],minimo:d[5],objetivo:d[6],costo:d[7],precio:d[8]});
     d[9].forEach((v,i)=>{ if(v>0) state.movimientos.push({pid:id,tipo:'salida',piezas:v,t:now-(i+0.5)*DAY}); });
   });
   save(); render();
