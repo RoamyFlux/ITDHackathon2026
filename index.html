@@ -265,7 +265,7 @@ label input,label select{margin-top:6px;font-weight:500}
              radial-gradient(30% 80% at 55% 10%,color-mix(in srgb,var(--a3) 16%,transparent),transparent 70%);
   animation:aurora 12s ease-in-out infinite alternate}
 .saludo-der{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-/* Anillo "Salud del inventario": círculo que se llena con el % de productos bien surtidos.
+/* Anillo "% en riesgo": círculo que se llena con el % de productos que requieren atención.
    r = 27, así que la circunferencia mide 169.65; stroke-dashoffset dice cuánto queda "vacío". */
 .salud{display:flex;align-items:center;gap:12px;padding:6px 16px 6px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
 .salud svg{width:50px;height:50px;transform:rotate(-90deg);flex:none}
@@ -273,7 +273,7 @@ label input,label select{margin-top:6px;font-weight:500}
 .salud .pista{stroke:var(--surface-2)}
 .salud .valor{stroke:var(--ok);stroke-linecap:round;stroke-dasharray:169.65;stroke-dashoffset:169.65;transition:stroke-dashoffset 1.3s var(--ease),stroke .4s}
 .salud.low .valor{stroke:var(--low)} .salud.crit .valor{stroke:var(--crit)}
-.salud b{display:block;font-size:1.15rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.salud b{display:block;font-size:1.05rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;white-space:nowrap}
 .salud span{display:block;font-size:.72rem;color:var(--muted);font-weight:700}
 .saludo h1{font-size:1.65rem;font-weight:800;letter-spacing:-.03em}
 .saludo h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -326,6 +326,10 @@ label input,label select{margin-top:6px;font-weight:500}
  * .resaltar = brillo morado temporal cuando llegas a la tarjeta desde el panel de alertas.
  * ===================================================================== */
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+/* Fila de categorías: una sola línea que se desliza de lado si hay muchas categorías. */
+.chips.cats{flex-wrap:nowrap;overflow-x:auto;align-items:center;margin-top:-6px;padding-bottom:4px;scrollbar-width:thin}
+.chips.cats .chip{flex:none;padding:5px 11px;font-size:.78rem}
+.cats-tit{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:4px}
 .chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
   color:var(--muted);font-weight:700;font-size:.82rem;box-shadow:none}
 .chip:hover{color:var(--text);background:var(--surface-2);transform:none;box-shadow:none}
@@ -347,7 +351,8 @@ label input,label select{margin-top:6px;font-weight:500}
 .prod-stock .total{font-size:1.35rem;font-weight:800;letter-spacing:-.02em}
 .prod-stock .total small{font-size:.8rem;font-weight:700}
 .prod-stock .eq{font-size:.8rem;color:var(--muted)}
-.prod-stock .dias{font-size:.8rem;font-weight:700;color:var(--brand-text);display:inline-flex;align-items:center;gap:5px;align-self:center}
+.prod-stock .dias{font-size:.8rem;font-weight:700;color:var(--brand-text);display:inline-flex;align-items:center;gap:5px;align-self:center;cursor:help}
+.prod-stock .dias .ritmo{color:var(--muted);font-weight:600;margin-left:4px}
 .nivel{position:relative;height:8px;border-radius:99px;background:var(--surface-2);margin-top:9px;max-width:440px}
 .nivel i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--ok);transform-origin:left}
 .nivel.low i{background:var(--low)} .nivel.crit i{background:var(--crit)}
@@ -428,6 +433,7 @@ dialog form{padding:24px}
 .stepper input{text-align:center;font-size:1.2rem;font-weight:800;margin:0}
 .stepper button{width:48px}
 .rapidos{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 14px}
+.seg.unidad{margin:-2px 0 12px}
 .perfil-foto{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:18px;text-align:center}
 .perfil-foto .botones{display:flex;gap:8px}
 
@@ -884,8 +890,8 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
   -->
   <div id="appBox" hidden>
     <!--
-         SALUDO: "Hola, <negocio>" y la fecha. A la derecha, el anillo "Salud del inventario"
-         (% de productos bien surtidos) y el botón para agregar productos.
+         SALUDO: "Hola, <negocio>" y la fecha. A la derecha, el anillo "% en riesgo"
+         (porcentaje de productos que requieren atención) y el botón para agregar productos.
     -->
     <div class="saludo">
       <div>
@@ -893,9 +899,9 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
         <p id="fechaHoy"></p>
       </div>
       <div class="saludo-der">
-        <div class="salud" id="salud" role="img" aria-label="Salud del inventario" hidden>
+        <div class="salud" id="salud" role="img" aria-label="Porcentaje del inventario en riesgo" hidden>
           <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="pista" cx="32" cy="32" r="27"/><circle class="valor" id="saludArco" cx="32" cy="32" r="27"/></svg>
-          <div><b id="saludPct">0%</b><span id="saludTxt">Salud del inventario</span></div>
+          <div><b id="saludPct">0%</b><span id="saludTxt">En riesgo</span></div>
         </div>
         <button id="btnNuevo"><svg class="ic"><use href="#i-plus"/></svg>Nuevo producto</button>
       </div>
@@ -918,6 +924,8 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
         </div>
         <div class="buscar"><svg class="ic"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Buscar producto o categoría" aria-label="Buscar producto"></div>
         <div class="chips" id="chips" role="group" aria-label="Filtrar por estado"></div>
+        <!-- Filtro por categoría: un chip por cada categoría que exista, con su número de productos. -->
+        <div class="chips cats" id="cats" role="group" aria-label="Filtrar por categoría"></div>
         <div class="list" id="lista"></div>
       </section>
     </div>
@@ -1019,6 +1027,11 @@ button.rojo{background:var(--crit);box-shadow:0 4px 14px color-mix(in srgb,var(-
         <button type="button" class="sec" data-paso="1" aria-label="Más"><svg class="ic"><use href="#i-plus"/></svg></button>
       </span>
     </label>
+    <!-- Solo en llegadas: ¿llegaron paquetes completos o piezas sueltas? -->
+    <div class="seg unidad" id="movUnidad" role="group" aria-label="Unidad de la llegada">
+      <button type="button" data-unidad="paq"><svg class="ic sm"><use href="#i-box"/></svg>Paquetes</button>
+      <button type="button" data-unidad="pza"><svg class="ic sm"><use href="#i-layers"/></svg>Piezas sueltas</button>
+    </div>
     <div class="rapidos" id="rapidos"></div>
     <div class="previa" id="movPrevia"></div>
     <label id="movCadLabel">Fecha de caducidad de este lote (opcional) <input name="cad" type="date"></label>
@@ -1262,6 +1275,8 @@ let cargando = false, usuarioActual = null;
 // filtroEstado = chip seleccionado ('' = todos, 'crit', 'low', 'ok').  animar = true para que la próxima
 // vez que se dibuje la lista las tarjetas entren con animación (solo al cargar datos, no al buscar).
 let filtroEstado = '', animar = false;
+// filtroCategoria = categoría elegida en la fila de chips de categorías ('' = todas).
+let filtroCategoria = '';
 // perfil = datos del usuario guardados en su cuenta de Supabase (nombre del negocio y foto).
 let perfil = {negocio:'', avatar:null, email:''};
 // Atajo para buscar elementos por id.
@@ -1274,7 +1289,8 @@ const ico = (n, cls='') => `<svg class="ic ${cls}" aria-hidden="true"><use href=
  * La base usa nombres con guion bajo (por_paquete) y la app camelCase (porPaquete): deDB y aDB traducen.
  * ===================================================================== */
 // deDB: fila de la tabla productos -> objeto de la app (los lotes se agregan después en cargarTodo).
-const deDB = r => ({id:r.id, nombre:r.nombre, categoria:r.categoria||'', paquetes:r.paquetes, porPaquete:r.por_paquete,
+// creado = fecha en que se dio de alta (sirve para saber cuántos días de ventas hay para estimar).
+const deDB = r => ({id:r.id, nombre:r.nombre, categoria:r.categoria||'', creado:Date.parse(r.created_at)||Date.now(), paquetes:r.paquetes, porPaquete:r.por_paquete,
   sueltas:r.sueltas, minimo:Number(r.minimo), objetivo:Number(r.objetivo),
   costo:r.costo==null?null:Number(r.costo), precio:r.precio==null?null:Number(r.precio), lotes:[]});
 // aDB: objeto de la app -> columnas de la tabla (sin id ni user_id: los pone la base de datos).
@@ -1371,17 +1387,36 @@ function descontar(p, n){
     p.sueltas += abrir * p.porPaquete - falta;        //    lo no vendido queda suelto
   }
 }
-// Consumo diario = piezas vendidas en los últimos 7 días ÷ 7. Ejemplo: 70 en la semana -> 10 al día.
+// ¿CÓMO SE ESTIMA CUÁNTOS DÍAS ALCANZA UN PRODUCTO?
+//   1) Se suman las piezas VENDIDAS (movimientos "salida") de los últimos 7 días. Las llegadas no cuentan.
+//   2) Se divide entre los días de historial: 7, o menos si el producto es más nuevo (desde su alta o su
+//      primera venta, lo que sea antes; mínimo 1 día). Así un producto dado de alta hace 2 días no se
+//      divide entre 7 (eso haría parecer que se vende poco y avisaría tarde).
+//   3) Días que alcanza = piezas en tienda ÷ venta diaria. Se muestra redondeado hacia abajo ("~N días").
+// Ejemplo (tienda de ejemplo): Refresco vendió 62 pzas en 7 días -> 8.9 al día; hay 15 -> 15 ÷ 8.9 = 1.7 -> "~1 día".
+function diasHistorial(p){
+  const desde = Date.now() - 7*DAY;
+  const primeraVenta = state.movimientos.reduce((a,m)=> m.pid===p.id && m.tipo==='salida' && m.t>=desde ? Math.min(a,m.t) : a, Infinity);
+  const inicio = Math.min(p.creado || Date.now(), primeraVenta);
+  return Math.min(7, Math.max(1, Math.ceil((Date.now() - inicio) / DAY)));
+}
+// Venta diaria promedio (piezas por día) según el historial de arriba.
 function consumoDiario(p){
   const desde = Date.now() - 7*DAY;
   const vend = state.movimientos.filter(m => m.pid===p.id && m.tipo==='salida' && m.t>=desde)
                                 .reduce((a,m)=>a+m.piezas,0);
-  return vend/7;
+  return vend / diasHistorial(p);
 }
 // Días que alcanza el stock al ritmo actual (null si aún no hay ventas para estimar).
 function diasRestantes(p){
   const c = consumoDiario(p);
   return c>0 ? totalPiezas(p)/c : null;
+}
+// Explicación para el tooltip: "Vende ≈ 8.9 pzas/día (últimos 7 días). 15 pzas ÷ 8.9 = 1.7 días."
+function explicarDias(p){
+  const c = consumoDiario(p), h = diasHistorial(p);
+  if(!(c>0)) return 'Aún no hay ventas registradas para estimar.';
+  return `Vende ≈ ${c.toFixed(1)} pzas/día (últimos ${h} día${h===1?'':'s'}). ${totalPiezas(p)} pzas ÷ ${c.toFixed(1)} = ${(totalPiezas(p)/c).toFixed(1)} días.`;
 }
 // Semáforo por CANTIDAD:
 //   crit = agotado o en/bajo el mínimo.   low = hasta 1.5 veces el mínimo o le quedan ≤ 2 días.   ok = suficiente.
@@ -1512,30 +1547,49 @@ function render(){
   S.classList.toggle('anim', anim);
   if(anim) S.querySelectorAll('b[data-n]').forEach(contar);
 
-  // ---- ANILLO "SALUD DEL INVENTARIO" ---- % de productos en verde (ni por acabarse ni por caducar).
+  // ---- ANILLO "% EN RIESGO" ----
+  // Muestra qué porcentaje de productos está EN RIESGO (crítico, por acabarse o con caducidad próxima/caducada),
+  // y el arco se llena con ese mismo porcentaje. Ejemplo: 6 de 8 productos con alerta -> 75 % en riesgo (rojo).
+  //   < 30 % verde "Inventario sano" · 30–59 % ámbar "Atención" · ≥ 60 % rojo "Riesgo alto".
   // El anillo no se redibuja: solo se cambia su stroke-dashoffset, así la transición CSS lo anima de un valor al otro.
-  const pct = prods.length ? Math.round(prods.filter(p=>estadoTotal(p)==='ok').length / prods.length * 100) : 100;
+  const enRiesgo = prods.filter(p=>estadoTotal(p)!=='ok').length;
+  const pct = prods.length ? Math.round(enRiesgo / prods.length * 100) : 0;
   const sal = $('salud'), arco = $('saludArco');
   sal.hidden = !prods.length;
-  sal.className = 'salud ' + (pct>=70 ? 'ok' : pct>=40 ? 'low' : 'crit');
-  sal.setAttribute('aria-label', `Salud del inventario: ${pct}% de productos bien surtidos`);
-  $('saludTxt').textContent = pct>=70 ? 'Inventario saludable' : pct>=40 ? 'Requiere atención' : 'Riesgo alto';
+  sal.className = 'salud ' + (pct>=60 ? 'crit' : pct>=30 ? 'low' : 'ok');
+  sal.setAttribute('aria-label', `${pct}% del inventario en riesgo: ${enRiesgo} de ${prods.length} productos requieren atención`);
+  sal.title = `${enRiesgo} de ${prods.length} productos requieren atención (por acabarse, críticos o por caducar)`;
+  $('saludTxt').textContent = (pct>=60 ? 'Riesgo alto' : pct>=30 ? 'Atención' : 'Inventario sano') + ` · ${enRiesgo} de ${prods.length}`;
   if(anim){ arco.style.transition = 'none'; arco.style.strokeDashoffset = 169.65; void arco.getBoundingClientRect(); arco.style.transition = ''; }
   requestAnimationFrame(()=>{ arco.style.strokeDashoffset = (169.65 * (1 - pct/100)).toFixed(2); });
   const pe = $('saludPct'); pe.dataset.n = pct; pe.dataset.f = 'pct'; pe.textContent = formatear(pct,'pct');
   if(anim) contar(pe);
 
-  // ---- FILTROS (chips) ---- con el número de productos de cada estado.
-  const cuenta = {'':prods.length, crit:0, low:0, ok:0};
-  prods.forEach(p=>cuenta[estadoTotal(p)]++);
+  // ---- FILTRO POR CATEGORÍA ----
+  // Se arma con las categorías que existen (orden alfabético). Si la elegida ya no existe, vuelve a "Todas".
+  const catDe = p => p.categoria || 'Sin categoría';
+  const cats = {};
+  prods.forEach(p=>{ cats[catDe(p)] = (cats[catDe(p)]||0) + 1; });
+  if(filtroCategoria && !cats[filtroCategoria]) filtroCategoria = '';
+  const nombresCat = Object.keys(cats).sort((a,b)=>a.localeCompare(b,'es'));
+  $('cats').hidden = nombresCat.length < 2;
+  $('cats').innerHTML = `<span class="cats-tit">${ico('tag','sm')}Categoría</span>` +
+    [['','Todas',prods.length], ...nombresCat.map(c=>[c,c,cats[c]])]
+      .map(([v,t,n])=>`<button type="button" class="chip ${filtroCategoria===v?'activo':''}" data-cat="${esc(v)}" aria-pressed="${filtroCategoria===v}">${esc(t)}<span class="n">${n}</span></button>`).join('');
+  const enCategoria = p => !filtroCategoria || catDe(p)===filtroCategoria;
+
+  // ---- FILTROS DE ESTADO (chips) ---- con el número de productos de cada estado (dentro de la categoría elegida).
+  const prodsCat = prods.filter(enCategoria);
+  const cuenta = {'':prodsCat.length, crit:0, low:0, ok:0};
+  prodsCat.forEach(p=>cuenta[estadoTotal(p)]++);
   $('chips').innerHTML = [['','Todos'],['crit','Urgentes'],['low','Atención'],['ok','Bien surtidos']]
     .map(([v,t])=>`<button type="button" class="chip ${filtroEstado===v?'activo':''}" data-f="${v}" aria-pressed="${filtroEstado===v}">${v?`<span class="dot ${v}"></span>`:''}${t}<span class="n">${cuenta[v]}</span></button>`).join('');
 
   // ---- LISTA DE PRODUCTOS ----
-  // 1) Filtra por buscador y chip.  2) Ordena: rojos, ámbar, verdes (y alfabético).  3) Dibuja cada tarjeta.
+  // 1) Filtra por buscador, estado y categoría.  2) Ordena: rojos, ámbar, verdes (y alfabético).  3) Dibuja cada tarjeta.
   const q = $('q').value.trim().toLowerCase();
   const orden = {crit:0,low:1,ok:2};
-  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!filtroEstado || estadoTotal(p)===filtroEstado))
+  const vis = prods.filter(p=>(!q || (p.nombre+' '+(p.categoria||'')).toLowerCase().includes(q)) && (!filtroEstado || estadoTotal(p)===filtroEstado) && enCategoria(p))
                    .sort((a,b)=>orden[estadoTotal(a)]-orden[estadoTotal(b)] || a.nombre.localeCompare(b.nombre));
   const L = $('lista');
   L.classList.toggle('anim', animar);
@@ -1559,7 +1613,7 @@ function render(){
         <div>
           <div class="prod-top"><h3>${esc(p.nombre)}</h3><span class="badge ${es}">${ETIQ[es]}</span>${ec!=='ok'?`<span class="badge cad ${ec}">${ico('clock','sm')}${ec==='crit'?'Caducado':'Por caducar'}</span>`:''}</div>
           <div class="prod-meta"><span>${ico('tag','sm')}${esc(p.categoria||'Sin categoría')}</span><span>${ico('bell','sm')}Aviso con ${fmt(p.minimo)} paq. (${fmt(p.minimo*p.porPaquete)} pzas)</span></div>
-          <div class="prod-stock"><span class="total">${totalPiezas(p)} <small>pzas</small></span>${p.porPaquete>1?`<span class="eq">${p.paquetes} paq. × ${p.porPaquete}${p.sueltas?` + ${p.sueltas} sueltas`:''}</span>`:''}${dias?`<span class="dias">${ico('clock','sm')}Alcanza ${dias}</span>`:''}${spark(p.id)}</div>
+          <div class="prod-stock"><span class="total">${totalPiezas(p)} <small>pzas</small></span>${p.porPaquete>1?`<span class="eq">${p.paquetes} paq. × ${p.porPaquete}${p.sueltas?` + ${p.sueltas} sueltas`:''}</span>`:''}${dias?`<span class="dias" title="${explicarDias(p)}">${ico('clock','sm')}Alcanza ${dias}<small class="ritmo">≈ ${consumoDiario(p).toFixed(1)} pzas/día</small></span>`:''}${spark(p.id)}</div>
           ${nivel}${lotesHtml}
         </div>
         <div class="actions">
@@ -1648,7 +1702,7 @@ function tablaHTML(vis){
       <td class="num">${p.paquetes}</td><td class="num">${p.porPaquete}</td><td class="num">${p.sueltas}</td>
       <td class="num"><b>${totalPiezas(p)}</b></td>
       <td class="num">${fmt(p.minimo)} paq. <small>(${fmt(p.minimo*p.porPaquete)})</small></td>
-      <td class="num">${diasCorto(p) || '—'}</td>
+      <td class="num" title="${explicarDias(p)}">${diasCorto(p) || '—'}${diasCorto(p)?`<br><small>≈ ${consumoDiario(p).toFixed(1)}/día</small>`:''}</td>
       <td>${l ? `<span class="cad-celda ${d<0?'crit':d<=DIAS_AVISO?'low':''}">${fechaCorta(l.cad)} <small>· ${cadTxt(d)}</small></span>` : '—'}</td>
       <td class="num"><span class="ventas-celda">${spark(p.id)}<b>${v7}</b></span></td>
       <td class="num"><span class="acc">
@@ -1663,7 +1717,7 @@ function tablaHTML(vis){
     <tfoot><tr><td>${filas.length} producto${filas.length===1?'':'s'}</td><td colspan="5"></td><td class="num">${totPz} pzas</td><td colspan="3"></td><td class="num" colspan="2">Valor ${money(valor)}</td></tr></tfoot></table></div>`;
 }
 // formatear(valor, formato): 'money' -> $1,234.00 · 'pct' -> 72% · 'int' -> 12
-function formatear(n, f){ return f==='money' ? money(n) : f==='pct' ? Math.round(n)+'%' : String(Math.round(n)); }
+function formatear(n, f){ return f==='money' ? money(n) : f==='pct' ? Math.round(n)+'% en riesgo' : String(Math.round(n)); }
 // ¿Se permiten animaciones? (opción de Configuración y preferencia del sistema)
 const movimientoActivo = () => prefs.movimiento!=='off' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
 // contar(el): anima el número de un elemento desde 0 hasta data-n en ~0.9 s (curva que frena al final).
@@ -1692,7 +1746,7 @@ function comprasTexto(){
 function irAProducto(id){
   // Si un filtro o una búsqueda la esconde, se quitan para que aparezca.
   // (data-fila es el id del producto en la tarjeta o en la fila de la tabla)
-  if(!document.querySelector(`#lista [data-fila="${id}"]`)){ filtroEstado=''; $('q').value=''; render(); }
+  if(!document.querySelector(`#lista [data-fila="${id}"]`)){ filtroEstado=''; filtroCategoria=''; $('q').value=''; render(); }
   const el = document.querySelector(`#lista [data-fila="${id}"]`); if(!el) return;
   el.scrollIntoView({behavior:'smooth', block:'center'});
   el.classList.remove('resaltar'); void el.offsetWidth; el.classList.add('resaltar');
@@ -1745,7 +1799,7 @@ $('cancelProd').onclick = ()=>dlgProd.close();
 $('btnNuevo').onclick = ()=>abrirProd(null);
 
 /* =====================================================================
- * I) VENTANA DE MOVIMIENTO: venta (piezas) o llegada (paquetes, con caducidad opcional)
+ * I) VENTANA DE MOVIMIENTO: venta (piezas) o llegada (paquetes o piezas sueltas, con caducidad opcional)
  * ===================================================================== */
 const dlgMov = $('dlgMov'), formMov = $('formMov');
 // Vista previa: cuánto quedará después de registrar (se recalcula con cada cambio de cantidad).
@@ -1753,13 +1807,24 @@ function prevMov(){
   if(!movCtx) return;
   const p = state.productos.find(x=>x.id===movCtx.id); if(!p) return;
   const n = Math.max(0, Math.floor(+formMov.elements.cant.value||0));
-  const despues = movCtx.tipo==='sale' ? Math.max(0, totalPiezas(p)-n) : totalPiezas(p) + n*p.porPaquete;
+  const despues = movCtx.tipo==='sale' ? Math.max(0, totalPiezas(p)-n) : totalPiezas(p) + piezasLlegada(p, n);
   $('movPrevia').innerHTML = `${movCtx.tipo==='sale'?'Quedarán en tienda':'Tendrás en tienda'} <b>${despues} pzas</b>`;
+}
+// Piezas reales de una llegada: n paquetes × piezas por paquete, o n piezas sueltas (según el botón elegido).
+const piezasLlegada = (p, n) => movCtx.unidad==='pza' ? n : n*p.porPaquete;
+// Ajusta textos, atajos y vista previa según si llegaron paquetes o piezas sueltas.
+function pintarUnidad(p){
+  const pza = movCtx.unidad==='pza';
+  $('movUnidad').querySelectorAll('[data-unidad]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.unidad===movCtx.unidad)));
+  $('movLabel').firstChild.textContent = pza ? 'Piezas sueltas que llegaron ' : 'Paquetes que llegaron ';
+  $('movHint').textContent = pza ? 'Se suman como piezas sueltas (sin paquete).' : `Cada paquete trae ${p.porPaquete} pieza${p.porPaquete===1?'':'s'}.`;
+  $('rapidos').innerHTML = (pza ? [1,5,10,20] : [1,2,5,10]).map(n=>`<button type="button" class="chip" data-n="${n}">${n}</button>`).join('');
+  prevMov();
 }
 // Abre la ventana. "sale" = venta (se escriben PIEZAS). "buy" = llegada (se escriben PAQUETES y puede llevar fecha).
 // Los atajos rápidos cambian según el caso (en venta incluye "1 paquete" si el producto viene en paquetes).
 function abrirMov(tipo,p){
-  movCtx = {tipo,id:p.id};
+  movCtx = {tipo, id:p.id, unidad:'paq'};
   const venta = tipo==='sale';
   $('movIco').innerHTML = ico(venta?'minus':'truck');
   $('movTitulo').innerHTML = `${venta?'Registrar venta':'Llegó mercancía'}<small>${esc(p.nombre)} · hay ${totalPiezas(p)} pzas</small>`;
@@ -1772,8 +1837,17 @@ function abrirMov(tipo,p){
   $('movOk').textContent = venta ? 'Registrar venta' : 'Registrar llegada';
   formMov.elements.cant.value = 1; formMov.elements.cad.value = '';
   $('movCadLabel').style.display = venta ? 'none' : '';
+  // El selector Paquetes/Piezas solo aparece en llegadas de productos que vienen en paquetes.
+  $('movUnidad').hidden = venta || p.porPaquete<=1;
+  if(!venta) pintarUnidad(p);
   prevMov(); dlgMov.showModal();
 }
+// Cambiar entre "Paquetes" y "Piezas sueltas" en una llegada.
+$('movUnidad').addEventListener('click', e=>{
+  const b = e.target.closest('[data-unidad]'); if(!b || !movCtx) return;
+  movCtx.unidad = b.dataset.unidad;
+  const p = state.productos.find(x=>x.id===movCtx.id); if(p) pintarUnidad(p);
+});
 // Botones − / + del campo de cantidad y atajos rápidos.
 formMov.addEventListener('click', e=>{
   const paso = e.target.closest('[data-paso]'), rap = e.target.closest('[data-n]');
@@ -1785,13 +1859,14 @@ formMov.addEventListener('click', e=>{
 formMov.elements.cant.addEventListener('input', prevMov);
 // Al registrar:
 //   VENTA: descuenta piezas (abre paquetes), gasta primero el lote que caduca antes y guarda el movimiento "salida".
-//   LLEGADA: suma paquetes, crea lote si hay fecha y guarda el movimiento "entrada".
+//   LLEGADA: suma paquetes (o piezas sueltas), crea lote si hay fecha y guarda el movimiento "entrada" con las piezas reales.
 formMov.addEventListener('submit',()=>{
   const ctx = movCtx; if(!ctx) return;                 // copia: movCtx puede cambiar mientras se espera a la base
   const n = Math.floor(+formMov.elements.cant.value); if(!(n>0)) return;
   const cad = formMov.elements.cad.value;
   const prod = state.productos.find(x=>x.id===ctx.id); if(!prod) return;
-  const nombre = prod.nombre;
+  const nombre = prod.nombre, pzas = ctx.tipo==='sale' ? n : (ctx.unidad==='pza' ? n : n*prod.porPaquete);
+  const detalle = ctx.tipo==='sale' ? '' : ctx.unidad==='pza' ? ` · ${n} pieza${n===1?'':'s'}` : ` · ${n} paquete${n===1?'':'s'} (${pzas} pzas)`;
   guardar(async()=>{
     const p = state.productos.find(x=>x.id===ctx.id); if(!p) return;
     if(ctx.tipo==='sale'){
@@ -1803,11 +1878,13 @@ formMov.addEventListener('submit',()=>{
       await sincronizarLotes(antes, p);
       chk(await sb.from('movimientos').insert({producto_id:p.id, tipo:'salida', piezas:n2}));
     } else {
-      chk(await sb.from('productos').update({paquetes:p.paquetes+n}).eq('id', p.id));
-      if(cad) chk(await sb.from('lotes').insert({producto_id:p.id, piezas:n*p.porPaquete, caducidad:cad}));
-      chk(await sb.from('movimientos').insert({producto_id:p.id, tipo:'entrada', piezas:n*p.porPaquete}));
+      // Paquetes completos -> se suman a "paquetes". Piezas sueltas -> se suman a "sueltas".
+      const cambio = ctx.unidad==='pza' ? {sueltas:p.sueltas+n} : {paquetes:p.paquetes+n};
+      chk(await sb.from('productos').update(cambio).eq('id', p.id));
+      if(cad) chk(await sb.from('lotes').insert({producto_id:p.id, piezas:pzas, caducidad:cad}));
+      chk(await sb.from('movimientos').insert({producto_id:p.id, tipo:'entrada', piezas:pzas}));
     }
-  }, ctx.tipo==='sale' ? `Venta registrada: ${nombre}` : `Llegada registrada: ${nombre}`);
+  }, ctx.tipo==='sale' ? `Venta registrada: ${nombre}` : `Llegada registrada: ${nombre}${detalle}`);
 });
 $('cancelMov').onclick = ()=>dlgMov.close();
 
@@ -1844,6 +1921,11 @@ $('alertas').addEventListener('click', e=>{
 $('chips').addEventListener('click', e=>{
   const c = e.target.closest('[data-f]'); if(!c) return;
   filtroEstado = c.dataset.f; render();
+});
+// Chips de categoría.
+$('cats').addEventListener('click', e=>{
+  const c = e.target.closest('[data-cat]'); if(!c) return;
+  filtroCategoria = c.dataset.cat; render();
 });
 $('q').addEventListener('input',render);
 
@@ -2135,6 +2217,10 @@ function comandos(){
     {g:'Cuenta', i:'phone', t:'Cómo instalar la app', f:()=>{ abrirConfig(); setTimeout(()=>$('ajusteInstalar').scrollIntoView({behavior:'smooth'}), 150); }},
     {g:'Cuenta', i:'logout', t:'Cerrar sesión', f:()=>$('btnSalir').click()}
   ];
+  // Un comando por categoría para filtrar rápido.
+  [...new Set(state.productos.map(p=>p.categoria || 'Sin categoría'))].sort((a,b)=>a.localeCompare(b,'es')).forEach(c=>
+    lista.push({g:'Categorías', i:'tag', t:`Categoría: ${c}`, f:()=>{ filtroCategoria = c; render(); $('inventario').scrollIntoView({behavior:'smooth'}); }}));
+  if(state.productos.length) lista.push({g:'Categorías', i:'tag', t:'Todas las categorías', f:()=>{ filtroCategoria = ''; render(); }});
   state.productos.forEach(p=>lista.push(
     {g:'Productos', i:'minus', t:`Vender: ${p.nombre}`, d:`${totalPiezas(p)} pzas`, f:()=>abrirMov('sale',p)},
     {g:'Productos', i:'truck', t:`Llegó: ${p.nombre}`, f:()=>abrirMov('buy',p)},

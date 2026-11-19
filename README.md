@@ -28,6 +28,13 @@ EarlyStock es una página web (un solo `index.html`) que avisa al dueño de un n
 ## Cómo usarla
 Abre `index.html` en el navegador (celular o computadora), crea tu cuenta y pulsa **"Probar con una tienda de ejemplo"**. Los datos se guardan en tu cuenta de Supabase, así que los ves desde cualquier dispositivo.
 
+## Cómo calcula EarlyStock sus avisos
+- **"Alcanza ~N días":** suma las piezas **vendidas** en los últimos 7 días (las llegadas no cuentan) y las divide entre los días de historial: 7, o menos si el producto se dio de alta hace menos tiempo (mínimo 1). Eso da la **venta diaria**; luego `piezas en tienda ÷ venta diaria`, redondeado hacia abajo.
+  Ejemplo: Refresco vendió 62 piezas en 7 días → 8.9 al día; hay 15 → 15 ÷ 8.9 = 1.7 → "~1 día". Al pasar el mouse por "Alcanza" se ve la cuenta completa.
+- **% en riesgo (anillo junto al saludo):** porcentaje de productos que requieren atención (críticos, por acabarse o con caducidad próxima o vencida). Verde menos de 30 %, ámbar de 30 a 59 %, rojo 60 % o más.
+- **Filtros:** por estado (Urgentes, Atención, Bien surtidos), por **categoría** y con el buscador; se pueden combinar.
+- **Llegadas:** se registran en **paquetes** o en **piezas sueltas**.
+
 ## Importar tus productos desde Excel
 1. En **Herramientas → Importar Excel** (o en la bienvenida, o con Ctrl+K → "Importar").
 2. Arrastra o elige tu archivo **.xlsx, .xls o .csv**. ¿No tienes uno? Pulsa **Descargar plantilla**, llénala y súbela.
