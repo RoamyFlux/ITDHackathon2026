@@ -298,11 +298,11 @@ header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-conte
 // CONEXIÓN CON SUPABASE
 // Pega aquí los dos datos de tu proyecto (Supabase -> Project Settings -> API):
 //   SUPABASE_URL      = "Project URL"
-//   SUPABASE_ANON_KEY = "anon public key"
+//   SUPABASE_ANON_KEY = "anon public key" o "publishable key" (sb_publishable_…)
 // La anon key es PÚBLICA por diseño: la seguridad real la dan las reglas RLS de supabase/schema.sql.
 // NUNCA pegues aquí la "service_role key": esa sí es secreta y daría acceso total a la base.
-const SUPABASE_URL = 'TU_URL_DE_SUPABASE';
-const SUPABASE_ANON_KEY = 'TU_ANON_KEY';
+const SUPABASE_URL = 'https://nfmanfduefulqwzuoueh.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_LWuugii57u_iu30WsqVlfA_3369oPG6';   // publishable key (pública, segura en el navegador)
 // "configurado" es falso mientras sigan los textos de ejemplo; entonces la app muestra un aviso en vez de fallar.
 const configurado = !SUPABASE_URL.startsWith('TU_') && !SUPABASE_ANON_KEY.startsWith('TU_') && !!window.supabase;
 // sb = cliente de Supabase: con él leemos y escribimos las tablas y manejamos el inicio de sesión.
