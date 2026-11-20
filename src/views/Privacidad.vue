@@ -46,7 +46,8 @@ const SECCIONES = [
       <ul>
         <li><b>Supabase</b>: base de datos, cuentas y almacenamiento de fotos (los servidores pueden estar fuera de México).</li>
         <li><b>GitHub Pages</b>: publica los archivos de la página web.</li>
-        <li><b>[Proveedor de correo]</b>: envía los correos de confirmación y recuperación.</li>
+        <li><b>[Proveedor de correo]</b> (por ejemplo, Resend): envía los correos de confirmación y recuperación.</li>
+        <li><b>Cloudflare</b> (DNS público 1.1.1.1): al crear una cuenta se le pregunta si el <i>dominio</i> de tu correo (por ejemplo, gmail.com) puede recibir mensajes. Solo se envía el dominio, nunca tu correo completo.</li>
       </ul>
       <p>Al aceptar este aviso consientes estas transferencias necesarias para prestar el servicio. Solo compartiremos datos con autoridades cuando una ley lo exija.</p>
     </section>

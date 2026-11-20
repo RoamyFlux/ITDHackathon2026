@@ -4,7 +4,7 @@
  * Aquí está cómo se interpretan los renglones ya leídos: detectar columnas, convertir números y
  * fechas, y decidir qué producto se crea, se actualiza o se omite.
  * ===================================================================== */
-import { totalPiezas, fechaISO, DIA } from './inventario.js'
+import { totalPiezas, fechaISO, claveProducto, DIA } from './inventario.js'
 import { norm } from './formato.js'
 
 /* ---- Columnas que entiende EarlyStock y sus sinónimos ----
@@ -12,9 +12,11 @@ import { norm } from './formato.js'
  * con estas listas. req = obligatorio. */
 export const CAMPOS = [
   { k: 'nombre', t: 'Producto', req: true, sin: ['producto', 'productos', 'nombre', 'nombre del producto', 'articulo', 'articulos', 'descripcion', 'item', 'mercancia'] },
+  { k: 'presentacion', t: 'Presentación', sin: ['presentacion', 'presentaciones', 'tamano', 'contenido neto', 'medida', 'capacidad', 'gramaje', 'volumen', 'peso'] },
+  { k: 'sabor', t: 'Sabor', sin: ['sabor', 'sabores', 'variedad', 'variante', 'aroma', 'color'] },
   { k: 'categoria', t: 'Categoría', sin: ['categoria', 'categorias', 'tipo', 'departamento', 'depto', 'dpto', 'familia', 'linea', 'seccion', 'rubro', 'clasificacion'] },
   { k: 'paquetes', t: 'Paquetes (cajas)', sin: ['paquetes', 'paquete', 'cajas', 'caja', 'bultos', 'paq', 'paqs', 'fardos', 'packs', 'no de cajas', 'num cajas'] },
-  { k: 'porPaquete', t: 'Piezas por paquete', sin: ['piezas por paquete', 'pzas por paquete', 'pzas/paq', 'contenido', 'unidades por caja', 'unidades por paquete', 'piezas por caja', 'por paquete', 'por caja', 'presentacion'] },
+  { k: 'porPaquete', t: 'Piezas por paquete', sin: ['piezas por paquete', 'pzas por paquete', 'pzas/paq', 'contenido', 'unidades por caja', 'unidades por paquete', 'piezas por caja', 'por paquete', 'por caja'] },
   { k: 'sueltas', t: 'Piezas sueltas', sin: ['sueltas', 'piezas sueltas', 'unidades sueltas', 'sueltos'] },
   { k: 'total', t: 'Existencia total (piezas)', sin: ['existencia', 'existencias', 'stock', 'cantidad', 'cant', 'inventario', 'total', 'total piezas', 'unidades', 'piezas', 'pzas', 'disponible', 'en tienda'] },
   { k: 'minimo', t: 'Mínimo (paquetes)', sin: ['minimo', 'stock minimo', 'min', 'punto de reorden', 'reorden'] },
@@ -112,7 +114,9 @@ export function convertirFila (fila, mapa, unificarCategoria = c => c) {
     if (cad === undefined) { errores.push(`Fecha "${String(g('cad')).slice(0, 20)}" no reconocida`); cad = null }
   }
   const categoria = tiene('categoria') ? unificarCategoria(String(g('categoria')).trim().slice(0, 30)) : null
-  return { nombre, categoria, n, cad, errores }
+  const presentacion = tiene('presentacion') ? String(g('presentacion')).trim().slice(0, 30) : ''
+  const sabor = tiene('sabor') ? String(g('sabor')).trim().slice(0, 30) : ''
+  return { nombre, presentacion, sabor, categoria, n, cad, errores }
 }
 
 // Reparte el stock en paquetes + sueltas. Con solo la existencia total: 63 pzas de 12 -> 5 paquetes y 3 sueltas.
@@ -132,38 +136,62 @@ const traeCantidad = n => ['paquetes', 'sueltas', 'total'].some(k => n[k] != nul
 // Producto NUEVO: lo del archivo + valores por defecto (avisar con 1 paquete, tener 4).
 export function productoNuevo (x) {
   return {
-    nombre: x.nombre, categoria: x.categoria || '', ...stockDe(x.n, 1),
+    nombre: x.nombre, presentacion: x.presentacion || '', sabor: x.sabor || '', categoria: x.categoria || '', ...stockDe(x.n, 1),
     minimo: x.n.minimo ?? 1, objetivo: x.n.objetivo ?? 4, costo: x.n.costo ?? null, precio: x.n.precio ?? null
   }
 }
 
 // Producto que YA EXISTE: solo cambia lo que trae el archivo.
-export function cambiosPara (x, p) {
+//   modo 'actualizar' -> las cantidades del archivo REEMPLAZAN a las actuales (inventario recién contado).
+//   modo 'sumar'      -> las cantidades del archivo se SUMAN a lo que ya hay (llegó mercancía).
+export function cambiosPara (x, p, modo = 'actualizar') {
   const c = {}
   if (x.categoria != null) c.categoria = x.categoria
-  if (traeCantidad(x.n)) Object.assign(c, stockDe(x.n, p.porPaquete))
-  else if (x.n.porPaquete != null) c.porPaquete = Math.max(1, Math.floor(x.n.porPaquete))
+  if (traeCantidad(x.n)) {
+    const st = stockDe(x.n, p.porPaquete)
+    if (modo === 'sumar') {
+      // Se suma en piezas y se vuelve a repartir con las piezas por paquete del producto.
+      const pp = Math.max(1, Math.floor(x.n.porPaquete ?? p.porPaquete))
+      const piezas = p.paquetes * p.porPaquete + p.sueltas + st.paquetes * st.porPaquete + st.sueltas
+      Object.assign(c, { porPaquete: pp, paquetes: Math.floor(piezas / pp), sueltas: piezas % pp })
+    } else Object.assign(c, st)
+  } else if (x.n.porPaquete != null) c.porPaquete = Math.max(1, Math.floor(x.n.porPaquete))
   for (const k of ['minimo', 'objetivo', 'costo', 'precio']) if (x.n[k] != null) c[k] = x.n[k]
   return c
 }
 
-/* Decide qué pasa con cada renglón: "nuevo", "actualizar" (mismo nombre que uno existente en modo
- * actualizar) u "omitir" (tiene errores o el nombre se repite en el archivo). */
+/* Decide qué pasa con cada renglón:
+ *   nuevo      -> no existe: se crea.
+ *   actualizar -> ya existe (mismo nombre, presentación y sabor): se actualiza o se le suma (según el modo).
+ *   sumado     -> el mismo producto aparece otra vez en el archivo: sus piezas se suman al primer renglón.
+ *   omitir     -> tiene errores.
+ * Así NUNCA se crean productos repetidos. */
 export function calcularImport (filas, mapa, modo, productos, unificarCategoria) {
-  const existentes = new Map(productos.map(p => [norm(p.nombre.trim()), p]))
-  const vistos = new Set()
-  return filas.map(f => {
+  const existentes = new Map(productos.map(p => [claveProducto(p), p]))
+  const primeros = new Map()
+  const res = filas.map(f => {
     const x = convertirFila(f, mapa, unificarCategoria)
-    const clave = norm(x.nombre)
-    if (x.nombre && vistos.has(clave)) x.errores.push('Nombre repetido en el archivo')
-    vistos.add(clave)
-    const p = existentes.get(clave)
-    x.accion = x.errores.length ? 'omitir' : (modo === 'actualizar' && p) ? 'actualizar' : 'nuevo'
-    x.p = p
-    x.vista = x.accion === 'actualizar' ? { ...p, ...cambiosPara(x, p) } : productoNuevo(x)
-    x.total = totalPiezas(x.vista)
+    x.clave = claveProducto(x)
+    if (x.errores.length) { x.accion = 'omitir'; return x }
+    const primero = primeros.get(x.clave)
+    if (primero) {
+      // Repetido en el archivo: se suman sus piezas (y paquetes/sueltas) al primer renglón.
+      for (const k of ['paquetes', 'sueltas', 'total']) if (x.n[k] != null) primero.n[k] = (primero.n[k] || 0) + x.n[k]
+      x.accion = 'sumado'
+      x.errores.push(`Repetido: se sumó a "${primero.nombre}"`)
+      return x
+    }
+    primeros.set(x.clave, x)
+    x.p = existentes.get(x.clave)
+    x.accion = x.p ? 'actualizar' : 'nuevo'
     return x
   })
+  for (const x of res) {
+    x.modo = modo
+    x.vista = x.accion === 'actualizar' ? { ...x.p, ...cambiosPara(x, x.p, modo) } : productoNuevo(x)
+    x.total = totalPiezas(x.vista)
+  }
+  return res
 }
 
 /* Busca la fila de encabezados (la primera, dentro de las 10 primeras, con 2 o más celdas llenas; así se
@@ -185,7 +213,7 @@ export function celdaSegura (v) {
 }
 
 // Encabezados de la plantilla y de la exportación (lo exportado se puede volver a importar).
-export const ENC_PLANTILLA = ['Producto', 'Categoría', 'Paquetes', 'Piezas por paquete', 'Piezas sueltas', 'Mínimo (paquetes)', 'Objetivo (paquetes)', 'Costo por pieza', 'Precio de venta', 'Caducidad (dd/mm/aaaa)']
+export const ENC_PLANTILLA = ['Producto', 'Presentación', 'Sabor', 'Categoría', 'Paquetes', 'Piezas por paquete', 'Piezas sueltas', 'Mínimo (paquetes)', 'Objetivo (paquetes)', 'Costo por pieza', 'Precio de venta', 'Caducidad (dd/mm/aaaa)']
 export const ddmmaaaa = iso => (iso ? iso.split('-').reverse().join('/') : '')
 
 // CSV que abre Excel con acentos (BOM al inicio), con celdas protegidas contra fórmulas.

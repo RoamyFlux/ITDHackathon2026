@@ -16,11 +16,11 @@ const inv = useInventario()
 const i = ref(0)
 const PASOS = [
   { ic: 'spark', t: 'Bienvenido a EarlyStock', d: 'Te ayudamos a saber, ANTES de que pase, qué se te va a acabar o caducar. Son 5 pasos rápidos.' },
-  { ic: 'box', t: '1. Registra tus productos', d: 'Con "Nuevo producto" o desde tu Excel. Cuéntalos por paquetes: cuántas cajas, cuántas piezas trae cada una y cuántas sueltas.' },
+  { ic: 'box', t: '1. Registra tus productos', d: 'Con "Nuevo producto" o desde tu Excel. Cuéntalos por paquetes y agrega sus presentaciones (600 ml, 2 L…) y sabores: todo queda en una sola tarjeta y nunca se duplica.' },
   { ic: 'minus', t: '2. Anota lo que vendes y lo que llega', d: '"Vendí" resta piezas (abre paquetes sola). "Llegó" suma mercancía y puedes poner su fecha de caducidad.' },
   { ic: 'bell', t: '3. Fíjate en los colores', d: 'Rojo = urgente (se acabó o caducó). Ámbar = atención (queda poco o caduca pronto). Verde = todo bien. "Alcanza ~N días" te dice cuánto te dura.' },
-  { ic: 'bulb', t: '4. Sigue las sugerencias', d: 'Te decimos qué hacer: pedir N paquetes, retirar lo caducado o hacer una oferta (2×1 o descuento) para vender antes de que caduque.' },
-  { ic: 'cart', t: '5. Compra sin pensar', d: 'La lista de compras se arma sola. Mándala por WhatsApp a tu proveedor con un toque.' }
+  { ic: 'bulb', t: '4. Sigue las sugerencias', d: 'Te decimos qué hacer: pedir N paquetes, retirar lo caducado o poner una oferta (2×1 o descuento) que activas y quitas cuando quieras.' },
+  { ic: 'cart', t: '5. Compra sin pensar', d: 'La lista de compras se arma sola: cópiala o imprímela para tu proveedor. ¿Dudas? Toca "?" y escríbenos a soporte.' }
 ]
 function tecla (e) { if (e.key === 'ArrowRight') i.value = Math.min(PASOS.length - 1, i.value + 1); if (e.key === 'ArrowLeft') i.value = Math.max(0, i.value - 1) }
 function terminar () { emit('cerrar'); if (!inv.productos.length) setTimeout(() => ui.abrir('producto'), 80) }

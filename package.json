@@ -17,6 +17,7 @@
     "@fontsource-variable/plus-jakarta-sans": "5.3.0",
     "@supabase/supabase-js": "2.119.2",
     "pinia": "4.1.0",
+    "simple-icons": "16.38.0",
     "vue": "3.5.45",
     "vue-router": "5.5.1"
   },

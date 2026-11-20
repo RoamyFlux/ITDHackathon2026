@@ -18,6 +18,8 @@ import Inventario from '../components/Inventario.vue'
 import GraficaVentas from '../components/GraficaVentas.vue'
 import ListaCompras from '../components/ListaCompras.vue'
 import Herramientas from '../components/Herramientas.vue'
+import StockCategorias from '../components/StockCategorias.vue'
+import OfertasActivas from '../components/OfertasActivas.vue'
 import Pie from '../components/Pie.vue'
 import Icono from '../components/Icono.vue'
 
@@ -90,8 +92,10 @@ onUnmounted(() => { removeEventListener('online', alCambiarRed); removeEventList
       </div>
       <aside class="col-side">
         <PanelAlertas @ir="irAProducto" />
-        <GraficaVentas v-if="inv.productos.length" />
+        <OfertasActivas />
         <ListaCompras />
+        <StockCategorias />
+        <GraficaVentas v-if="inv.productos.length" />
         <Herramientas />
       </aside>
     </div>

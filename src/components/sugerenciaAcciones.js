@@ -8,7 +8,7 @@ export const BOTON_SUG = { retirar: 'Retirar', oferta: 'Crear oferta', pedir: 'V
 
 export function accionSugerencia (s, inv, ui) {
   if (s.tipo === 'retirar') return inv.retirarCaducados([s.producto])
-  if (s.tipo === 'oferta') return ui.abrir('oferta', { sugerencia: s })
+  if (s.tipo === 'oferta') return ui.abrir('oferta', { producto: s.producto, sugerencia: s })
   if (s.tipo === 'pedir') return ui.irA('compras')
   ui.abrir('producto', { producto: s.producto })
 }

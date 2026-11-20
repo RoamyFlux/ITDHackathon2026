@@ -26,6 +26,6 @@ import Icono from './Icono.vue'
       <div class="pa-grafica"><i v-for="n in 7" :key="n" :class="'b' + n" /></div>
     </div>
     <div class="pa-flotante pa-f1"><Icono n="bell" sm />Se acaba: Refresco</div>
-    <div class="pa-flotante pa-f2"><Icono n="chat" sm />Lista enviada por WhatsApp</div>
+    <div class="pa-flotante pa-f2"><Icono n="gift" sm />Oferta activa: Huevo −20 %</div>
   </div>
 </template>

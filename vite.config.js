@@ -29,7 +29,8 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
-  `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST}`,
+  // cloudflare-dns.com: revisar que el dominio de un correo nuevo reciba correo (ver src/lib/correo.js)
+  `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST} https://cloudflare-dns.com`,
   `img-src 'self' data: blob: https://${SUPABASE_HOST}`,
   "font-src 'self'",
   "worker-src 'self'",

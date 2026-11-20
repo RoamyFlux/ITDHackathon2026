@@ -2,6 +2,7 @@
  * PÁGINAS (router)
  *   #/            -> página de inicio (presentación, entrar y crear cuenta)
  *   #/app         -> el panel del inventario (requiere sesión o modo demostración)
+ *   #/admin       -> administración de contactos de soporte (solo la cuenta administradora)
  *   #/privacidad  -> Aviso de Privacidad        #/terminos -> Términos de Uso
  * Se usa el modo "hash" (#/…) porque GitHub Pages solo sirve archivos: así cualquier enlace funciona.
  * ===================================================================== */
@@ -14,6 +15,7 @@ export const router = createRouter({
   routes: [
     { path: '/', name: 'inicio', component: Inicio, meta: { titulo: 'Inventario inteligente para tu negocio' } },
     { path: '/app', name: 'app', component: () => import('./views/Panel.vue'), meta: { requiereSesion: true, titulo: 'Mi inventario' } },
+    { path: '/admin', name: 'admin', component: () => import('./views/Admin.vue'), meta: { requiereSesion: true, titulo: 'Administración' } },
     { path: '/privacidad', name: 'privacidad', component: () => import('./views/Privacidad.vue'), meta: { titulo: 'Aviso de Privacidad' } },
     { path: '/terminos', name: 'terminos', component: () => import('./views/Terminos.vue'), meta: { titulo: 'Términos de Uso' } },
     { path: '/:resto(.*)*', redirect: '/' }

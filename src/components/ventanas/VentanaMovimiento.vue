@@ -7,7 +7,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useInventario } from '../../stores/inventario.js'
-import { totalPiezas } from '../../logica/inventario.js'
+import { totalPiezas, nombreCompleto } from '../../logica/inventario.js'
 import Ventana from '../Ventana.vue'
 import Icono from '../Icono.vue'
 
@@ -38,7 +38,7 @@ function registrar () {
 </script>
 
 <template>
-  <Ventana :titulo="venta ? 'Registrar venta' : 'Llegó mercancía'" :subtitulo="`${p.nombre} · hay ${hay} pzas`" :icono="venta ? 'minus' : 'truck'" ancho="sm" @cerrar="emit('cerrar')">
+  <Ventana :titulo="venta ? 'Registrar venta' : 'Llegó mercancía'" :subtitulo="`${nombreCompleto(p)} · hay ${hay} pzas`" :icono="venta ? 'minus' : 'truck'" ancho="sm" @cerrar="emit('cerrar')">
     <form @submit.prevent="registrar">
       <div v-if="!venta && p.porPaquete > 1" class="seg unidad" role="group" aria-label="¿Qué llegó?">
         <button type="button" :aria-pressed="unidad === 'paq'" @click="unidad = 'paq'"><Icono n="box" sm />Paquetes</button>
