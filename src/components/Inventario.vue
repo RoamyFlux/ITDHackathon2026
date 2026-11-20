@@ -8,6 +8,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useInventario } from '../stores/inventario.js'
 import { usePreferencias } from '../stores/preferencias.js'
+import { useUI } from '../stores/ui.js'
 import Icono from './Icono.vue'
 import TarjetaProducto from './TarjetaProducto.vue'
 import TablaInventario from './TablaInventario.vue'
@@ -16,6 +17,7 @@ import { norm } from '../logica/formato.js'
 
 const inv = useInventario()
 const prefs = usePreferencias()
+const ui = useUI()
 const a = computed(() => inv.analisis)
 const f = computed(() => inv.filtros)
 const catDe = p => p.categoria || 'Sin categoría'
@@ -81,6 +83,7 @@ defineExpose({ irAProducto })
   <section id="inventario">
     <div class="sec-tit">
       <h2><Icono n="box" />Inventario</h2>
+      <button type="button" class="sm btn-nuevo btn-nuevo-inv" @click="ui.abrir('producto')"><Icono n="plus" sm />Nuevo producto</button>
       <div class="seg vista" role="group" aria-label="Vista del inventario">
         <button type="button" :aria-pressed="prefs.prefs.vista === 'tarjetas'" @click="prefs.cambiar('vista', 'tarjetas'); inv.animar = true"><Icono n="grid" sm />Tarjetas</button>
         <button type="button" :aria-pressed="prefs.prefs.vista === 'tabla'" @click="prefs.cambiar('vista', 'tabla'); inv.animar = true"><Icono n="table" sm />Tabla</button>

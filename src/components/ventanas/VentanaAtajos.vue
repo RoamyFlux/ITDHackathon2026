@@ -2,7 +2,7 @@
 <script setup>
 import Ventana from '../Ventana.vue'
 const emit = defineEmits(['cerrar'])
-const ATAJOS = [[['Ctrl', 'K'], 'Buscar o ejecutar cualquier cosa'], [['N'], 'Nuevo producto'], [['/'], 'Ir al buscador del inventario'], [['?'], 'Ver estos atajos'], [['Esc'], 'Cerrar ventanas']]
+const ATAJOS = [[['Ctrl', 'K'], 'Buscar o ejecutar cualquier cosa'], [['N'], 'Nuevo producto'], [['1', '…', '6'], 'Cambiar de pestaña (Hoy, Inventario, Compras, Ofertas, Reportes, Más)'], [['/'], 'Ir al buscador del inventario'], [['?'], 'Ver estos atajos'], [['Esc'], 'Cerrar ventanas']]
 </script>
 
 <template>

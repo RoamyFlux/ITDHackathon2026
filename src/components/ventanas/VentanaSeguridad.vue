@@ -1,5 +1,5 @@
 <!--
-  SEGURIDAD (administración automática de la cuenta)
+  SEGURIDAD (administración automática de la cuenta), en PESTAÑAS para no deslizar:
   1) Revisión automática: puntos que protegen la cuenta y su estado (correo, llave, inactividad, https).
   2) Llaves de acceso: agregar la de este dispositivo, renombrar y quitar.
   3) Sesiones: cerrar en los demás dispositivos y cierre automático por inactividad.
@@ -7,7 +7,7 @@
   5) Zona de peligro: eliminar mi cuenta y todos mis datos.
 -->
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSesion } from '../../stores/sesion.js'
 import { useSeguridad, EVENTOS } from '../../stores/seguridad.js'
 import { usePreferencias } from '../../stores/preferencias.js'
@@ -15,6 +15,7 @@ import { useAvisos } from '../../stores/avisos.js'
 import { fechaHora } from '../../logica/formato.js'
 import Ventana from '../Ventana.vue'
 import Icono from '../Icono.vue'
+import Pestanas from '../Pestanas.vue'
 
 const emit = defineEmits(['cerrar'])
 const sesion = useSesion()
@@ -25,6 +26,14 @@ const trabajando = ref(false)
 const editando = ref(null)
 const nombre = ref('')
 const errorLlaves = ref('')
+// Pestañas: Resumen · Llaves de acceso · Sesiones (y eliminar cuenta) · Actividad.
+const tab = ref('resumen')
+const TABS = computed(() => [
+  { id: 'resumen', t: 'Resumen', icono: 'check', n: seg.revision.length - seg.puntaje, alerta: true },
+  { id: 'llaves', t: 'Llaves', icono: 'finger', n: sesion.passkeys.length },
+  { id: 'sesiones', t: 'Sesiones', icono: 'phone' },
+  { id: 'actividad', t: 'Actividad', icono: 'activity' }
+])
 
 onMounted(async () => {
   seg.cargarEventos()
@@ -55,16 +64,17 @@ async function eliminar () {
 </script>
 
 <template>
-  <Ventana titulo="Seguridad" subtitulo="Tu cuenta se revisa sola; aquí ves y ajustas todo" icono="shield" ancho="lg" @cerrar="emit('cerrar')">
-    <div class="seg-rejilla">
-      <section class="card-in">
+  <Ventana titulo="Seguridad" subtitulo="Tu cuenta se revisa sola; aquí ves y ajustas todo" icono="shield" ancho="md" @cerrar="emit('cerrar')">
+    <Pestanas v-model="tab" :opciones="TABS" etiqueta="Secciones de seguridad" class="pestanas-ventana" />
+    <div class="seg-tabs">
+      <section v-show="tab === 'resumen'" class="card-in" role="tabpanel">
         <h3><Icono n="check" sm />Revisión automática <span class="contador" :class="seg.puntaje === seg.revision.length ? 'ok' : 'low'">{{ seg.puntaje }}/{{ seg.revision.length }}</span></h3>
         <ul class="revision">
           <li v-for="r in seg.revision" :key="r.id" :class="r.ok ? 'ok' : 'low'"><Icono :n="r.ok ? 'check' : 'alert'" sm /><span><b>{{ r.t }}</b><small>{{ r.d }}</small></span></li>
         </ul>
       </section>
 
-      <section class="card-in">
+      <section v-show="tab === 'llaves'" class="card-in" role="tabpanel">
         <h3><Icono n="finger" sm />Llaves de acceso</h3>
         <p class="hint">Entra con tu huella, rostro o el PIN de tu dispositivo. Es más seguro que una contraseña: no se puede adivinar ni robar con un correo falso.</p>
         <p v-if="sesion.esDemo" class="nota">Disponible con una cuenta real.</p>
@@ -84,16 +94,20 @@ async function eliminar () {
         </template>
       </section>
 
-      <section class="card-in">
+      <section v-show="tab === 'sesiones'" class="card-in" role="tabpanel">
         <h3><Icono n="phone" sm />Sesiones</h3>
         <p class="hint">Cerrar la sesión sola si nadie usa la app:</p>
         <div class="seg compacto" role="group" aria-label="Cierre por inactividad">
           <button v-for="m in [0, 15, 30, 60, 120]" :key="m" type="button" :aria-pressed="prefs.prefs.inactividad === m" @click="prefs.cambiar('inactividad', m)">{{ m ? (m < 60 ? m + ' min' : m / 60 + ' h') : 'Nunca' }}</button>
         </div>
         <button v-if="!sesion.esDemo" type="button" class="sec ancho" :disabled="trabajando" @click="otros"><Icono n="logout" sm />Cerrar sesión en los demás dispositivos</button>
+        <section class="peligro-zona">
+          <div><b>Eliminar mi cuenta</b><small>Borra tu cuenta y todos tus datos para siempre (derecho de cancelación).</small></div>
+          <button type="button" class="peligro sm" :disabled="trabajando" @click="eliminar"><Icono n="trash" sm />Eliminar cuenta</button>
+        </section>
       </section>
 
-      <section class="card-in actividad">
+      <section v-show="tab === 'actividad'" class="card-in actividad" role="tabpanel">
         <h3><Icono n="activity" sm />Actividad reciente</h3>
         <p v-if="seg.errorEventos" class="nota low">{{ seg.errorEventos }}</p>
         <ul v-else-if="seg.eventos.length" class="eventos">
@@ -104,9 +118,6 @@ async function eliminar () {
       </section>
     </div>
 
-    <section class="peligro-zona">
-      <div><b>Eliminar mi cuenta</b><small>Borra tu cuenta y todos tus datos para siempre (derecho de cancelación).</small></div>
-      <button type="button" class="peligro sm" :disabled="trabajando" @click="eliminar"><Icono n="trash" sm />Eliminar cuenta</button>
-    </section>
+
   </Ventana>
 </template>

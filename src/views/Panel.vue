@@ -1,14 +1,18 @@
 <!--
-  PANEL DEL INVENTARIO (la app)
-  Computadora: resumen arriba; abajo 2 columnas: sugerencias + inventario (izq.) y alertas, ventas, compras y
-  herramientas (der.). Celular: una columna, con lo urgente primero, y botón flotante "+".
+  PANEL DEL INVENTARIO (la app), ORGANIZADO EN PESTAÑAS para no tener que deslizar una página larguísima:
+    Hoy        -> resumen, sugerencias y "Requiere atención"
+    Inventario -> buscador, filtros y productos (tarjetas o tabla)
+    Compras    -> lista de compras          Ofertas -> ofertas activas
+    Reportes   -> ventas de 7 días y stock por categoría          Más -> tu plan y herramientas
+  Computadora: pestañas arriba (fijas bajo el encabezado). Celular: barra fija abajo, como una app.
+  Las pestañas usan v-show (no se destruyen): así el inventario conserva búsqueda y filtros al cambiar.
   También maneja: atajos de teclado, la guía rápida la primera vez y las notificaciones del navegador.
 -->
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useInventario } from '../stores/inventario.js'
 import { useSesion } from '../stores/sesion.js'
-import { useUI } from '../stores/ui.js'
+import { useUI, PESTANAS } from '../stores/ui.js'
 import { usePreferencias } from '../stores/preferencias.js'
 import Encabezado from '../components/Encabezado.vue'
 import ResumenHero from '../components/ResumenHero.vue'
@@ -23,25 +27,45 @@ import OfertasActivas from '../components/OfertasActivas.vue'
 import TuPlan from '../components/TuPlan.vue'
 import Pie from '../components/Pie.vue'
 import Icono from '../components/Icono.vue'
+import Pestanas from '../components/Pestanas.vue'
 
 const inv = useInventario()
 const sesion = useSesion()
 const ui = useUI()
 const prefs = usePreferencias()
 const inventario = ref(null)
-const irAProducto = id => inventario.value && inventario.value.irAProducto(id)
+// Ir a un producto: primero a la pestaña Inventario y luego bajar hasta él (desde alertas o la paleta).
+function irAProducto (id) {
+  const cambio = ui.pestana !== 'inventario'
+  ui.cambiarPestana('inventario')
+  setTimeout(() => inventario.value && inventario.value.irAProducto(id), cambio ? 80 : 0)
+}
+
+/* ---- Pestañas ----
+ * Cada una con su contador: Hoy = pendientes urgentes, Compras = productos por comprar, Ofertas = activas. */
+const urgentes = computed(() => inv.sugerencias.filter(s => s.prioridad >= 80).length)
+const opciones = computed(() => [
+  { id: 'hoy', t: 'Hoy', icono: 'spark', n: urgentes.value, alerta: true },
+  { id: 'inventario', t: 'Inventario', icono: 'box', n: inv.productos.length },
+  { id: 'compras', t: 'Compras', icono: 'cart', n: inv.resumen.nCompras, alerta: inv.resumen.crit.length > 0 },
+  { id: 'ofertas', t: 'Ofertas', icono: 'gift', n: inv.ofertaDe.size },
+  { id: 'reportes', t: 'Reportes', icono: 'chart' },
+  { id: 'mas', t: 'Más', icono: 'sliders' }
+])
+// Al cambiar de pestaña se sube al inicio del contenido (sin brincos si ya se ve).
+watch(() => ui.pestana, () => { if (scrollY > 120) scrollTo({ top: 0, behavior: 'smooth' }) })
 // La paleta de comandos también puede pedir ir a un producto.
 watch(() => ui.ventana, v => { if (v === null && ui.irProducto) { const id = ui.irProducto; ui.irProducto = null; setTimeout(() => irAProducto(id), 60) } })
 
 /* ---- Atajos de teclado ----
- * Ctrl+K paleta de comandos · N nuevo producto · / buscar · ? atajos. No se activan mientras escribes ni con
+ * Ctrl+K paleta de comandos · N nuevo producto · / buscar · ? atajos · 1 a 6 cambian de pestaña. No se activan mientras escribes ni con
  * una ventana abierta (salvo Ctrl+K). */
 function teclas (e) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); ui.ventana && ui.ventana.tipo === 'comandos' ? ui.cerrar() : ui.abrir('comandos'); return }
   if (document.querySelector('dialog[open]')) return
   if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return
   if (e.ctrlKey || e.metaKey || e.altKey) return
-  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); ui.abrir('producto') } else if (e.key === '/') { e.preventDefault(); document.querySelector('#inventario input[type=search]')?.focus() } else if (e.key === '?') { e.preventDefault(); ui.abrir('atajos') }
+  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); ui.abrir('producto') } else if (e.key === '/') { e.preventDefault(); ui.cambiarPestana('inventario'); setTimeout(() => document.querySelector('#inventario input[type=search]')?.focus(), 30) } else if (e.key === '?') { e.preventDefault(); ui.abrir('atajos') } else if (/^[1-6]$/.test(e.key)) { e.preventDefault(); ui.cambiarPestana(PESTANAS[+e.key - 1]) }
 }
 onMounted(() => addEventListener('keydown', teclas))
 onUnmounted(() => removeEventListener('keydown', teclas))
@@ -85,21 +109,44 @@ onUnmounted(() => { removeEventListener('online', alCambiarRed); removeEventList
       <button type="button" class="sm" @click="sesion.salir().then(() => $router.push({ path: '/', query: { ver: 1 } }))">Crear cuenta</button>
     </div>
     <div v-if="!enLinea && !sesion.esDemo" class="banner low noprint"><Icono n="alert" />Sin conexión a internet: los cambios no se guardarán hasta que vuelva.</div>
-    <div id="appBox">
-      <ResumenHero />
-      <div class="col-main">
-        <PanelSugerencias />
+    <Pestanas :model-value="ui.pestana" :opciones="opciones" etiqueta="Secciones del panel" class="pestanas-panel" @update:model-value="ui.cambiarPestana" />
+    <div id="appBox" :class="'en-' + ui.pestana">
+      <!-- HOY -->
+      <section v-show="ui.pestana === 'hoy'" class="pagina pagina-hoy" role="tabpanel" aria-label="Hoy">
+        <ResumenHero />
+        <div class="dos-columnas">
+          <PanelSugerencias />
+          <PanelAlertas @ir="irAProducto" />
+        </div>
+      </section>
+      <!-- INVENTARIO -->
+      <section v-show="ui.pestana === 'inventario'" class="pagina" role="tabpanel" aria-label="Inventario">
         <Inventario ref="inventario" />
-      </div>
-      <aside class="col-side">
-        <PanelAlertas @ir="irAProducto" />
-        <OfertasActivas />
+      </section>
+      <!-- COMPRAS -->
+      <section v-show="ui.pestana === 'compras'" class="pagina angosta" role="tabpanel" aria-label="Compras">
         <ListaCompras />
-        <StockCategorias />
-        <GraficaVentas v-if="inv.productos.length" />
-        <TuPlan />
-        <Herramientas />
-      </aside>
+      </section>
+      <!-- OFERTAS -->
+      <section v-show="ui.pestana === 'ofertas'" class="pagina angosta" role="tabpanel" aria-label="Ofertas">
+        <OfertasActivas />
+        <p v-if="!inv.productos.length" class="vacio-mini">Agrega productos para poder ponerlos en oferta.</p>
+      </section>
+      <!-- REPORTES -->
+      <section v-show="ui.pestana === 'reportes'" class="pagina" role="tabpanel" aria-label="Reportes">
+        <div v-if="inv.productos.length" class="dos-columnas">
+          <GraficaVentas />
+          <StockCategorias />
+        </div>
+        <p v-else class="card vacio-lista">Cuando agregues productos y registres ventas, aquí verás tus reportes.</p>
+      </section>
+      <!-- MÁS -->
+      <section v-show="ui.pestana === 'mas'" class="pagina" role="tabpanel" aria-label="Más">
+        <div class="dos-columnas">
+          <TuPlan />
+          <Herramientas />
+        </div>
+      </section>
     </div>
     <button type="button" class="fab" aria-label="Nuevo producto" title="Nuevo producto" @click="ui.abrir('producto')"><Icono n="plus" /></button>
   </main>

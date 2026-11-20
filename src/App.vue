@@ -42,7 +42,8 @@ const actual = computed(() => ui.ventana && VENTANAS[ui.ventana.tipo])
 // Entrar -> al panel. Salir -> a la página de inicio (y se cierra cualquier ventana abierta).
 watch(() => sesion.dentro, dentro => {
   if (dentro && route.name === 'inicio') router.push({ name: 'app' })
-  if (!dentro) { ui.cerrar(); if (route.meta.requiereSesion) router.push({ name: 'inicio' }) }
+  // Al salir se vuelve a la pestaña Hoy: la siguiente sesión empieza por lo urgente.
+  if (!dentro) { ui.cerrar(); ui.cambiarPestana('hoy'); if (route.meta.requiereSesion) router.push({ name: 'inicio' }) }
 })
 // Volvió desde el correo de recuperación: pedir la contraseña nueva.
 watch(() => sesion.recuperando && sesion.modo === 'dentro', r => { if (r) ui.abrir('contrasena', { desdeCorreo: true }) }, { immediate: true })

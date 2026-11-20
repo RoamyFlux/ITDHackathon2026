@@ -243,3 +243,21 @@ a.contacto:hover{background:var(--brand-soft);border-color:color-mix(in srgb,var
 .sub-bloque{text-align:center;color:var(--muted);margin:-18px 0 26px}
 .nota-planes{text-align:center;color:var(--muted);font-size:.86rem;margin:18px 0 0}
 @media (max-width:900px){ .planes-rejilla{grid-template-columns:1fr} .plan.recomendado{transform:none} }
+
+/* ---- Pestañas y plegables dentro de ventanas y Admin (EarlyStock 2.4) ---- */
+.pestanas-ventana{margin-bottom:14px;box-shadow:none;background:var(--surface-2);border-color:transparent}
+.pestanas-ventana .pestana{flex:1 1 0;padding:8px 10px;font-size:.82rem}
+.seg-tabs > .card-in{min-height:220px}
+.seg-tabs .peligro-zona{margin-top:16px}
+.pestanas-admin{margin-bottom:16px;max-width:560px}
+.grupo-ajustes{border-bottom:1px solid var(--line)}
+.grupo-ajustes > summary{padding:12px 0;font-size:1rem}
+.grupo-ajustes .ajuste:first-of-type{padding-top:0}
+.grupo-ajustes .ajuste{border-top:0;padding:10px 0}
+@media (max-width:600px){
+  .pestanas-ventana .pestana{flex-direction:column;gap:2px;font-size:.7rem;padding:6px 4px}
+  /* Planes en celular: tarjetas en carrusel horizontal (se deslizan de lado y se ven completas). */
+  .planes-rejilla{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:86%;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 4px 8px;gap:12px;scrollbar-width:none}
+  .planes-rejilla::-webkit-scrollbar{display:none}
+  .planes-rejilla .plan{scroll-snap-align:center}
+}

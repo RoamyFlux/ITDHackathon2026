@@ -10,6 +10,7 @@ import { useUI } from '../stores/ui.js'
 import { totalPiezas, piezasCaducadas, nombreCompleto } from '../logica/inventario.js'
 import { cadTxt, diasCorto } from '../logica/formato.js'
 import Icono from './Icono.vue'
+import Plegable from './Plegable.vue'
 
 const emit = defineEmits(['ir'])
 const inv = useInventario()
@@ -36,28 +37,25 @@ function verGrupo (estado) { inv.filtros = { q: '', estado, categoria: '' }; ui.
   </div>
   <section v-else-if="nAtencion" id="alertas" class="card alertas">
     <div class="sec-tit"><h2><Icono n="bell" />Requiere atención</h2><span class="contador crit">{{ nAtencion }}</span></div>
-    <div v-if="r.crit.length" class="grupo crit">
-      <h3><span class="dot crit" />Se acaba o se acabó</h3>
+    <!-- Cada grupo se pliega; el primero (el más urgente) empieza abierto. -->
+    <Plegable v-if="r.crit.length" clase="grupo crit" :titulo="`Se acaba o se acabó (${r.crit.length})`" abierto>
       <ul>
         <li v-for="p in r.crit.slice(0, MAX)" :key="p.id"><button type="button" class="fila-alerta" @click="emit('ir', p.id)"><b>{{ nombreCompleto(p) }}</b><span>{{ detalle(p) }}</span></button></li>
         <li v-if="r.crit.length > MAX"><button type="button" class="ghost sm ver-mas" @click="verGrupo('crit')">Ver {{ r.crit.length - MAX }} más</button></li>
       </ul>
-    </div>
-    <div v-if="r.low.length" class="grupo low">
-      <h3><span class="dot low" />Pronto hay que comprar</h3>
+    </Plegable>
+    <Plegable v-if="r.low.length" clase="grupo low" :titulo="`Pronto hay que comprar (${r.low.length})`" :abierto="!r.crit.length">
       <ul>
         <li v-for="p in r.low.slice(0, MAX)" :key="p.id"><button type="button" class="fila-alerta" @click="emit('ir', p.id)"><b>{{ nombreCompleto(p) }}</b><span>{{ detalle(p) }}</span></button></li>
         <li v-if="r.low.length > MAX"><button type="button" class="ghost sm ver-mas" @click="verGrupo('low')">Ver {{ r.low.length - MAX }} más</button></li>
       </ul>
-    </div>
-    <div v-if="r.lotesAlerta.length" class="grupo" :class="r.lotesAlerta[0].d < 0 ? 'crit' : 'low'">
-      <h3><Icono n="clock" sm />Caducidad
-        <button v-if="conCaducados.length" type="button" class="lote-retirar grande" @click="inv.retirarCaducados(conCaducados)"><Icono n="trash" sm />Retirar caducados ({{ conCaducados.length }})</button>
-      </h3>
+    </Plegable>
+    <Plegable v-if="r.lotesAlerta.length" :clase="'grupo ' + (r.lotesAlerta[0].d < 0 ? 'crit' : 'low')" icono="clock" :titulo="`Caducidad (${r.lotesAlerta.length})`" :abierto="!r.crit.length && !r.low.length">
+      <button v-if="conCaducados.length" type="button" class="lote-retirar grande retirar-todo" @click="inv.retirarCaducados(conCaducados)"><Icono n="trash" sm />Retirar caducados ({{ conCaducados.length }})</button>
       <ul>
         <li v-for="x in r.lotesAlerta.slice(0, MAX)" :key="x.l.id"><button type="button" class="fila-alerta" @click="emit('ir', x.p.id)"><b>{{ nombreCompleto(x.p) }}</b><span>{{ x.l.piezas }} pzas · {{ cadTxt(x.d) }}</span></button></li>
       </ul>
-    </div>
+    </Plegable>
   </section>
   <div v-else class="card estado-vacio"><span class="ico-grande"><Icono n="check" /></span><div><b>Todo en orden</b><br><small>Nada por acabarse ni por caducar.</small></div></div>
 </template>
