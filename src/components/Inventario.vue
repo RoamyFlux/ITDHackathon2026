@@ -11,6 +11,8 @@ import { usePreferencias } from '../stores/preferencias.js'
 import Icono from './Icono.vue'
 import TarjetaProducto from './TarjetaProducto.vue'
 import TablaInventario from './TablaInventario.vue'
+import { agruparPorNombre, peor, nombreCompleto } from '../logica/inventario.js'
+import { norm } from '../logica/formato.js'
 
 const inv = useInventario()
 const prefs = usePreferencias()
@@ -31,12 +33,19 @@ const cuenta = computed(() => {
   return c
 })
 const ORDEN = { crit: 0, low: 1, ok: 2 }
+// Variantes que pasan el buscador (nombre, presentación, sabor o categoría; sin acentos) y el filtro de estado.
 const visibles = computed(() => {
-  const q = f.value.q.trim().toLowerCase()
+  const q = norm(f.value.q.trim())
   return enCat.value
-    .filter(p => (!q || (p.nombre + ' ' + (p.categoria || '')).toLowerCase().includes(q)) && (!f.value.estado || a.value.estadoTotal(p) === f.value.estado))
-    .sort((x, y) => ORDEN[a.value.estadoTotal(x)] - ORDEN[a.value.estadoTotal(y)] || x.nombre.localeCompare(y.nombre))
+    .filter(p => (!q || norm(nombreCompleto(p) + ' ' + (p.categoria || '')).includes(q)) && (!f.value.estado || a.value.estadoTotal(p) === f.value.estado))
+    .sort((x, y) => ORDEN[a.value.estadoTotal(x)] - ORDEN[a.value.estadoTotal(y)] || nombreCompleto(x).localeCompare(nombreCompleto(y), 'es'))
 })
+// Tarjetas: una por producto (nombre), con sus presentaciones y sabores. Primero los más urgentes.
+const totalVariantes = computed(() => { const m = new Map(); agruparPorNombre(inv.productos).forEach(g => m.set(g.clave, g.variantes.length)); return m })
+const gruposVisibles = computed(() => agruparPorNombre(visibles.value)
+  .map(g => ({ ...g, e: g.variantes.reduce((e, p) => peor(e, a.value.estadoTotal(p)), 'ok') }))
+  .sort((x, y) => ORDEN[x.e] - ORDEN[y.e] || x.nombre.localeCompare(y.nombre, 'es')))
+const cuantos = computed(() => (prefs.prefs.vista === 'tabla' ? visibles.value.length : gruposVisibles.value.length))
 
 // Lista por partes.
 const PASO = 60
@@ -57,7 +66,7 @@ const setFiltro = (k, v) => { inv.filtros = { ...inv.filtros, [k]: v } }
 async function irAProducto (id) {
   if (!visibles.value.some(p => p.id === id)) quitarFiltros()
   await nextTick()
-  const pos = visibles.value.findIndex(p => p.id === id)
+  const pos = prefs.prefs.vista === 'tabla' ? visibles.value.findIndex(p => p.id === id) : gruposVisibles.value.findIndex(g => g.variantes.some(p => p.id === id))
   if (pos >= limite.value) limite.value = pos + 1
   await nextTick()
   const el = document.querySelector(`#inventario [data-fila="${id}"]`)
@@ -77,7 +86,7 @@ defineExpose({ irAProducto })
         <button type="button" :aria-pressed="prefs.prefs.vista === 'tabla'" @click="prefs.cambiar('vista', 'tabla'); inv.animar = true"><Icono n="table" sm />Tabla</button>
       </div>
     </div>
-    <div class="buscar"><Icono n="search" /><input :value="f.q" type="search" placeholder="Buscar producto o categoría" aria-label="Buscar producto" maxlength="60" @input="setFiltro('q', $event.target.value)" @keydown.esc="setFiltro('q', '')"></div>
+    <div class="buscar"><Icono n="search" /><input :value="f.q" type="search" placeholder="Buscar producto, presentación, sabor o categoría" aria-label="Buscar producto" maxlength="60" @input="setFiltro('q', $event.target.value)" @keydown.esc="setFiltro('q', '')"></div>
     <div class="chips">
       <button v-for="[v, t] in [['', 'Todos'], ['crit', 'Urgentes'], ['low', 'Atención'], ['ok', 'Bien surtidos']]" :key="v" type="button" class="chip" :class="{ activo: f.estado === v }" :aria-pressed="f.estado === v" @click="setFiltro('estado', v)">
         <span v-if="v" class="dot" :class="v" />{{ t }}<span class="n">{{ cuenta[v] }}</span>
@@ -106,9 +115,9 @@ defineExpose({ irAProducto })
         <button v-if="inv.productos.length" type="button" class="sec sm" @click="quitarFiltros"><Icono n="x" sm />Quitar filtros</button>
       </div>
       <TablaInventario v-else-if="prefs.prefs.vista === 'tabla'" :filas="visibles" :limite="limite" />
-      <TarjetaProducto v-for="(p, k) in visibles.slice(0, limite)" v-else :key="p.id" :p="p" :i="k" />
-      <button v-if="visibles.length > limite" ref="mas" type="button" class="sec mas" @click="limite += PASO">
-        <Icono n="dn" sm />Mostrar {{ Math.min(PASO, visibles.length - limite) }} más · {{ limite }} de {{ visibles.length }}
+      <TarjetaProducto v-for="(g, k) in gruposVisibles.slice(0, limite)" v-else :key="g.clave" :g="g" :i="k" :todas="totalVariantes.get(g.clave)" />
+      <button v-if="cuantos > limite" ref="mas" type="button" class="sec mas" @click="limite += PASO">
+        <Icono n="dn" sm />Mostrar {{ Math.min(PASO, cuantos - limite) }} más · {{ limite }} de {{ cuantos }}
       </button>
     </div>
   </section>

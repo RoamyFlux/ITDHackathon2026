@@ -11,7 +11,7 @@
  *   exhibir     -> nadie lo ha comprado en 7 días: ponerlo más a la vista.
  *   estrella    -> el más vendido de la semana: que nunca falte.
  * ===================================================================== */
-import { totalPiezas, lotesDe, diasA, paquetesAPedir, piezasCaducadas, DIA } from './inventario.js'
+import { totalPiezas, lotesDe, diasA, paquetesAPedir, piezasCaducadas, nombreCompleto, DIA } from './inventario.js'
 import { cadTxt, diasCorto, dinero, plural } from './formato.js'
 
 /* ---- ¿Qué descuento conviene? ----
@@ -47,13 +47,15 @@ function hastaCuando (cad, d) {
   return 'hasta el ' + f.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })
 }
 
-export function generarSugerencias (productos, analisis) {
+// conOferta = conjunto de ids de productos que ya tienen una oferta activa (no se vuelve a sugerir oferta).
+export function generarSugerencias (productos, analisis, { conOferta = new Set() } = {}) {
   const { ahora, diasAviso } = analisis
   const lista = []
   const agregar = s => lista.push({ id: `${s.tipo}:${s.producto ? s.producto.id : ''}:${s.datos?.cad || ''}`, ...s })
 
   let estrella = null
   for (const p of productos) {
+    const nom = nombreCompleto(p)
     const tot = totalPiezas(p)
     const consumo = analisis.consumoDiario(p)
     const ventas = analisis.ventasDe(p.id)
@@ -63,7 +65,7 @@ export function generarSugerencias (productos, analisis) {
     if (cad > 0) {
       agregar({
         tipo: 'retirar', prioridad: 100, producto: p,
-        titulo: `Retira lo caducado de ${p.nombre}`,
+        titulo: `Retira lo caducado de ${nom}`,
         detalle: `${plural(Math.min(cad, tot), 'pieza')} ya caducaron. Quítalas del anaquel y regístralas como merma para que tu inventario sea real.`,
         datos: { piezas: Math.min(cad, tot), costo: Math.min(cad, tot) * (p.costo || 0) }
       })
@@ -71,12 +73,12 @@ export function generarSugerencias (productos, analisis) {
 
     // 2) Por caducar con piezas que no alcanzarán a venderse -> oferta.
     for (const s of sobrantesPorLote(p, consumo, ahora)) {
-      if (s.d < 0 || s.d > diasAviso || s.sobrante <= 0) continue
+      if (s.d < 0 || s.d > diasAviso || s.sobrante <= 0 || conOferta.has(p.id)) continue
       const desc = descuentoPara(s.d)
       const precioOferta = p.precio ? Math.round(p.precio * (100 - desc.pct)) / 100 : null
       agregar({
         tipo: 'oferta', prioridad: 90 - s.d, producto: p,
-        titulo: `Haz una oferta de ${p.nombre}`,
+        titulo: `Haz una oferta de ${nom}`,
         detalle: `${plural(s.sobrante, 'pieza')} de ${s.lote.piezas} no se venderán antes de que caduquen (${cadTxt(s.d)}). ` +
           `Te sugerimos ${desc.texto}${precioOferta ? ` (de ${dinero(p.precio)} a ${dinero(precioOferta)})` : ''}` +
           `${p.costo ? `: así evitas perder hasta ${dinero(s.sobrante * p.costo)}` : ''}.`,
@@ -91,7 +93,7 @@ export function generarSugerencias (productos, analisis) {
       const dias = diasCorto(analisis.diasRestantes(p))
       agregar({
         tipo: 'pedir', prioridad: est === 'crit' ? 80 : 60, producto: p,
-        titulo: `${est === 'crit' ? 'Pide ya' : 'Pide pronto'}: ${plural(paq, 'paquete')} de ${p.nombre}`,
+        titulo: `${est === 'crit' ? 'Pide ya' : 'Pide pronto'}: ${plural(paq, 'paquete')} de ${nom}`,
         detalle: tot <= 0 ? 'Se agotó: tus clientes no lo encontrarán.' : `Quedan ${plural(tot, 'pieza')}${dias ? ` y alcanzan ${dias}` : ''}. Con ${plural(paq, 'paquete')} llegas a tu objetivo.`,
         datos: { paquetes: paq }
       })
@@ -103,7 +105,7 @@ export function generarSugerencias (productos, analisis) {
     if (objetivo > 0 && tot > objetivo * 2 && (dura === null ? analisis.diasHistorial(p) >= 7 : dura > 30)) {
       agregar({
         tipo: 'promocionar', prioridad: 30, producto: p,
-        titulo: `Tienes de más: ${p.nombre}`,
+        titulo: `Tienes de más: ${nom}`,
         detalle: `Hay ${plural(tot, 'pieza')} y tu objetivo es ${objetivo}${dura ? `; al ritmo actual duran ~${Math.floor(dura)} días` : ''}. No compres más por ahora y considera una promoción.`,
         datos: {}
       })
@@ -113,7 +115,7 @@ export function generarSugerencias (productos, analisis) {
     if (tot > 0 && ventas.suma === 0 && (ahora - (p.creado || ahora)) >= 7 * DIA) {
       agregar({
         tipo: 'exhibir', prioridad: 20, producto: p,
-        titulo: `Nadie ha comprado ${p.nombre} en 7 días`,
+        titulo: `Nadie ha comprado ${nom} en 7 días`,
         detalle: 'Ponlo más a la vista (junto a la caja o a la altura de los ojos) o arma un paquete con un producto que sí se vende.',
         datos: {}
       })
@@ -126,7 +128,7 @@ export function generarSugerencias (productos, analisis) {
   if (estrella) {
     agregar({
       tipo: 'estrella', prioridad: 10, producto: estrella.p,
-      titulo: `Tu más vendido: ${estrella.p.nombre}`,
+      titulo: `Tu más vendido: ${nombreCompleto(estrella.p)}`,
       detalle: `Vendiste ${plural(estrella.n, 'pieza')} esta semana. Asegura que nunca falte: considera subir su mínimo.`,
       datos: { piezas: estrella.n }
     })
@@ -140,6 +142,6 @@ export function generarSugerencias (productos, analisis) {
 export function textoOferta (s, negocio = '') {
   const d = s.datos
   const que = d.pct >= 50 ? 'promoción 2×1' : d.pct === 30 ? '2×1 o 30 % de descuento' : `${d.pct} % de descuento`
-  return `¡Oferta${negocio ? ' en ' + negocio : ''}! ${s.producto.nombre} con ${que}` +
+  return `¡Oferta${negocio ? ' en ' + negocio : ''}! ${nombreCompleto(s.producto)} con ${que}` +
     `${d.precioOferta ? `: ahora ${dinero(d.precioOferta)}` : ''}. Válido ${d.hasta} o hasta agotar existencias.`
 }

@@ -1,6 +1,7 @@
 <!--
   ENCABEZADO DEL PANEL (cápsula de cristal flotante)
-  Logo · buscar/comandos (Ctrl+K) · notificaciones · cambiar tema · ayuda · configuración · perfil.
+  Logo · buscar/comandos (Ctrl+K) · notificaciones · cambiar tema · Admin (solo administrador) · ayuda y soporte ·
+  configuración · perfil.
 -->
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
@@ -10,10 +11,12 @@ import { usePreferencias } from '../stores/preferencias.js'
 import Icono from './Icono.vue'
 import Avatar from './Avatar.vue'
 import CentroNotificaciones from './CentroNotificaciones.vue'
+import { useSoporte } from '../stores/soporte.js'
 
 const sesion = useSesion()
 const ui = useUI()
 const prefs = usePreferencias()
+const soporte = useSoporte()
 
 // Al bajar en la página, el encabezado se vuelve más opaco (clase "scrolled").
 const bajo = ref(false)
@@ -37,7 +40,9 @@ const alternarTema = () => prefs.cambiar('tema', prefs.esOscuro() ? 'light' : 'd
         </button>
         <CentroNotificaciones />
         <button type="button" class="btn-top icono ocultar-movil" :aria-label="prefs.esOscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'" :title="prefs.esOscuro() ? 'Tema claro' : 'Tema oscuro'" @click="alternarTema"><Icono :n="prefs.esOscuro() ? 'sun' : 'moon'" /></button>
-        <button type="button" class="btn-top icono ocultar-movil" aria-label="Guía rápida" title="Guía rápida" @click="ui.abrir('guia')"><Icono n="help" /></button>
+        <router-link v-if="soporte.esAdmin" to="/admin" class="btn-top admin-btn" title="Administración"><Icono n="shield" sm /><span class="ocultar-movil">Admin</span></router-link>
+        <router-link v-if="$route.name !== 'app'" to="/app" class="btn-top icono" title="Mi inventario" aria-label="Mi inventario"><Icono n="box" /></router-link>
+        <button type="button" class="btn-top icono" aria-label="Ayuda y soporte" title="Ayuda y soporte" @click="ui.abrir('soporte')"><Icono n="help" /></button>
         <button type="button" class="btn-top icono" aria-label="Configuración" title="Configuración" @click="ui.abrir('configuracion')"><Icono n="gear" /></button>
         <button type="button" class="btn-perfil" title="Mi perfil y seguridad" @click="ui.abrir('perfil')">
           <Avatar />

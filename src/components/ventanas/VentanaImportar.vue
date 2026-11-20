@@ -2,7 +2,8 @@
   IMPORTAR DESDE EXCEL (3 pasos)
   1) Archivo: elegir o arrastrar (.xlsx, .xls, .ods, .csv; máx. 10 MB). Se lee en un Web Worker aislado.
   2) Columnas: EarlyStock adivina qué columna es cada dato (en verde); se puede corregir.
-  3) Revisar: modo (actualizar existentes o agregar todo como nuevo) y vista previa antes de guardar.
+  3) Revisar: los que ya existen (mismo nombre, presentación y sabor) se reemplazan o se suman, nunca se duplican;
+     los repetidos dentro del archivo se suman en uno solo. Vista previa antes de guardar.
 -->
 <script setup>
 import { ref, computed } from 'vue'
@@ -49,7 +50,7 @@ function cambiarCol (k, v) { const m = { ...datos.value.mapa }; if (v === '') de
 const detectadas = computed(() => Object.keys(datos.value.mapa).length)
 const res = computed(() => (paso.value === 3 ? calcularImport(datos.value.filas, datos.value.mapa, modo.value, inv.productos, inv.unificarCategoria) : []))
 const cuenta = a => res.value.filter(x => x.accion === a).length
-const ETQ = { nuevo: ['ok', 'Nuevo'], actualizar: ['low', 'Actualizar'], omitir: ['crit', 'Omitir'] }
+const ETQ = { nuevo: ['ok', 'Nuevo'], actualizar: ['low', 'Ya existe'], sumado: ['ok', 'Sumado'], omitir: ['crit', 'Omitir'] }
 function importar () { emit('cerrar'); inv.importar(res.value) }
 </script>
 
@@ -91,20 +92,21 @@ function importar () { emit('cerrar'); inv.importar(res.value) }
     <div v-else>
       <div class="imp-resumen">
         <span class="badge ok">{{ plural(cuenta('nuevo'), 'nuevo') }}</span>
-        <span class="badge low">{{ cuenta('actualizar') }} por actualizar</span>
+        <span class="badge low">{{ cuenta('actualizar') }} ya existen</span>
+        <span v-if="cuenta('sumado')" class="badge ok">{{ cuenta('sumado') }} repetidos se suman</span>
         <span class="badge crit">{{ plural(cuenta('omitir'), 'omitido') }}</span>
       </div>
       <div class="seg imp-modo" role="group" aria-label="Productos que ya existen">
-        <button type="button" :aria-pressed="modo === 'actualizar'" @click="modo = 'actualizar'">Actualizar los que ya existen</button>
-        <button type="button" :aria-pressed="modo === 'agregar'" @click="modo = 'agregar'">Agregar todo como nuevo</button>
+        <button type="button" :aria-pressed="modo === 'actualizar'" @click="modo = 'actualizar'">Reemplazar cantidades (conteo)</button>
+        <button type="button" :aria-pressed="modo === 'sumar'" @click="modo = 'sumar'">Sumar a lo que ya hay (llegó)</button>
       </div>
       <div class="tabla-wrap">
         <table class="tabla mini">
-          <thead><tr><th v-for="(t, i) in ['', 'Producto', 'Observaciones', 'Categoría', 'Paquetes', 'Pzas/paq', 'Sueltas', 'Total', 'Mín.', 'Obj.', 'Costo', 'Precio', 'Caducidad']" :key="i" :class="{ num: i >= 4 && i <= 11 }"><span class="th-txt">{{ t }}</span></th></tr></thead>
+          <thead><tr><th v-for="(t, i) in ['', 'Producto', 'Presentación', 'Sabor', 'Observaciones', 'Categoría', 'Paquetes', 'Pzas/paq', 'Sueltas', 'Total', 'Mín.', 'Obj.', 'Costo', 'Precio', 'Caducidad']" :key="i" :class="{ num: i >= 6 && i <= 13 }"><span class="th-txt">{{ t }}</span></th></tr></thead>
           <tbody>
             <tr v-for="(x, i) in res.slice(0, 200)" :key="i" :class="x.accion">
               <td><span class="badge" :class="ETQ[x.accion][0]">{{ ETQ[x.accion][1] }}</span></td>
-              <td><b>{{ x.nombre || '—' }}</b></td><td class="err">{{ x.errores.join(' · ') }}</td><td>{{ x.vista.categoria || '—' }}</td>
+              <td><b>{{ x.nombre || '—' }}</b></td><td>{{ x.presentacion || '—' }}</td><td>{{ x.sabor || '—' }}</td><td class="err">{{ x.errores.join(' · ') }}</td><td>{{ x.vista ? x.vista.categoria || '—' : '—' }}</td>
               <td class="num">{{ x.vista.paquetes }}</td><td class="num">{{ x.vista.porPaquete }}</td><td class="num">{{ x.vista.sueltas }}</td><td class="num"><b>{{ x.total }}</b></td>
               <td class="num">{{ fmt(x.vista.minimo) }}</td><td class="num">{{ fmt(x.vista.objetivo) }}</td>
               <td class="num">{{ x.vista.costo != null ? dinero(x.vista.costo) : '—' }}</td><td class="num">{{ x.vista.precio != null ? dinero(x.vista.precio) : '—' }}</td>

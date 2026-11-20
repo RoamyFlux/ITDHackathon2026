@@ -10,13 +10,13 @@ import { sb } from './supabase.js'
 
 // Fila de la tabla productos -> objeto de la app (los lotes se agregan después).
 export const deDB = r => ({
-  id: r.id, nombre: r.nombre, categoria: r.categoria || '', creado: Date.parse(r.created_at) || Date.now(),
+  id: r.id, nombre: r.nombre, presentacion: r.presentacion || '', sabor: r.sabor || '', categoria: r.categoria || '', creado: Date.parse(r.created_at) || Date.now(),
   paquetes: r.paquetes, porPaquete: r.por_paquete, sueltas: r.sueltas, minimo: Number(r.minimo), objetivo: Number(r.objetivo),
   costo: r.costo == null ? null : Number(r.costo), precio: r.precio == null ? null : Number(r.precio), lotes: []
 })
 // Objeto de la app -> columnas (sin id ni user_id: los pone la base de datos).
 export const aDB = p => ({
-  nombre: p.nombre, categoria: p.categoria, paquetes: p.paquetes, por_paquete: p.porPaquete,
+  nombre: p.nombre, presentacion: p.presentacion || '', sabor: p.sabor || '', categoria: p.categoria, paquetes: p.paquetes, por_paquete: p.porPaquete,
   sueltas: p.sueltas, minimo: p.minimo, objetivo: p.objetivo, costo: p.costo, precio: p.precio
 })
 
@@ -40,12 +40,13 @@ async function leerTodo (armar) {
 export const almacenSupabase = {
   // Lee las 3 tablas (solo columnas necesarias). Movimientos: solo los últimos 8 días (el cálculo usa 7).
   async leer (desdeISO) {
-    const [productos, lotes, movimientos] = await Promise.all([
-      leerTodo(() => sb.from('productos').select('id,nombre,categoria,paquetes,por_paquete,sueltas,minimo,objetivo,costo,precio,created_at').order('created_at').order('id')),
+    const [productos, lotes, movimientos, ofertas] = await Promise.all([
+      leerTodo(() => sb.from('productos').select('id,nombre,presentacion,sabor,categoria,paquetes,por_paquete,sueltas,minimo,objetivo,costo,precio,created_at').order('created_at').order('id')),
       leerTodo(() => sb.from('lotes').select('id,producto_id,piezas,caducidad').order('id')),
-      leerTodo(() => sb.from('movimientos').select('id,producto_id,tipo,piezas,created_at').gte('created_at', desdeISO).order('created_at'))
+      leerTodo(() => sb.from('movimientos').select('id,producto_id,tipo,piezas,created_at').gte('created_at', desdeISO).order('created_at')),
+      leerTodo(() => sb.from('ofertas').select('id,producto_id,tipo,valor,termina,nota').order('created_at'))
     ])
-    return { productos, lotes, movimientos }
+    return { productos, lotes, movimientos, ofertas }
   },
   insertarProductos: async filas => chk(await sb.from('productos').insert(filas).select()),
   actualizarProducto: async (id, cols) => chk(await sb.from('productos').update(cols).eq('id', id)),
@@ -60,6 +61,12 @@ export const almacenSupabase = {
   insertarMovimiento: async fila => chk(await sb.from('movimientos').insert(fila).select('id').single()).id,
   insertarMovimientos: async filas => { if (filas.length) chk(await sb.from('movimientos').insert(filas)) },
   borrarMovimientos: async ids => chk(await sb.from('movimientos').delete().in('id', ids)),
+  // Ofertas (una por producto: crear una nueva reemplaza la anterior).
+  guardarOferta: async fila => {
+    chk(await sb.from('ofertas').delete().eq('producto_id', fila.producto_id))
+    chk(await sb.from('ofertas').insert(fila))
+  },
+  borrarOferta: async id => chk(await sb.from('ofertas').delete().eq('id', id)),
   // Bitácora de seguridad (tabla eventos_seguridad; ver schema.sql). Los borrados y retiros los anota la base sola.
   registrarEvento: async (tipo, detalle = '') => chk(await sb.from('eventos_seguridad').insert({ tipo, detalle: String(detalle).slice(0, 300) })),
   leerEventos: async () => chk(await sb.from('eventos_seguridad').select('id,tipo,detalle,created_at').order('created_at', { ascending: false }).limit(50))
@@ -71,14 +78,14 @@ export const almacenSupabase = {
  * no pueda cambiarlas "por fuera" (igual que con una base de datos real).
  * ------------------------------------------------------------------- */
 export function crearAlmacenDemo () {
-  const db = { productos: [], lotes: [], movimientos: [], eventos: [] }
+  const db = { productos: [], lotes: [], movimientos: [], ofertas: [], eventos: [] }
   const id = () => crypto.randomUUID()
   const copia = x => structuredClone(x)
   const ahora = () => new Date().toISOString()
   const evento = (tipo, detalle) => db.eventos.unshift({ id: id(), tipo, detalle, created_at: ahora() })
   return {
     async leer (desdeISO) {
-      return copia({ productos: db.productos, lotes: db.lotes, movimientos: db.movimientos.filter(m => m.created_at >= desdeISO) })
+      return copia({ productos: db.productos, lotes: db.lotes, movimientos: db.movimientos.filter(m => m.created_at >= desdeISO), ofertas: db.ofertas })
     },
     async insertarProductos (filas) {
       const nuevas = filas.map(f => ({ id: id(), created_at: ahora(), costo: null, precio: null, ...copia(f) }))
@@ -91,11 +98,12 @@ export function crearAlmacenDemo () {
       db.productos = db.productos.filter(p => p.id !== pid)
       db.lotes = db.lotes.filter(l => l.producto_id !== pid)
       db.movimientos = db.movimientos.filter(m => m.producto_id !== pid)
+      db.ofertas = db.ofertas.filter(o => o.producto_id !== pid)
       evento('borrado', '1 producto eliminado')
     },
     async borrarTodo () {
       const n = db.productos.length
-      db.productos = []; db.lotes = []; db.movimientos = []
+      db.productos = []; db.lotes = []; db.movimientos = []; db.ofertas = []
       if (n) evento('borrado', `${n} productos eliminados`)
     },
     async insertarLotes (filas) { db.lotes.push(...filas.map(f => ({ id: id(), ...copia(f) }))) },
@@ -110,6 +118,8 @@ export function crearAlmacenDemo () {
     },
     async insertarMovimientos (filas) { db.movimientos.push(...filas.map(f => ({ id: id(), created_at: ahora(), ...copia(f) }))) },
     async borrarMovimientos (ids) { db.movimientos = db.movimientos.filter(m => !ids.includes(m.id)) },
+    async guardarOferta (f) { db.ofertas = db.ofertas.filter(o => o.producto_id !== f.producto_id); db.ofertas.push({ id: id(), ...copia(f) }) },
+    async borrarOferta (oid) { db.ofertas = db.ofertas.filter(o => o.id !== oid) },
     async registrarEvento (tipo, detalle = '') { evento(tipo, String(detalle).slice(0, 300)) },
     async leerEventos () { return copia(db.eventos.slice(0, 50)) }
   }

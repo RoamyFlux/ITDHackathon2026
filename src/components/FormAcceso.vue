@@ -7,10 +7,11 @@
     revisa     -> "Revisa tu correo": después de crear la cuenta, con botón para reenviar (cada 60 s)
 -->
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useSesion } from '../stores/sesion.js'
 import { useAvisos } from '../stores/avisos.js'
 import { validarContrasena, validarCorreo } from '../logica/validacion.js'
+import { dominioRecibeCorreo } from '../lib/correo.js'
 import Icono from './Icono.vue'
 import CampoContrasena from './CampoContrasena.vue'
 
@@ -28,7 +29,21 @@ const error = ref('')
 const vCorreo = computed(() => validarCorreo(f.value.email))
 const vClave = computed(() => validarContrasena(f.value.password))
 const coinciden = computed(() => f.value.password === f.value.password2)
-const puedeCrear = computed(() => vCorreo.value.ok && vClave.value.ok && coinciden.value && f.value.acepto)
+// ¿El dominio del correo recibe mensajes? Se revisa 0.6 s después de dejar de escribir (ver lib/correo.js).
+const dominio = ref('') // '' | 'revisando' | 'si' | 'no' | 'desconocido'
+let tDominio = null
+watch(() => [f.value.email, props.pestana], () => {
+  clearTimeout(tDominio)
+  dominio.value = ''
+  if (props.pestana !== 'crear' || !vCorreo.value.ok) return
+  const d = f.value.email.trim().toLowerCase().split('@')[1]
+  dominio.value = 'revisando'
+  tDominio = setTimeout(async () => {
+    const r = await dominioRecibeCorreo(d)
+    if (f.value.email.trim().toLowerCase().split('@')[1] === d) dominio.value = r
+  }, 600)
+})
+const puedeCrear = computed(() => vCorreo.value.ok && !['no', 'revisando'].includes(dominio.value) && vClave.value.ok && coinciden.value && f.value.acepto)
 
 // Reenviar confirmación: se espera 60 s entre envíos.
 const espera = ref(0)
@@ -38,7 +53,7 @@ function iniciarEspera () {
   clearInterval(reloj)
   reloj = setInterval(() => { if (--espera.value <= 0) clearInterval(reloj) }, 1000)
 }
-onUnmounted(() => clearInterval(reloj))
+onUnmounted(() => { clearInterval(reloj); clearTimeout(tDominio) })
 
 async function ejecutar (fn) {
   error.value = ''
@@ -92,6 +107,9 @@ const usarSugerencia = () => { f.value.email = vCorreo.value.sugerencia }
       </label>
       <p v-if="f.email && !vCorreo.ok" class="pista mal">{{ vCorreo.motivo }}</p>
       <p v-else-if="vCorreo.sugerencia" class="pista">¿Quisiste decir <button type="button" class="enlace en-linea" @click="usarSugerencia">{{ vCorreo.sugerencia }}</button>?</p>
+      <p v-else-if="dominio === 'revisando'" class="pista">Revisando que el correo pueda recibir mensajes…</p>
+      <p v-else-if="dominio === 'no'" class="pista mal">Ese correo no existe: "{{ f.email.split('@')[1] }}" no recibe mensajes. Revisa que esté bien escrito.</p>
+      <p v-else-if="dominio === 'si' && !vCorreo.sugerencia" class="pista ok-txt"><Icono n="check" sm /> El correo puede recibir mensajes. Te enviaremos un enlace para confirmarlo.</p>
       <CampoContrasena v-model="f.password" etiqueta="Crea una contraseña" autocomplete="new-password" con-reglas />
       <CampoContrasena v-model="f.password2" etiqueta="Repite la contraseña" autocomplete="new-password" />
       <p v-if="f.password2 && !coinciden" class="pista mal">Las contraseñas no coinciden.</p>

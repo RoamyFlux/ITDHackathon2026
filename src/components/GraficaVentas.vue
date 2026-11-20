@@ -6,7 +6,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useInventario } from '../stores/inventario.js'
-import { hoy0, DIA } from '../logica/inventario.js'
+import { hoy0, DIA, nombreCompleto } from '../logica/inventario.js'
 import { dinero } from '../logica/formato.js'
 import Icono from './Icono.vue'
 
@@ -45,7 +45,7 @@ const extra = computed(() => {
     <div class="ventas-pie">
       <div><span>Promedio diario</span><b>{{ (total / 7).toFixed(1) }} pzas</b></div>
       <div v-if="extra.vendido"><span>Vendido (aprox.)</span><b>{{ dinero(extra.vendido) }}</b></div>
-      <div><span>Más vendido</span><b>{{ extra.top ? `${extra.top.p.nombre} · ${extra.top.n} pzas` : '—' }}</b></div>
+      <div><span>Más vendido</span><b>{{ extra.top ? `${nombreCompleto(extra.top.p)} · ${extra.top.n} pzas` : '—' }}</b></div>
       <div v-if="extra.mermaPz" class="merma"><span>Merma por caducidad</span><b>{{ extra.mermaPz }} pzas<template v-if="extra.mermaCosto"> · {{ dinero(extra.mermaCosto) }}</template></b></div>
     </div>
   </section>

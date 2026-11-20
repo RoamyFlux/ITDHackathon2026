@@ -1,0 +1,12 @@
+<!--
+  PLANTILLA DEL CORREO "CONFIRMA TU CUENTA" (en español)
+  Pegar en Supabase -> Authentication -> Emails -> Templates -> "Confirm signup".
+  Asunto sugerido: Confirma tu cuenta de EarlyStock
+  {{ .ConfirmationURL }} lo reemplaza Supabase por el enlace único de confirmación.
+-->
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1d1530">
+  <h2 style="margin:0 0 8px;color:#6d28d9">Bienvenido a EarlyStock</h2>
+  <p>Para activar tu cuenta y confirmar que este correo es tuyo, toca el botón:</p>
+  <p style="margin:24px 0"><a href="{{ .ConfirmationURL }}" style="background:#7c3aed;color:#ffffff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:bold">Confirmar mi cuenta</a></p>
+  <p style="color:#655d7c;font-size:13px">Si tú no creaste esta cuenta, ignora este correo: sin confirmarla nadie podrá usarla.</p>
+</div>

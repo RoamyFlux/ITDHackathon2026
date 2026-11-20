@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 import { useInventario } from '../stores/inventario.js'
 import { useUI } from '../stores/ui.js'
-import { totalPiezas, piezasCaducadas } from '../logica/inventario.js'
+import { totalPiezas, piezasCaducadas, nombreCompleto } from '../logica/inventario.js'
 import { cadTxt, diasCorto } from '../logica/formato.js'
 import Icono from './Icono.vue'
 
@@ -39,14 +39,14 @@ function verGrupo (estado) { inv.filtros = { q: '', estado, categoria: '' }; ui.
     <div v-if="r.crit.length" class="grupo crit">
       <h3><span class="dot crit" />Se acaba o se acabó</h3>
       <ul>
-        <li v-for="p in r.crit.slice(0, MAX)" :key="p.id"><button type="button" class="fila-alerta" @click="emit('ir', p.id)"><b>{{ p.nombre }}</b><span>{{ detalle(p) }}</span></button></li>
+        <li v-for="p in r.crit.slice(0, MAX)" :key="p.id"><button type="button" class="fila-alerta" @click="emit('ir', p.id)"><b>{{ nombreCompleto(p) }}</b><span>{{ detalle(p) }}</span></button></li>
         <li v-if="r.crit.length > MAX"><button type="button" class="ghost sm ver-mas" @click="verGrupo('crit')">Ver {{ r.crit.length - MAX }} más</button></li>
       </ul>
     </div>
     <div v-if="r.low.length" class="grupo low">
       <h3><span class="dot low" />Pronto hay que comprar</h3>
       <ul>
-        <li v-for="p in r.low.slice(0, MAX)" :key="p.id"><button type="button" class="fila-alerta" @click="emit('ir', p.id)"><b>{{ p.nombre }}</b><span>{{ detalle(p) }}</span></button></li>
+        <li v-for="p in r.low.slice(0, MAX)" :key="p.id"><button type="button" class="fila-alerta" @click="emit('ir', p.id)"><b>{{ nombreCompleto(p) }}</b><span>{{ detalle(p) }}</span></button></li>
         <li v-if="r.low.length > MAX"><button type="button" class="ghost sm ver-mas" @click="verGrupo('low')">Ver {{ r.low.length - MAX }} más</button></li>
       </ul>
     </div>
@@ -55,7 +55,7 @@ function verGrupo (estado) { inv.filtros = { q: '', estado, categoria: '' }; ui.
         <button v-if="conCaducados.length" type="button" class="lote-retirar grande" @click="inv.retirarCaducados(conCaducados)"><Icono n="trash" sm />Retirar caducados ({{ conCaducados.length }})</button>
       </h3>
       <ul>
-        <li v-for="x in r.lotesAlerta.slice(0, MAX)" :key="x.l.id"><button type="button" class="fila-alerta" @click="emit('ir', x.p.id)"><b>{{ x.p.nombre }}</b><span>{{ x.l.piezas }} pzas · {{ cadTxt(x.d) }}</span></button></li>
+        <li v-for="x in r.lotesAlerta.slice(0, MAX)" :key="x.l.id"><button type="button" class="fila-alerta" @click="emit('ir', x.p.id)"><b>{{ nombreCompleto(x.p) }}</b><span>{{ x.l.piezas }} pzas · {{ cadTxt(x.d) }}</span></button></li>
       </ul>
     </div>
   </section>

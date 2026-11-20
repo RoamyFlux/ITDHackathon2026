@@ -11,6 +11,7 @@ import { ref, computed, shallowRef } from 'vue'
 import { sb, configurado, urlRegreso, BUCKET_FOTOS } from '../lib/supabase.js'
 import { almacenSupabase, crearAlmacenDemo } from '../lib/almacen.js'
 import { validarContrasena, validarCorreo, esperaTrasFallos } from '../logica/validacion.js'
+import { dominioRecibeCorreo } from '../lib/correo.js'
 import { usePreferencias } from './preferencias.js'
 
 // Versión de los Términos y el Aviso de Privacidad. Si cambian, súbela: se pedirá aceptarlos otra vez.
@@ -22,7 +23,10 @@ export function msgAuth (e) {
   if (/Invalid login/i.test(m)) return 'Correo o contraseña incorrectos.'
   if (/already registered|already exists/i.test(m)) return 'Ese correo ya tiene cuenta. Entra o recupera tu contraseña.'
   if (/Email not confirmed/i.test(m)) return 'Primero confirma tu correo: abre el enlace que te enviamos.'
-  if (/rate limit|too many|over_email_send_rate/i.test(m)) return 'Demasiados intentos. Espera unos minutos y vuelve a intentar.'
+  if (/over_email_send_rate|email rate limit/i.test(m)) return 'Se alcanzó el límite de correos por hora del servidor. Intenta más tarde (el administrador debe configurar un servicio de correo propio, ver README).'
+  if (/Error sending confirmation|sending.*email|smtp/i.test(m)) return 'No se pudo enviar el correo de confirmación. Avísale al administrador (falta configurar el servicio de correo).'
+  if (/email.*invalid|invalid.*email|email_address_invalid/i.test(m)) return 'Ese correo no es válido o no puede recibir mensajes.'
+  if (/rate limit|too many/i.test(m)) return 'Demasiados intentos. Espera unos minutos y vuelve a intentar.'
   if (/weak|pwned|password should/i.test(m)) return 'Esa contraseña es muy débil o aparece en filtraciones conocidas. Elige otra.'
   if (/same.*password|different from the old/i.test(m)) return 'La contraseña nueva debe ser distinta a la anterior.'
   if (/not allowed|disposable|signups not allowed/i.test(m)) return 'No se pudo crear la cuenta con ese correo. Usa tu correo real.'
@@ -173,6 +177,8 @@ export const useSesion = defineStore('sesion', () => {
     const vc = validarCorreo(email)
     if (!vc.ok) throw new Error(vc.motivo)
     if (!validarContrasena(password).ok) throw new Error('La contraseña debe tener al menos 8 caracteres, letras y números.')
+    // El dominio debe recibir correo (si no se puede revisar, se sigue: el enlace de confirmación lo comprueba).
+    if (await dominioRecibeCorreo(email.split('@')[1]) === 'no') throw new Error('Ese correo no existe: su dominio no recibe mensajes. Revisa que esté bien escrito.')
     const r = await sb.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
@@ -182,6 +188,11 @@ export const useSesion = defineStore('sesion', () => {
       }
     })
     if (r.error) throw new Error(msgAuth(r.error))
+    // Correo ya registrado: por seguridad Supabase no lo dice (para que nadie averigüe qué correos tienen cuenta)
+    // y devuelve un usuario sin "identities". Se avisa de forma neutral.
+    if (r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length === 0) {
+      throw new Error('Si ese correo ya tiene cuenta, entra o usa "¿Olvidaste tu contraseña?".')
+    }
     // Si Supabase NO pide confirmar el correo, entra directo. (Recomendado: activar "Confirm email", ver README.)
     if (r.data.session) { almacen.value = almacenSupabase; registrarEvento('cuenta_creada', dispositivo()) }
     return { pendiente: !r.data.session }

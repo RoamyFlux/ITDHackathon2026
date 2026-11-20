@@ -10,7 +10,7 @@ import { useUI } from '../../stores/ui.js'
 import { useSesion } from '../../stores/sesion.js'
 import { useAvisos } from '../../stores/avisos.js'
 import { usePreferencias, TEMAS, ACENTOS } from '../../stores/preferencias.js'
-import { totalPiezas } from '../../logica/inventario.js'
+import { totalPiezas, nombreCompleto } from '../../logica/inventario.js'
 import { ETIQ, norm } from '../../logica/formato.js'
 import { exportarInventario, descargarPlantilla } from '../../lib/exportar.js'
 import Ventana from '../Ventana.vue'
@@ -37,6 +37,9 @@ function comandos () {
     { g: 'Acciones', i: 'upload', t: 'Importar productos desde Excel', f: () => ui.abrir('importar') },
     { g: 'Acciones', i: 'download', t: 'Exportar inventario a Excel', f: () => { ui.cerrar(); exportarInventario(inv, sesion, avisos) } },
     { g: 'Acciones', i: 'file', t: 'Descargar plantilla de Excel', f: () => { ui.cerrar(); descargarPlantilla(avisos) } },
+    { g: 'Acciones', i: 'gift', t: 'Ver ofertas activas', f: ir('ofertas') },
+    { g: 'Acciones', i: 'layers', t: 'Ver stock por categoría', f: ir('categorias') },
+    { g: 'Cuenta', i: 'chat', t: 'Contactar a soporte', f: () => ui.abrir('soporte') },
     { g: 'Acciones', i: 'trash', t: 'Retirar productos caducados', f: () => { ui.cerrar(); inv.retirarCaducados() } },
     { g: 'Acciones', i: 'spark', t: 'Cargar tienda de ejemplo', f: () => { ui.cerrar(); inv.cargarEjemplo() } },
     { g: 'Apariencia', i: 'table', t: 'Ver inventario como tabla', f: () => { ui.cerrar(); ps.cambiar('vista', 'tabla') } },
@@ -53,10 +56,11 @@ function comandos () {
   if (!sesion.esDemo) c.splice(c.length - 2, 0, { g: 'Cuenta', i: 'lock', t: 'Cambiar contraseña', f: () => ui.abrir('contrasena') })
   inv.categorias.forEach(cat => c.push({ g: 'Categorías', i: 'tag', t: `Categoría: ${cat}`, f: () => { inv.filtros = { q: '', estado: '', categoria: cat }; ir('inventario')() } }))
   inv.productos.forEach(p => c.push(
-    { g: 'Productos', i: 'minus', t: `Vender: ${p.nombre}`, d: `${totalPiezas(p)} pzas`, f: () => ui.abrir('movimiento', { tipo: 'venta', producto: p }) },
-    { g: 'Productos', i: 'truck', t: `Llegó: ${p.nombre}`, f: () => ui.abrir('movimiento', { tipo: 'llegada', producto: p }) },
-    { g: 'Productos', i: 'edit', t: `Editar: ${p.nombre}`, f: () => ui.abrir('producto', { producto: p }) },
-    { g: 'Productos', i: 'search', t: `Ver: ${p.nombre}`, d: ETIQ[inv.analisis.estado(p)], f: () => { ui.irProducto = p.id; ui.cerrar() } }
+    { g: 'Productos', i: 'minus', t: `Vender: ${nombreCompleto(p)}`, d: `${totalPiezas(p)} pzas`, f: () => ui.abrir('movimiento', { tipo: 'venta', producto: p }) },
+    { g: 'Productos', i: 'truck', t: `Llegó: ${nombreCompleto(p)}`, f: () => ui.abrir('movimiento', { tipo: 'llegada', producto: p }) },
+    { g: 'Productos', i: 'edit', t: `Editar: ${nombreCompleto(p)}`, f: () => ui.abrir('producto', { producto: p }) },
+    { g: 'Productos', i: 'gift', t: `Oferta: ${nombreCompleto(p)}`, f: () => ui.abrir('oferta', { producto: p }) },
+    { g: 'Productos', i: 'search', t: `Ver: ${nombreCompleto(p)}`, d: ETIQ[inv.analisis.estado(p)], f: () => { ui.irProducto = p.id; ui.cerrar() } }
   ))
   return c
 }

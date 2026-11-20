@@ -303,3 +303,132 @@ do $$ begin
     grant execute on function public.hook_correos_reales(jsonb) to supabase_auth_admin;
   end if;
 end $$;
+
+-- =====================================================================
+-- EarlyStock 2.1 · PRESENTACIONES Y SABORES, OFERTAS Y SOPORTE
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 12) PRESENTACIONES Y SABORES (sin duplicados)
+--     Cada fila de productos es una variante: nombre + presentación (600 ml, 1 kg…) + sabor (Cola, Fresa…).
+--     La app las muestra juntas en una sola tarjeta por nombre.
+--     El índice único impide que una misma cuenta tenga dos veces el mismo nombre + presentación + sabor
+--     (sin importar mayúsculas ni espacios). Si ya había duplicados de antes, se avisa y no se crea el índice:
+--     júntenlos en la app (editar uno y borrar el otro) y vuelvan a ejecutar este archivo.
+-- ---------------------------------------------------------------------
+alter table public.productos add column if not exists presentacion text not null default '';
+alter table public.productos add column if not exists sabor text not null default '';
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'productos_variante_limites') then
+    alter table public.productos add constraint productos_variante_limites
+      check (char_length(presentacion) <= 30 and char_length(sabor) <= 30) not valid;
+  end if;
+  if not exists (select 1 from pg_indexes where indexname = 'productos_sin_duplicados') then
+    if exists (
+      select 1 from public.productos
+      group by user_id, lower(btrim(nombre)), lower(btrim(presentacion)), lower(btrim(sabor)) having count(*) > 1
+    ) then
+      raise notice 'Hay productos repetidos: júntenlos en la app y vuelvan a ejecutar este archivo para activar la protección.';
+    else
+      create unique index productos_sin_duplicados on public.productos
+        (user_id, lower(btrim(nombre)), lower(btrim(presentacion)), lower(btrim(sabor)));
+    end if;
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- 13) OFERTAS (se ponen y se quitan cuando el usuario quiera)
+--     tipo: porcentaje (valor = % de descuento), dos_por_uno, precio (valor = precio especial).
+--     termina: último día de la oferta (vacío = hasta quitarla). Una oferta por producto.
+-- ---------------------------------------------------------------------
+create table if not exists public.ofertas (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  producto_id uuid not null references public.productos(id) on delete cascade,
+  tipo        text not null check (tipo in ('porcentaje', 'dos_por_uno', 'precio')),
+  valor       numeric not null default 0 check (valor >= 0 and valor <= 1000000),
+  termina     date,
+  nota        text not null default '' check (char_length(nota) <= 120),
+  created_at  timestamptz not null default now(),
+  check (tipo <> 'porcentaje' or (valor between 1 and 90))
+);
+create unique index if not exists ofertas_una_por_producto on public.ofertas (producto_id);
+create index if not exists ofertas_user_idx on public.ofertas (user_id);
+grant select, insert, update, delete on public.ofertas to authenticated;
+alter table public.ofertas enable row level security;
+drop policy if exists "ofertas: solo el dueño" on public.ofertas;
+create policy "ofertas: solo el dueño" on public.ofertas
+  for all to authenticated
+  using      (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid())
+              and exists (select 1 from public.productos p
+                          where p.id = producto_id and p.user_id = (select auth.uid())));
+
+-- La bitácora acepta también el evento "contactos_editados" (lo anota el administrador).
+alter table public.eventos_seguridad drop constraint if exists eventos_seguridad_tipo_check;
+alter table public.eventos_seguridad add constraint eventos_seguridad_tipo_check check (tipo in (
+  'inicio_sesion','cierre_sesion','cierre_otros','cuenta_creada','contrasena_cambiada','llave_agregada','llave_borrada',
+  'importacion','exportacion','borrado','retiro','cambio_masivo','contactos_editados'));
+
+-- ---------------------------------------------------------------------
+-- 14) ADMINISTRADORES
+--     Lista de correos con permiso de administrador. Nadie puede leerla ni cambiarla desde la app
+--     (no tiene permisos para anon ni authenticated): solo desde el SQL Editor de Supabase.
+--     Para nombrar al administrador, ejecuten UNA vez (con su correo; ver README):
+--       insert into public.administradores (email) values ('correo-del-admin@ejemplo.com') on conflict do nothing;
+--     es_admin() = la cuenta que hace la petición está en la lista Y ya confirmó su correo.
+-- ---------------------------------------------------------------------
+create table if not exists public.administradores (
+  email      text primary key check (email = lower(email)),
+  created_at timestamptz not null default now()
+);
+alter table public.administradores enable row level security;
+revoke all on public.administradores from anon, authenticated;
+
+create or replace function public.es_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from auth.users u join public.administradores a on a.email = lower(u.email)
+    where u.id = auth.uid() and u.email_confirmed_at is not null
+  );
+$$;
+revoke execute on function public.es_admin() from public;
+grant execute on function public.es_admin() to anon, authenticated;
+
+-- ---------------------------------------------------------------------
+-- 15) CONTACTOS DE SOPORTE
+--     Los edita solo el administrador (varios, de distintas redes). Todos los ven (también sin sesión,
+--     para que la página de inicio pueda mostrarlos), pero solo los marcados como activos.
+--     La base valida cada dato según su red (teléfono = dígitos, correo = formato, enlaces = https).
+-- ---------------------------------------------------------------------
+create table if not exists public.contactos_soporte (
+  id         uuid primary key default gen_random_uuid(),
+  red        text not null check (red in ('whatsapp','telegram','messenger','facebook','instagram','tiktok','x','youtube','correo','telefono','web')),
+  etiqueta   text not null default '' check (char_length(etiqueta) <= 60),
+  valor      text not null check (char_length(valor) between 1 and 200),
+  orden      integer not null default 0,
+  activo     boolean not null default true,
+  updated_at timestamptz not null default now(),
+  check (case
+    when red in ('whatsapp', 'telefono') then valor ~ '^\+?[0-9 ()-]{8,25}$'
+    when red = 'correo' then valor ~* '^[^[:space:]@]+@[^[:space:]@]+\.[a-z]{2,}$'
+    when red = 'web' then valor ~* '^https://[^[:space:]<>"'']+$'
+    else valor ~* '^https://[^[:space:]<>"'']+$' or valor ~ '^@?[A-Za-z0-9_.]{2,60}$'
+  end)
+);
+grant select on public.contactos_soporte to anon, authenticated;
+grant insert, update, delete on public.contactos_soporte to authenticated;
+alter table public.contactos_soporte enable row level security;
+drop policy if exists "contactos: ver activos" on public.contactos_soporte;
+create policy "contactos: ver activos" on public.contactos_soporte
+  for select to anon, authenticated using (activo or (select public.es_admin()));
+drop policy if exists "contactos: admin agrega" on public.contactos_soporte;
+create policy "contactos: admin agrega" on public.contactos_soporte
+  for insert to authenticated with check ((select public.es_admin()));
+drop policy if exists "contactos: admin cambia" on public.contactos_soporte;
+create policy "contactos: admin cambia" on public.contactos_soporte
+  for update to authenticated using ((select public.es_admin())) with check ((select public.es_admin()));
+drop policy if exists "contactos: admin borra" on public.contactos_soporte;
+create policy "contactos: admin borra" on public.contactos_soporte
+  for delete to authenticated using ((select public.es_admin()));

@@ -8,12 +8,14 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 import { useSesion } from '../stores/sesion.js'
+import { useUI } from '../stores/ui.js'
 import Icono from '../components/Icono.vue'
 import VistaPrevia from '../components/VistaPrevia.vue'
 import FormAcceso from '../components/FormAcceso.vue'
 import Pie from '../components/Pie.vue'
 
 const sesion = useSesion()
+const ui = useUI()
 const pestana = ref('entrar')
 // Botones "Crear cuenta" / "Entrar": eligen la pestaña y bajan hasta el formulario.
 async function irAcceso (p) {
@@ -32,8 +34,8 @@ const PASOS = [
 const BENEFICIOS = [
   { i: 'clock', t: '"Alcanza ~3 días"', d: 'Calcula cuántos días te dura cada producto según lo que vendes de verdad.' },
   { i: 'gift', t: 'Ofertas antes de perder', d: 'Detecta lo que caducará sin venderse y te propone 2×1 o descuento, con el texto listo.' },
-  { i: 'cart', t: 'Lista de compras sola', d: 'Sabe cuántos paquetes pedir y la manda por WhatsApp a tu proveedor.' },
-  { i: 'layers', t: 'Por paquetes, no pieza por pieza', d: 'Como realmente compras: cajas, piezas por caja y sueltas.' },
+  { i: 'cart', t: 'Lista de compras sola', d: 'Sabe cuántos paquetes pedir de cada presentación; cópiala o imprímela.' },
+  { i: 'layers', t: 'Presentaciones y sabores', d: 'Cada producto con sus tamaños y sabores y el stock de cada uno, sin duplicados.' },
   { i: 'upload', t: 'Trae tu Excel', d: 'Reconoce tus columnas aunque se llamen distinto y te muestra todo antes de guardar.' },
   { i: 'phone', t: 'En tu celular', d: 'Se instala como app en Android, iPhone o computadora. Con tema claro, gris u oscuro.' }
 ]
@@ -53,6 +55,7 @@ const SEGURIDAD = [
         <a href="#como" @click.prevent="irA('como')">Cómo funciona</a>
         <a href="#beneficios" @click.prevent="irA('beneficios')">Beneficios</a>
         <a href="#seguridad" @click.prevent="irA('seguridad')">Seguridad</a>
+        <a href="#" @click.prevent="ui.abrir('soporte')">Soporte</a>
       </nav>
       <div class="nav-der">
         <button v-if="sesion.dentro" type="button" @click="$router.push('/app')">Ir a mi inventario<Icono n="arrow" sm /></button>
@@ -104,7 +107,7 @@ const SEGURIDAD = [
         <div>
           <span class="etiqueta"><Icono n="bulb" sm />Sugerencias inteligentes</span>
           <h2 class="tit-bloque izq">Te dice <span class="grad-t">qué hacer</span>, no solo qué pasa</h2>
-          <p>Compara lo que vendes cada día con las fechas de caducidad. Si un lote no se venderá a tiempo, te propone una oferta con el descuento adecuado y el mensaje listo para WhatsApp.</p>
+          <p>Compara lo que vendes cada día con las fechas de caducidad. Si un lote no se venderá a tiempo, te propone una oferta con el descuento adecuado. Tú la activas y la quitas cuando quieras.</p>
         </div>
         <div class="ejemplos-sug">
           <div class="card sug-ej crit"><Icono n="gift" /><div><b>Haz una oferta de Yogur bebible</b><small>Caduca en 2 días y sobrarán 20 piezas: 2×1 o 30 % de descuento.</small></div></div>

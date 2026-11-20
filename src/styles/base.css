@@ -226,3 +226,4 @@ dialog::backdrop{background:var(--overlay);backdrop-filter:blur(4px)}
   body::before,body::after{display:none}
   #appBox{display:block!important} body{background:#fff;color:#000} .card{box-shadow:none;border:0}
 }
+.pista.ok-txt{color:var(--ok);display:flex;align-items:center;gap:4px}

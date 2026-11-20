@@ -9,6 +9,8 @@
  * Cada movimiento: { id, pid (id del producto), tipo: 'entrada' | 'salida' | 'merma', piezas, t (ms) }
  * ===================================================================== */
 
+import { norm } from './formato.js'
+
 // Milisegundos de un día.
 export const DIA = 86400000
 
@@ -202,4 +204,73 @@ export function crearAnalisis (productos, movimientos, { diasAviso = 7, ahora = 
   }
 
   return { ahora, diasAviso, ventasDe, diasHistorial, consumoDiario, diasRestantes, estado, estadoCad, estadoTotal, compras, resumen }
+}
+
+/* =====================================================================
+ * PRESENTACIONES Y SABORES
+ * Cada producto registrado es una VARIANTE: nombre + presentación (600 ml, 1 L, 1 kg…) + sabor (Cola, Fresa…).
+ * En pantalla se agrupan por nombre: una sola tarjeta "Refresco" con el stock de cada presentación y sabor.
+ * ===================================================================== */
+// Clave que identifica una variante sin importar mayúsculas, acentos ni espacios de más.
+// "Refresco", "600 ml", "Cola" y "refresco ", "600 ML", "cola" son el MISMO producto (no se duplica).
+const limpio = s => norm(String(s ?? '').trim()).replace(/\s+/g, ' ')
+export const claveProducto = p => [p.nombre, p.presentacion, p.sabor].map(limpio).join('|')
+
+// "Refresco · 600 ml · Cola" (sin las partes vacías). Se usa en alertas, compras, sugerencias y exportar.
+export const nombreCompleto = p => [p.nombre, p.presentacion, p.sabor].map(x => String(x ?? '').trim()).filter(Boolean).join(' · ')
+// Solo presentación y sabor ("600 ml · Cola"); vacío si el producto no tiene variantes.
+export const nombreVariante = p => [p.presentacion, p.sabor].map(x => String(x ?? '').trim()).filter(Boolean).join(' · ')
+
+// Agrupa las variantes por nombre (sin distinguir mayúsculas ni acentos), conservando el orden de entrada.
+// Cada grupo: { clave, nombre, categoria, variantes:[…], total (piezas de todas las variantes) }.
+export function agruparPorNombre (productos) {
+  const grupos = new Map()
+  for (const p of productos) {
+    const k = limpio(p.nombre)
+    let g = grupos.get(k)
+    if (!g) grupos.set(k, (g = { clave: k, nombre: p.nombre, categoria: p.categoria || '', variantes: [], total: 0 }))
+    g.variantes.push(p)
+    g.total += totalPiezas(p)
+  }
+  return [...grupos.values()]
+}
+
+// Stock total por categoría: piezas, cuántos productos (por nombre) y cuántas variantes en riesgo.
+// estadoDe(p) es opcional (del análisis) para contar las que requieren atención.
+export function stockPorCategoria (productos, estadoDe = null) {
+  const cats = new Map()
+  for (const p of productos) {
+    const c = p.categoria || 'Sin categoría'
+    let x = cats.get(c)
+    if (!x) cats.set(c, (x = { categoria: c, piezas: 0, nombres: new Set(), variantes: 0, enRiesgo: 0 }))
+    x.piezas += totalPiezas(p)
+    x.nombres.add(limpio(p.nombre))
+    x.variantes++
+    if (estadoDe && estadoDe(p) !== 'ok') x.enRiesgo++
+  }
+  return [...cats.values()].map(x => ({ categoria: x.categoria, piezas: x.piezas, productos: x.nombres.size, variantes: x.variantes, enRiesgo: x.enRiesgo }))
+    .sort((a, b) => b.piezas - a.piezas || a.categoria.localeCompare(b.categoria, 'es'))
+}
+
+/* =====================================================================
+ * OFERTAS
+ * Una oferta: { id, pid (producto), tipo: 'porcentaje' | 'dos_por_uno' | 'precio', valor, termina ("AAAA-MM-DD" o null), nota }
+ * ===================================================================== */
+// ¿Sigue vigente? (sin fecha de fin = hasta que la quiten; con fecha = hasta ese día incluido)
+export const ofertaVigente = (o, ahora = Date.now()) => !o.termina || diasA(o.termina, ahora) >= 0
+
+// Precio por pieza con la oferta (null si el producto no tiene precio).
+// 2×1 = la mitad por pieza al llevar dos.
+export function precioConOferta (precio, o) {
+  if (precio == null) return o.tipo === 'precio' ? o.valor : null
+  if (o.tipo === 'porcentaje') return Math.round(precio * (100 - o.valor)) / 100
+  if (o.tipo === 'dos_por_uno') return Math.round(precio * 50) / 100
+  return o.valor
+}
+
+// Texto corto para la insignia: "−20 %", "2×1" o "$15.00".
+export function etiquetaOferta (o) {
+  if (o.tipo === 'porcentaje') return `−${o.valor} %`
+  if (o.tipo === 'dos_por_uno') return '2×1'
+  return '$' + Number(o.valor).toFixed(2)
 }
