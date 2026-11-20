@@ -1,0 +1,14 @@
+<!--
+  PLANTILLA DEL CORREO "CREA UNA CONTRASEÑA NUEVA" (en español)
+  Pegar en Supabase -> Authentication -> Emails -> Templates -> "Reset password".
+  Asunto sugerido: Crea una contraseña nueva para EarlyStock
+  {{ .ConfirmationURL }} lo reemplaza Supabase por el enlace único (vence en poco tiempo y sirve una sola vez).
+  Al abrirlo, la app pide la contraseña nueva automáticamente.
+-->
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1d1530">
+  <h2 style="margin:0 0 8px;color:#6d28d9">Crea una contraseña nueva</h2>
+  <p>Recibimos una solicitud para cambiar la contraseña de tu cuenta de EarlyStock. Toca el botón para elegir una nueva:</p>
+  <p style="margin:24px 0"><a href="{{ .ConfirmationURL }}" style="background:#7c3aed;color:#ffffff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:bold">Crear contraseña nueva</a></p>
+  <p style="color:#655d7c;font-size:13px">¿El botón no funciona? Copia y pega este enlace en tu navegador:<br><a href="{{ .ConfirmationURL }}" style="color:#6d28d9;word-break:break-all">{{ .ConfirmationURL }}</a></p>
+  <p style="color:#655d7c;font-size:13px">Si tú no lo pediste, ignora este correo: tu contraseña no cambia. Si te llegan varios sin pedirlos, entra a la app y revisa <b>Perfil → Seguridad</b>.</p>
+</div>

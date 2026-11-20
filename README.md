@@ -1,12 +1,31 @@
 <p align="center"><img src="public/logo.svg" width="96" alt="Logo de EarlyStock"></p>
 
-# EarlyStock 2.0 · Hackathon ITD 2026
+# EarlyStock 2.5 · Hackathon ITD 2026
 
 **Eje:** Comercio y emprendimiento local
 **Problemática:** Control de inventarios en pequeños negocios
 **Pregunta:** ¿Cómo podría un negocio pequeño saber que se le está acabando algo?
 
 EarlyStock avisa al dueño de un negocio **antes** de que se le acabe un producto o de que algo caduque, le **sugiere qué hacer** (pedir, retirar, hacer una oferta) y arma su lista de compras. Está hecha con **Vue 3 + Vite**, guarda los datos en **Supabase** y se publica sola en **GitHub Pages**.
+
+## Novedades 2.5 (pulido)
+Revisión completa de la app, la base de datos y el código, sin cambiar cómo se usa:
+- **No se pierde nada al guardar:** las acciones entran a una cola. Dos ventas seguidas (o una venta mientras se importa) se guardan las dos.
+- **Excel sin sorpresas:** exportar y volver a importar el mismo archivo ya no cambia las caducidades de los lotes. La columna "Estado" incluye la caducidad.
+- **Fechas exactas:** las ofertas de algo que caduca hoy duran "solo hoy" (antes proponían una fecha pasada). Los planes vencen con la fecha de **México**, no la del servidor.
+- **Números claros:** "Urgentes" y "Atención" del resumen cuentan lo mismo que muestran sus filtros. Las ventas de 7 días coinciden con la gráfica.
+- **Accesibilidad:** pestañas completas para lector de pantalla y teclado (Inicio/Fin), ventanas que devuelven el foco, botones con el nombre completo del producto y errores anunciados de inmediato.
+- **Más seguro:**
+  - El límite de ofertas ya no se puede saltar, y nadie puede fingir eventos de "plan cambiado".
+  - Las funciones internas de planes no se pueden llamar desde la app, y `anon` no tiene acceso a las tablas privadas.
+  - En CI, las acciones están fijadas por commit y los permisos son mínimos.
+- **Probada en navegador:** 6 recorridos completos con Playwright en `tests/e2e/` (`npm run e2e`), además de las pruebas de lógica. También corren en cada PR.
+- Detalles:
+  - **Ctrl + K** funciona también en Administración y no borra un formulario abierto.
+  - "Crear cuenta" desde la demostración abre el formulario correcto.
+  - Las notificaciones funcionan en Android y el botón "Instalar EarlyStock" aparece cuando el navegador lo permite.
+
+**Para el equipo:** vuelvan a ejecutar `supabase/schema.sql` en Supabase (es seguro hacerlo varias veces).
 
 ## Interfaz compacta con pestañas (2.4)
 El panel ya no es una página larga que hay que deslizar: está dividido en **pestañas**.
@@ -45,14 +64,14 @@ Cada presentación o sabor cuenta como un producto. Los límites los aplica la *
 **Cómo se cobra (sin pasarela de pago integrada todavía):**
 1. El cliente toca *Mi plan → Contratar Pro/Max*. Se abre WhatsApp o el correo de soporte con el mensaje ya escrito.
 2. Se le mandan los datos de pago (transferencia, OXXO o un link de cobro de Mercado Pago).
-3. El administrador entra a **Admin → Planes de clientes**, escribe el correo del cliente, el plan y hasta qué día pagó.
-4. Al vencer, la cuenta vuelve sola a Gratis (no se borra nada).
+3. El administrador entra a **Admin → Usuarios y planes**, busca la cuenta del cliente, elige el plan y hasta qué día pagó (o "sin vencimiento").
+4. Al vencer (fecha de México), la cuenta vuelve sola a Gratis (no se borra nada).
 
 Siguiente paso recomendado: integrar Mercado Pago Suscripciones o Stripe para cobro automático. Requiere una cuenta del negocio y un servidor (Supabase Edge Function) para recibir la confirmación del pago.
 
 ## Novedades 2.1
 - **Presentaciones y sabores:** cada producto muestra en UNA tarjeta todas sus presentaciones (600 ml, 2 L, 1 kg…) y sabores, con el stock de cada una y el total del producto.
-- **Sin duplicados:** si agregas un producto que ya existe (mismo nombre, presentación y sabor, sin importar mayúsculas o acentos), se **suman** sus piezas al existente. Al importar Excel, los repetidos también se suman. La base de datos lo impide además con un índice único.
+- **Sin duplicados:** si agregas un producto que ya existe (mismo nombre, presentación y sabor, sin importar mayúsculas, acentos ni espacios de más), la app **suma** sus piezas al existente. Al importar Excel, los repetidos también se suman. Además, la base de datos lo impide con un índice único que ignora mayúsculas y espacios.
 - **Stock por categoría** (piezas, productos y cuántos en riesgo) y **ofertas** que se ponen y quitan cuando quieras (% de descuento, 2×1 o precio especial, con fecha de fin opcional).
 - **Correos reales:** al crear la cuenta se revisa que el dominio del correo reciba mensajes (MX) y la cuenta solo se activa con el enlace de confirmación.
 - **Soporte:** botón "?" → *Ayuda y soporte* con los contactos que da de alta el **administrador** (WhatsApp, Telegram, Messenger, Facebook, Instagram, TikTok, X, YouTube, correo, teléfono o web) con sus logotipos originales. WhatsApp ya no se usa para clientes ni para la lista de compras.
@@ -68,7 +87,7 @@ Siguiente paso recomendado: integrar Mercado Pago Suscripciones o Stripe para co
 - **Inventario por paquetes** (paquetes × piezas + sueltas; al vender abre paquetes solo) y **caducidad por lote** (se vende primero lo que caduca antes).
 - Ventas y llegadas rápidas con vista previa, **Deshacer**, **Retirar caducados** (merma), lista de compras (copiar e imprimir), ventas de 7 días.
 - **Tarjetas o Tabla**, filtros por estado y categoría, buscador, **importar y exportar Excel**, plantilla, paleta de comandos **Ctrl + K** y atajos.
-- **Guía rápida** de 5 pasos la primera vez (y siempre en el botón "?").
+- **Guía rápida** de 5 pasos la primera vez (y siempre en Ctrl + K → "Guía rápida").
 - **Temas:** Claro, **Niebla** (gris claro), **Grafito** (gris medio), Oscuro y Automático; colores Vice, Neón, Ocaso, Lila, **Océano** y **Bosque**; densidad y animaciones.
 - El **valor del inventario** ya no es protagonista: su lugar en el resumen lo ocupa **"Por comprar"**; el valor aparece discreto en Herramientas.
 - **Se instala como app** (PWA) en celular y computadora.
@@ -78,20 +97,23 @@ Siguiente paso recomendado: integrar Mercado Pago Suscripciones o Stripe para co
 | --- | --- |
 | Cuentas | Correo **real** (enlace de confirmación + bloqueo de correos temporales) y contraseña propia de **mínimo 8 caracteres con letras y números** (revisado en la página y en Supabase). Medidor de fuerza, mostrar/ocultar. |
 | Llaves de acceso | Entrar con **huella, rostro o PIN** (passkeys de Supabase). Se agregan, renombran y quitan en *Perfil → Seguridad*. |
-| Administración automática | Bloqueo tras 5 intentos fallidos, **cierre por inactividad**, cerrar sesión en otros dispositivos, **revisión automática** de la cuenta y **bitácora de actividad**. La base de datos anota sola borrados, retiros y cambios masivos (no se pueden fingir ni ocultar) y borra la bitácora a los 90 días. |
+| Administración automática | Bloqueo tras 5 intentos fallidos, **cierre por inactividad**, cerrar sesión en otros dispositivos, **revisión automática** de la cuenta y **bitácora de actividad**. La base de datos anota sola borrados, retiros, cambios masivos y cambios de plan (no se pueden fingir ni ocultar). Cada vez que la cuenta registra actividad, se borran sus eventos de más de 90 días. |
 | Datos | Reglas RLS (cada cuenta solo ve lo suyo), límites en textos y números, **eliminar mi cuenta** (borra todo: derecho de cancelación). |
 | Página | **CSP estricta** (sin scripts en línea ni de otros sitios), sin CDNs (librerías y fuentes incluidas), `no-referrer`, anti-iframe, Excel leído en un **Web Worker aislado** con límites, CSV protegido contra fórmulas. |
-| GitHub | Workflow **Seguridad** en cada PR (pruebas, `npm audit`, búsqueda de claves secretas, revisión de CSP, CodeQL), **Dependabot** y [`SECURITY.md`](SECURITY.md). |
+| Planes y admin | Los límites y el vencimiento los aplica la base (triggers). Las funciones de administrador solo responden a cuentas en `administradores` con correo confirmado. |
+| GitHub | Workflow **Seguridad** en cada PR (pruebas, recorridos en navegador, `npm audit`, búsqueda de claves secretas, revisión de CSP y CodeQL del código y de los workflows), acciones fijadas por commit, **Dependabot** y [`SECURITY.md`](SECURITY.md). |
 
-**Políticas:** [Aviso de Privacidad](src/views/Privacidad.vue) (LFPDPPP, derechos ARCO) y [Términos de Uso](src/views/Terminos.vue). Son plantillas: **llenen los datos entre corchetes** (`[Nombre del responsable]`, `[domicilio]`, `[correo de contacto]`, `[Proveedor de correo]`, `[ciudad y estado]`) y revísenlas con un asesor antes de usarla con clientes reales. Si cambian el texto, suban `VERSION_POLITICAS` en `src/stores/sesion.js` para que se pida aceptarlas de nuevo.
+**Políticas:** [Aviso de Privacidad](src/views/Privacidad.vue) (LFPDPPP, derechos ARCO) y [Términos de Uso](src/views/Terminos.vue). Son plantillas: **llenen los datos entre corchetes** (`[Nombre del responsable]`, `[domicilio]`, `[correo de contacto]`, `[Proveedor de correo]`, `[ciudad y estado]`) y revísenlas con un asesor antes de usarlas con clientes reales. Si cambian el texto, suban `VERSION_POLITICAS` en `src/stores/sesion.js` para que se pida aceptarlas de nuevo.
 
 ## Cómo calcula sus avisos
 - **"Alcanza ~N días"** = piezas en tienda ÷ venta diaria (piezas vendidas en los últimos 7 días ÷ días de historial, mínimo 1). Ej.: Refresco vendió 62 en 7 días → 8.9/día; hay 15 → "~1 día".
-- **Semáforo:** urgente = agotado o en su mínimo (o lote caducado); atención = hasta 1.5× el mínimo, ≤ 2 días, o caduca pronto; bien surtido = suficiente.
+- **Semáforo:** urgente = agotado o en su mínimo (o lote caducado); atención = hasta 1.5× el mínimo, ≤ 2 días, o caduca pronto; bien surtido = suficiente. Los números "Urgentes" y "Atención" del resumen cuentan cantidad **y** caducidad, igual que los filtros.
+- **Ventas de 7 días:** hoy y los 6 días de calendario anteriores (lo mismo en la gráfica, en "Alcanza ~N días" y en "Vendido").
 - **% en riesgo:** productos con alguna alerta ÷ total (verde < 30 %, ámbar 30–59 %, rojo ≥ 60 %).
 - **Ofertas:** para cada lote (el que caduca antes primero) se calcula cuánto se venderá antes de su fecha; lo que sobra se oferta.
 
 ## Desarrollo local
+Requisito: **Node 20.19 o más nuevo** (recomendado Node 22).
 ```bash
 npm install
 npm run dev        # http://localhost:5173
@@ -99,7 +121,10 @@ npm test           # pruebas de la lógica (Vitest)
 npm run build      # versión final en dist/
 npm run preview    # probar dist/ en http://localhost:4173/ITDHackaton2026/
 npm run revisar-seguridad
+npx playwright install chromium   # solo la primera vez
+npm run e2e        # recorridos completos en navegador con un Supabase simulado (no toca datos reales)
 ```
+Para usar otro proyecto de Supabase en local, copien `.env.example` a `.env` y pongan su URL y su *publishable key*. La CSP se ajusta sola.
 Ya no se abre con doble clic al `index.html`: hay que usar `npm run dev` o la dirección de GitHub Pages.
 
 ## Publicar en GitHub Pages (automático)
@@ -115,7 +140,9 @@ Sin un servicio de correo propio, **Supabase solo envía correos a los miembros 
    - Host `smtp.resend.com`, Port `465`, Username `resend`, Password = la API key de Resend.
    - Sender email: por ejemplo `no-responder@su-dominio.com`. Sender name: `EarlyStock`.
 3. **Authentication → Rate Limits:** subir "Rate limit for sending emails" (por ejemplo, a 30 por hora).
-4. **Authentication → Emails → Templates → Confirm signup:** pegar [`supabase/plantillas/confirmar.html`](supabase/plantillas/confirmar.html) (correo en español). Asunto: *Confirma tu cuenta de EarlyStock*.
+4. **Authentication → Emails → Templates:**
+   - **Confirm signup:** pegar [`supabase/plantillas/confirmar.html`](supabase/plantillas/confirmar.html). Asunto: *Confirma tu cuenta de EarlyStock*.
+   - **Reset password:** pegar [`supabase/plantillas/recuperar.html`](supabase/plantillas/recuperar.html). Asunto: *Crea una contraseña nueva para EarlyStock*.
 5. Probar: crear una cuenta con un Gmail que no sea del equipo y abrir el enlace.
 
 La página además rechaza correos cuyo dominio no recibe mensajes (por ejemplo, `ana@nadaexiste123.com`). Para eso consulta el DNS de Cloudflare enviando **solo el dominio**.
@@ -125,15 +152,21 @@ El administrador edita los contactos de soporte en **Admin** (botón del encabez
 1. Ejecutar `supabase/schema.sql` (secciones 14 y 15).
 2. En **SQL Editor**, ejecutar una vez (con el correo del administrador):
    ```sql
-   insert into public.administradores (email) values ('correo-del-admin@ejemplo.com') on conflict do nothing;
+   insert into public.administradores (email) values (lower('correo-del-admin@ejemplo.com')) on conflict do nothing;
    ```
 3. Crear la cuenta en la app con ese correo y su contraseña, y abrir el enlace de confirmación. Solo las cuentas con el correo confirmado tienen permisos de administrador.
 4. Entrar: aparece el botón **Admin**. Recomendación: usar una contraseña larga y única y agregar una llave de acceso (huella) en *Perfil → Seguridad*.
 
-Para quitar a un administrador: `delete from public.administradores where email = '…';`
+Para quitar a un administrador: `delete from public.administradores where email = lower('…');`
 
 ## Configurar Supabase (una sola vez)
-1. **SQL:** *SQL Editor → New query →* pegar todo [`supabase/schema.sql`](supabase/schema.sql) → *Run*. Se puede volver a ejecutar sin problema y **hay que hacerlo con cada versión nueva**: la 2.1 agrega presentación, sabor, ofertas, administradores y contactos de soporte. Si avisa "Hay productos repetidos", júntenlos en la app y vuelvan a ejecutarlo.
+1. **SQL:** *SQL Editor → New query →* pegar todo [`supabase/schema.sql`](supabase/schema.sql) → *Run*. Se puede volver a ejecutar sin problema y **hay que hacerlo con cada versión nueva**:
+   - 2.1 agregó presentación, sabor, ofertas, administradores y contactos de soporte.
+   - 2.2 agregó suscripciones y límites por plan.
+   - 2.3 agregó la lista de cuentas para el administrador.
+   - 2.5 endurece permisos, límites y fechas.
+
+   Si avisa "Hay productos repetidos", júntenlos en la app y vuelvan a ejecutarlo.
 2. **Conexión:** `config/supabase.json` tiene la *Project URL* y la *publishable key* (públicas). Nunca pongan la *secret key*.
 3. **URLs:** *Authentication → URL Configuration*: **Site URL** = `https://roamyflux.github.io/ITDHackaton2026/` y en **Redirect URLs** agregar esa misma y `http://localhost:5173/` (para los enlaces de confirmación y recuperación).
 4. **Correos reales:** *Authentication → Sign In / Providers → Email*: activar **Confirm email** y configurar el SMTP propio (sección "Correos reales" de arriba).
@@ -147,16 +180,20 @@ Para quitar a un administrador: `delete from public.administradores where email 
 index.html               página base (CSP se agrega al compilar)
 vite.config.js           compilación, CSP y PWA
 config/supabase.json     conexión pública a Supabase
-public/                  logo, íconos y prefs.js (tema sin parpadeo + anti-iframe)
+public/                  logo, íconos (incluido el "maskable" para Android) y prefs.js (tema sin parpadeo + anti-iframe)
 src/main.js · App.vue · router.js
-src/logica/              cálculos puros (inventario, sugerencias, validación, Excel) con pruebas en tests/
-src/lib/                 Supabase, almacén (real y demo), Excel y exportar
-src/stores/              sesión, inventario, preferencias, seguridad, avisos, ventanas (Pinia)
-src/components/          encabezado, resumen, sugerencias, inventario, tarjetas, tabla, ventanas/…
-src/views/               Inicio, Panel, Privacidad, Términos
+src/logica/              cálculos puros: inventario, sugerencias, validación, Excel, formato, planes y soporte
+src/lib/                 Supabase, almacén (real y demo), Excel, exportar, correo (DNS) y notificaciones
+src/stores/              sesión, inventario, preferencias, seguridad, avisos, plan, soporte y ui (Pinia)
+src/components/          encabezado, pestañas, resumen, sugerencias, inventario, tarjetas, tabla, ventanas/…
+src/views/               Inicio, Panel, Admin, Privacidad y Términos
 src/workers/             lector de Excel aislado
 src/styles/              temas, base, panel, ventanas e inicio
+tests/                   pruebas de la lógica (*.test.js) y recorridos en navegador (e2e/)
+scripts/                 revisar-seguridad.mjs (claves secretas, CSP, código peligroso)
 supabase/schema.sql      tablas, RLS, bitácora, triggers y funciones
+supabase/plantillas/     correos en español (confirmar cuenta y recuperar contraseña)
+presentacion/            presentación del proyecto (.pptx) y el código que la genera
 .github/                 publicar, seguridad y dependabot
 ```
 
