@@ -48,3 +48,13 @@ export function enlaceContacto (red, valor) {
   if (/^https:\/\//i.test(v)) return v
   return r.base + encodeURIComponent(v.replace(/^@/, ''))
 }
+
+// Enlace con un mensaje ya escrito (para "Quiero contratar el plan Pro"): WhatsApp y correo lo permiten;
+// en las demás redes se abre el chat normal.
+export function enlaceConMensaje (red, valor, mensaje, asunto = 'EarlyStock') {
+  const base = enlaceContacto(red, valor)
+  if (!base) return null
+  if (red === 'whatsapp') return base + '?text=' + encodeURIComponent(mensaje)
+  if (red === 'correo') return base + '?subject=' + encodeURIComponent(asunto) + '&body=' + encodeURIComponent(mensaje)
+  return base
+}

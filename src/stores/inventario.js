@@ -11,6 +11,9 @@ import { ref, shallowRef, computed, markRaw, watch } from 'vue'
 import { useSesion } from './sesion.js'
 import { useAvisos } from './avisos.js'
 import { usePreferencias } from './preferencias.js'
+import { usePlan } from './plan.js'
+import { useUI } from './ui.js'
+import { limiteTxt } from '../logica/planes.js'
 import { deDB, aDB } from '../lib/almacen.js'
 import { DIA, hoy0, fechaISO, totalPiezas, descontar, consumirLotes, ajustarLotes, lotesDe, piezasCaducadas, crearAnalisis, claveProducto, nombreCompleto, ofertaVigente, agruparPorNombre, stockPorCategoria } from '../logica/inventario.js'
 import { generarSugerencias } from '../logica/sugerencias.js'
@@ -42,6 +45,8 @@ export const useInventario = defineStore('inventario', () => {
   const sesion = useSesion()
   const avisos = useAvisos()
   const prefsStore = usePreferencias()
+  const planStore = usePlan()
+  const ui = useUI()
 
   const productos = shallowRef([])
   const movimientos = shallowRef([])
@@ -121,7 +126,9 @@ export const useInventario = defineStore('inventario', () => {
     try { await fn(); await cargarTodo() } catch (e) {
       ok = false
       const msg = (e && e.message) || 'revisa tu conexión'
-      avisos.avisar('No se pudo guardar: ' + msg + (/permission denied|does not exist/i.test(msg) ? '. Ejecuta de nuevo supabase/schema.sql en Supabase.' : ''))
+      // Límite del plan aplicado por la base de datos (schema.sql §16): mensaje claro + botón "Ver planes".
+      if (/LIMITE_PLAN/.test(msg)) avisos.avisar(msg.replace(/^.*LIMITE_PLAN:\s*/, ''), 'error', { texto: 'Ver planes', fn: () => ui.abrir('planes') })
+      else avisos.avisar('No se pudo guardar: ' + msg + (/permission denied|does not exist/i.test(msg) ? '. Ejecuta de nuevo supabase/schema.sql en Supabase.' : ''))
       try { await cargarTodo() } catch (_) {}
     }
     animar.value = anim
@@ -171,6 +178,7 @@ export const useInventario = defineStore('inventario', () => {
       return Promise.resolve(false)
     }
     if (!id && igual) return sumarAExistente(igual, data, cad)
+    if (!id && !revisarLimite(1)) return Promise.resolve(false)
     return guardar(async () => {
       if (id) {
         const p = copia(id)
@@ -202,9 +210,26 @@ export const useInventario = defineStore('inventario', () => {
     }, piezas > 0 ? `"${nombreCompleto(p0)}" ya existía: se sumaron ${plural(piezas, 'pieza')}` : `"${nombreCompleto(p0)}" ya existe en tu inventario`, { reg })
   }
 
+  /* ---- Límites del plan ----
+   * Antes de agregar productos se revisa el límite del plan (Gratis 1,000 · Pro 10,000 · Max ilimitado).
+   * Si no caben, se avisa con un botón para ver los planes. La base de datos lo vuelve a revisar. */
+  function revisarLimite (nuevos) {
+    const r = planStore.puedeAgregar(productos.value.length, nuevos)
+    if (r.ok) return true
+    avisos.avisar(`Tu plan ${r.plan.nombre} permite hasta ${limiteTxt(r.limite)} productos` +
+      (r.disponibles ? ` y solo te quedan ${r.disponibles} lugares.` : ' y ya llegaste al límite.') + ' Mejora tu plan para agregar más.',
+    'error', { texto: 'Ver planes', fn: () => ui.abrir('planes') })
+    return false
+  }
+
   /* ---- Ofertas ----
    * oferta = {tipo:'porcentaje'|'dos_por_uno'|'precio', valor, termina, nota}. Una por producto: guardar otra la reemplaza. */
   function crearOferta (p, o) {
+    // Límite de ofertas activas del plan (Gratis: 3). Cambiar la oferta de un producto que ya tiene una no cuenta.
+    if (!ofertaDe.value.has(p.id) && !planStore.puedeOfertar(ofertaDe.value.size).ok) {
+      avisos.avisar(`Tu plan ${planStore.plan.nombre} permite hasta ${planStore.plan.limites.ofertas} ofertas activas a la vez. Quita una o mejora tu plan.`, 'error', { texto: 'Ver planes', fn: () => ui.abrir('planes') })
+      return Promise.resolve(false)
+    }
     return guardar(() => db().guardarOferta({ producto_id: p.id, tipo: o.tipo, valor: o.tipo === 'dos_por_uno' ? 50 : o.valor, termina: o.termina || null, nota: String(o.nota || '').slice(0, 120) }),
       `Oferta activa: ${nombreCompleto(p)}`)
   }
@@ -291,6 +316,7 @@ export const useInventario = defineStore('inventario', () => {
     if (ok) guardar(() => db().borrarTodo(), 'Inventario borrado')
   }
   async function cargarEjemplo (preguntar = true) {
+    if (!planStore.puedeAgregar(0, EJEMPLO.length).ok) return
     if (preguntar && productos.value.length && !(await avisos.confirmar({ titulo: '¿Cargar la tienda de ejemplo?', mensaje: 'Esto reemplazará tu inventario actual con productos de ejemplo.', boton: 'Sí, cargar ejemplo', peligro: false }))) return
     return guardar(async () => {
       await db().borrarTodo()
@@ -319,6 +345,7 @@ export const useInventario = defineStore('inventario', () => {
     const act = res.filter(x => x.accion === 'actualizar')
     const sumados = res.filter(x => x.accion === 'sumado').length
     const omit = res.length - nuevos.length - act.length - sumados
+    if (nuevos.length && !revisarLimite(nuevos.length)) return Promise.resolve(false)
     return guardar(async () => {
       for (let i = 0; i < nuevos.length; i += 200) {
         const bloque = nuevos.slice(i, i + 200)

@@ -1,6 +1,8 @@
 <!--
   ADMINISTRACIÓN (solo la cuenta administradora)
-  Contactos de soporte: agregar varios de distintas redes, editar, ocultar/mostrar, ordenar y borrar, con
+  1) Planes de clientes: cuando un cliente paga, se le asigna Pro o Max por su correo y hasta qué fecha
+     (función admin_asignar_plan de schema.sql §16). Al vencer, la cuenta vuelve sola a Gratis.
+  2) Contactos de soporte: agregar varios de distintas redes, editar, ocultar/mostrar, ordenar y borrar, con
   vista previa con los logos originales. Si alguien sin permiso entra a esta dirección, ve un aviso; y aunque
   lo intentara a mano, la base de datos rechaza sus cambios (RLS + es_admin()).
 -->
@@ -9,6 +11,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useSoporte } from '../stores/soporte.js'
 import { useAvisos } from '../stores/avisos.js'
 import { REDES, validarContacto, enlaceContacto } from '../logica/soporte.js'
+import { PLANES, planPorId, precioTxt } from '../logica/planes.js'
+import { sb } from '../lib/supabase.js'
+import { fechaISO, DIA } from '../logica/inventario.js'
+import { fechaCorta } from '../logica/formato.js'
 import Encabezado from '../components/Encabezado.vue'
 import Pie from '../components/Pie.vue'
 import Icono from '../components/Icono.vue'
@@ -20,7 +26,26 @@ const revisando = ref(true)
 const vacio = () => ({ id: null, red: 'whatsapp', etiqueta: '', valor: '', activo: true })
 const form = ref(vacio())
 const guardando = ref(false)
-onMounted(async () => { await soporte.revisarAdmin(); if (soporte.esAdmin) await soporte.cargar(); revisando.value = false })
+onMounted(async () => { await soporte.revisarAdmin(); if (soporte.esAdmin) { await soporte.cargar(); await cargarSuscripciones() } revisando.value = false })
+
+/* ---- Planes de clientes ---- */
+const susc = ref([])
+const errorSusc = ref('')
+const formPlan = ref({ email: '', plan: 'pro', vence: fechaISO(Date.now() + 30 * DIA), nota: '' })
+async function cargarSuscripciones () {
+  errorSusc.value = ''
+  const r = await sb.rpc('admin_suscripciones')
+  if (r.error) errorSusc.value = /function|schema cache/i.test(r.error.message) ? 'Falta actualizar la base de datos (ejecutar supabase/schema.sql).' : r.error.message
+  else susc.value = r.data || []
+}
+const asignarPlan = () => hacer(async () => {
+  const f = formPlan.value
+  const r = await sb.rpc('admin_asignar_plan', { p_email: f.email.trim().toLowerCase(), p_plan: f.plan, p_vence: f.plan === 'gratis' ? null : (f.vence || null), p_nota: f.nota })
+  if (r.error) throw new Error(r.error.message)
+  await cargarSuscripciones()
+  formPlan.value = { email: '', plan: 'pro', vence: fechaISO(Date.now() + 30 * DIA), nota: '' }
+}, `Plan asignado a ${formPlan.value.email}`)
+const renovar = s => { formPlan.value = { email: s.email, plan: s.plan, vence: fechaISO(Math.max(Date.now(), s.vence ? new Date(s.vence + 'T12:00:00').getTime() : 0) + 30 * DIA), nota: '' }; document.getElementById('form-plan').scrollIntoView({ behavior: 'smooth', block: 'center' }) }
 const errorForm = computed(() => (form.value.valor ? validarContacto(form.value.red, form.value.valor) : ''))
 
 async function hacer (fn, ok) {
@@ -45,6 +70,38 @@ async function borrar (c) {
         <h1><Icono n="shield" />Administración</h1>
         <p>Los contactos que agregues aquí aparecen en "Ayuda y soporte" para todos los usuarios (y en la página de inicio).</p>
       </div>
+      <h2 class="admin-sub"><Icono n="star" />Planes de clientes</h2>
+      <div class="admin-rejilla">
+        <form id="form-plan" class="card admin-form" @submit.prevent="asignarPlan">
+          <h2>Asignar o renovar plan</h2>
+          <p class="hint">Cuando el cliente pague, escribe el correo de su cuenta, el plan y hasta qué día está pagado. Al pasar esa fecha vuelve solo a Gratis.</p>
+          <label>Correo de la cuenta del cliente<input v-model="formPlan.email" type="email" required maxlength="254" placeholder="cliente@correo.com"></label>
+          <div class="campo"><span>Plan</span>
+            <div class="seg">
+              <button v-for="p in PLANES" :key="p.id" type="button" :aria-pressed="formPlan.plan === p.id" @click="formPlan.plan = p.id">{{ p.nombre }} · {{ precioTxt(p.precio) }}</button>
+            </div>
+          </div>
+          <label v-if="formPlan.plan !== 'gratis'">Pagado hasta<input v-model="formPlan.vence" type="date" required></label>
+          <label>Nota <small>(opcional: forma de pago, folio…)</small><input v-model="formPlan.nota" maxlength="200" placeholder="Ej. Transferencia folio 1234"></label>
+          <div class="dlg-acciones"><button type="submit" :disabled="guardando || !formPlan.email"><Icono n="check" sm />Guardar plan</button></div>
+        </form>
+        <section class="card admin-lista">
+          <div class="sec-tit"><h2><Icono n="user" />Suscripciones</h2><span class="contador">{{ susc.length }}</span></div>
+          <p v-if="errorSusc" class="nota low">{{ errorSusc }}</p>
+          <ul v-else-if="susc.length" class="contactos">
+            <li v-for="x in susc" :key="x.email" :class="{ oculto: x.plan_vigente !== x.plan }">
+              <div class="contacto">
+                <span class="plan-chip" :class="'p-' + x.plan_vigente">{{ planPorId(x.plan_vigente).nombre }}</span>
+                <span><b>{{ x.email }}</b><small>{{ planPorId(x.plan).nombre }}{{ x.vence ? (x.plan_vigente !== x.plan ? ' · venció el ' : ' · hasta el ') + fechaCorta(x.vence) : '' }} · {{ x.productos }} productos{{ x.nota ? ' · ' + x.nota : '' }}</small></span>
+                <span class="admin-acc"><button type="button" class="ghost sm" @click="renovar(x)"><Icono n="refresh" sm />Renovar</button></span>
+              </div>
+            </li>
+          </ul>
+          <p v-else class="hint">Aún no hay clientes con plan de pago.</p>
+        </section>
+      </div>
+
+      <h2 class="admin-sub"><Icono n="chat" />Contactos de soporte</h2>
       <div class="admin-rejilla">
         <form id="form-contacto" class="card admin-form" @submit.prevent="guardar">
           <h2>{{ form.id ? 'Editar contacto' : 'Agregar contacto' }}</h2>

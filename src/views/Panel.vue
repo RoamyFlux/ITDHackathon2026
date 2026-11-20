@@ -20,6 +20,7 @@ import ListaCompras from '../components/ListaCompras.vue'
 import Herramientas from '../components/Herramientas.vue'
 import StockCategorias from '../components/StockCategorias.vue'
 import OfertasActivas from '../components/OfertasActivas.vue'
+import TuPlan from '../components/TuPlan.vue'
 import Pie from '../components/Pie.vue'
 import Icono from '../components/Icono.vue'
 
@@ -96,6 +97,7 @@ onUnmounted(() => { removeEventListener('online', alCambiarRed); removeEventList
         <ListaCompras />
         <StockCategorias />
         <GraficaVentas v-if="inv.productos.length" />
+        <TuPlan />
         <Herramientas />
       </aside>
     </div>

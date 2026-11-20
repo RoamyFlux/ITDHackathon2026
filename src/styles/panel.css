@@ -247,7 +247,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px 40px}
   #appBox{display:flex;flex-direction:column;gap:18px;align-items:stretch}
   .col-main,.col-side{display:contents}
   .bento{order:0;grid-template-columns:1fr}
-  #sugerencias{order:1} #alertas,.bienvenida,.estado-vacio{order:2} #inventario{order:3} #ofertas{order:4} #compras{order:5} #categorias{order:6} #ventas{order:7} #herramientas{order:8}
+  #sugerencias{order:1} #alertas,.bienvenida,.estado-vacio{order:2} #inventario{order:3} #ofertas{order:4} #compras{order:5} #categorias{order:6} #ventas{order:7} #tu-plan{order:8} #herramientas{order:9}
   .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
   .hero .saludo-der{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap}
   .btn-nuevo{width:auto}

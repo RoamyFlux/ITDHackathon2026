@@ -13,6 +13,7 @@ import Icono from '../components/Icono.vue'
 import VistaPrevia from '../components/VistaPrevia.vue'
 import FormAcceso from '../components/FormAcceso.vue'
 import Pie from '../components/Pie.vue'
+import PlanesTabla from '../components/PlanesTabla.vue'
 
 const sesion = useSesion()
 const ui = useUI()
@@ -55,6 +56,7 @@ const SEGURIDAD = [
         <a href="#como" @click.prevent="irA('como')">Cómo funciona</a>
         <a href="#beneficios" @click.prevent="irA('beneficios')">Beneficios</a>
         <a href="#seguridad" @click.prevent="irA('seguridad')">Seguridad</a>
+        <a href="#planes" @click.prevent="irA('planes')">Precios</a>
         <a href="#" @click.prevent="ui.abrir('soporte')">Soporte</a>
       </nav>
       <div class="nav-der">
@@ -122,6 +124,14 @@ const SEGURIDAD = [
         <div class="rejilla-beneficios cuatro">
           <article v-for="b in SEGURIDAD" :key="b.t" class="card beneficio"><span class="ico-b"><Icono :n="b.i" /></span><h3>{{ b.t }}</h3><p>{{ b.d }}</p></article>
         </div>
+      </section>
+
+      <!-- PLANES Y PRECIOS -->
+      <section id="planes" class="bloque">
+        <h2 class="tit-bloque">Planes para cada <span class="grad-t">tamaño de negocio</span></h2>
+        <p class="sub-bloque">Empieza gratis. Cambia de plan cuando tu tienda crezca. Precios en pesos, IVA incluido.</p>
+        <PlanesTabla :texto-boton="p => (p.precio ? `Empezar con ${p.nombre}` : 'Crear cuenta gratis')" @elegir="irAcceso('crear')" />
+        <p class="nota-planes">Los planes de pago se activan después de crear tu cuenta, desde <b>Mi plan</b>. Pagas por transferencia, OXXO o tarjeta; sin plazos forzosos.</p>
       </section>
 
       <!-- ACCESO -->

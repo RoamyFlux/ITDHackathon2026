@@ -34,7 +34,8 @@ const VENTANAS = {
   atajos: defineAsyncComponent(() => import('./components/ventanas/VentanaAtajos.vue')),
   guia: defineAsyncComponent(() => import('./components/ventanas/GuiaRapida.vue')),
   oferta: defineAsyncComponent(() => import('./components/ventanas/VentanaOferta.vue')),
-  soporte: defineAsyncComponent(() => import('./components/ventanas/VentanaSoporte.vue'))
+  soporte: defineAsyncComponent(() => import('./components/ventanas/VentanaSoporte.vue')),
+  planes: defineAsyncComponent(() => import('./components/ventanas/VentanaPlanes.vue'))
 }
 const actual = computed(() => ui.ventana && VENTANAS[ui.ventana.tipo])
 

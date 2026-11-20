@@ -195,3 +195,51 @@ a.contacto:hover{background:var(--brand-soft);border-color:color-mix(in srgb,var
 .admin-btn{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
 .ico-grande.rojo{background:var(--crit-bg);color:var(--crit)}
 @media (max-width:800px){ .admin-rejilla{grid-template-columns:1fr} .contacto{flex-wrap:wrap} .admin-acc{width:100%;justify-content:flex-end} }
+
+/* ---- Planes (EarlyStock 2.2) ----
+ * .plan = tarjeta de un plan; .recomendado = el plan resaltado (Pro); .actual = el que ya tiene la cuenta. */
+.planes{display:grid;gap:16px}
+.periodo{justify-self:center;grid-auto-columns:auto;min-width:260px}
+.periodo small{color:var(--ok);font-weight:800;margin-left:4px}
+.planes-rejilla{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.plan{padding:24px 20px 20px;display:flex;flex-direction:column;gap:10px;overflow:visible}
+.plan h3{font-size:1.4rem}
+.plan-lema{margin:-6px 0 0;color:var(--muted);font-size:.86rem}
+.plan-precio{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.plan-precio b{font:800 2.4rem var(--font-display);letter-spacing:-.03em;line-height:1}
+.plan-precio span{color:var(--muted);font-weight:700;font-size:.84rem}
+.plan-nota{margin:0;font-size:.76rem;color:var(--muted);min-height:2.4em}
+.plan-limite{display:flex;align-items:center;gap:6px;padding:9px 12px;border-radius:12px;background:var(--brand-soft);color:var(--brand-text);font-size:.88rem}
+.plan-limite b{font-family:var(--font-display);font-size:1.05rem}
+.plan-lista{list-style:none;margin:4px 0 8px;padding:0;display:grid;gap:7px;flex:1;align-content:start}
+.plan-lista li{display:flex;gap:8px;align-items:flex-start;font-size:.84rem;line-height:1.35}
+.plan-lista li .ic{margin-top:1px;color:var(--ok);flex:none}
+.plan-lista li.limitacion{color:var(--muted)}
+.plan-lista li.limitacion .ic{color:var(--muted)}
+.plan.recomendado{border:2px solid var(--brand);box-shadow:0 18px 44px var(--glow);transform:translateY(-6px)}
+.plan.actual{border-color:var(--ok)}
+.plan-cinta{position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:4px 14px;border-radius:999px;background:var(--grad);color:#fff;font-size:.72rem;font-weight:800;white-space:nowrap;box-shadow:0 6px 16px var(--glow)}
+.plan-cinta.actual{background:var(--ok);box-shadow:none}
+.mi-plan{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.mi-plan small{display:block}
+.mi-plan b{font:800 1.3rem var(--font-display)}
+.mi-plan .uso{display:grid;gap:6px;min-width:220px;font-size:.84rem;font-weight:700}
+.barra-uso{display:block;height:8px;border-radius:9px;background:var(--surface-2);overflow:hidden}
+.barra-uso i{display:block;height:100%;border-radius:9px;background:var(--ok);transition:width .6s var(--ease)}
+.barra-uso.low i{background:var(--low)} .barra-uso.crit i{background:var(--crit)}
+.contratar{margin-top:18px}
+.contratar h3{font:800 1rem var(--font);display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.contratar h3 .ic{color:var(--brand)}
+.plan-chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:.74rem;font-weight:800;background:var(--surface-2);color:var(--text);flex:none}
+.plan-chip.p-pro,.tu-plan.p-pro .plan-chip{background:var(--brand-soft);color:var(--brand-text)}
+.plan-chip.p-max,.tu-plan.p-max .plan-chip{background:var(--grad);color:#fff}
+.tu-plan{padding:18px}
+.tu-plan .uso-txt{margin:0 0 8px;font-size:.88rem;color:var(--muted)}
+.tu-plan .uso-txt b{color:var(--text);font:800 1.15rem var(--font-display)}
+.tu-plan .barra-uso{margin-bottom:10px}
+.tu-plan .hint,.tu-plan .pista{margin:0 0 10px}
+.admin-sub{display:flex;align-items:center;gap:8px;margin:26px 0 12px;font-size:1.2rem}
+.admin-sub .ic{color:var(--brand)}
+.sub-bloque{text-align:center;color:var(--muted);margin:-18px 0 26px}
+.nota-planes{text-align:center;color:var(--muted);font-size:.86rem;margin:18px 0 0}
+@media (max-width:900px){ .planes-rejilla{grid-template-columns:1fr} .plan.recomendado{transform:none} }

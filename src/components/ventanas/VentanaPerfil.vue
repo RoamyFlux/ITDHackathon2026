@@ -75,6 +75,7 @@ const salir = async () => { emit('cerrar'); await sesion.salir('Desde el perfil'
     <div class="lista-opciones">
       <button type="button" class="opcion" @click="ui.abrir('seguridad')"><Icono n="shield" /><span><b>Seguridad</b><small>Llaves de acceso, actividad y dispositivos</small></span><Icono n="arrow" sm /></button>
       <button v-if="!sesion.esDemo" type="button" class="opcion" @click="ui.abrir('contrasena')"><Icono n="lock" /><span><b>Cambiar contraseña</b><small>Mínimo 8 caracteres con letras y números</small></span><Icono n="arrow" sm /></button>
+      <button type="button" class="opcion" @click="ui.abrir('planes')"><Icono n="star" /><span><b>Mi plan</b><small>Gratis, Pro o Max: límites y cómo mejorar</small></span><Icono n="arrow" sm /></button>
       <button type="button" class="opcion" @click="ui.abrir('soporte')"><Icono n="chat" /><span><b>Ayuda y soporte</b><small>Escríbenos por WhatsApp, correo y más</small></span><Icono n="arrow" sm /></button>
       <button type="button" class="opcion" @click="ui.abrir('configuracion')"><Icono n="gear" /><span><b>Configuración</b><small>Tema, colores, avisos y notificaciones</small></span><Icono n="arrow" sm /></button>
       <router-link class="opcion" to="/privacidad" @click="emit('cerrar')"><Icono n="doc" /><span><b>Aviso de Privacidad y Términos</b><small>Qué datos guardamos y tus derechos</small></span><Icono n="arrow" sm /></router-link>
