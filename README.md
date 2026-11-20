@@ -8,6 +8,13 @@
 
 EarlyStock avisa al dueño de un negocio **antes** de que se le acabe un producto o de que algo caduque, le **sugiere qué hacer** (pedir, retirar, hacer una oferta) y arma su lista de compras. Está hecha con **Vue 3 + Vite**, guarda los datos en **Supabase** y se publica sola en **GitHub Pages**.
 
+## Insignias y administración de usuarios (2.3)
+- **Botón de plan** en el encabezado: en Gratis dice "Mejorar plan"; en Pro y Max muestra su insignia. Abre la ventana de planes.
+- **Insignias:** Gratis no tiene; **Pro** lleva una insignia **plateada** (y aro plateado en la foto) y **Max** una **dorada brillante** con destello (y aro dorado). La tarjeta del saludo lleva una banda en la esquina con el plan.
+- **Corona:** la cuenta administradora lleva una coronita dorada en su foto y junto a su nombre.
+- **Admin → Usuarios y planes:** lista de todas las cuentas de la app (correo, negocio, plan, vencimiento, productos, último acceso y si confirmó su correo), con buscador. "Asignar plan" permite dar Gratis, Pro o Max a **cualquier cuenta**, incluida la propia, con fecha de vencimiento o **sin vencimiento** (cortesía o pruebas).
+- La lista sale de la función `admin_usuarios()` (`schema.sql` §17), que solo responde al administrador. No muestra contraseñas ni inventarios.
+
 ## Planes (2.2)
 | Plan | Precio (MXN, IVA incluido) | Productos | Ofertas activas | Soporte |
 | --- | --- | --- | --- | --- |

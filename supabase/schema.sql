@@ -580,3 +580,44 @@ begin
 end $$;
 revoke execute on function public.admin_suscripciones() from public, anon;
 grant execute on function public.admin_suscripciones() to authenticated;
+
+-- ---------------------------------------------------------------------
+-- 17) ADMINISTRADOR: VER TODAS LAS CUENTAS (para asignarles el plan que quiera)
+--     Devuelve las cuentas registradas con su plan, vencimiento, productos y último acceso.
+--     Solo responde al administrador (es_admin); a cualquier otra cuenta le da error.
+--     No devuelve contraseñas ni datos del inventario, solo lo necesario para administrar planes.
+--     Mi plan también avisa si la cuenta es administradora (para mostrar la coronita).
+-- ---------------------------------------------------------------------
+create or replace function public.admin_usuarios(p_buscar text default '')
+returns table (email text, negocio text, creado timestamptz, ultimo_acceso timestamptz, confirmado boolean,
+               plan text, plan_vigente text, vence date, productos bigint, es_admin boolean)
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  if not public.es_admin() then raise exception 'Solo el administrador puede ver las cuentas.'; end if;
+  return query
+    select u.email::text,
+           coalesce(u.raw_user_meta_data->>'negocio', '')::text,
+           u.created_at, u.last_sign_in_at, u.email_confirmed_at is not null,
+           coalesce(s.plan, 'gratis'), public.plan_de(u.id), s.vence,
+           (select count(*) from public.productos p where p.user_id = u.id),
+           exists (select 1 from public.administradores a where a.email = lower(u.email))
+    from auth.users u left join public.suscripciones s on s.user_id = u.id
+    where coalesce(p_buscar, '') = ''
+       or u.email ilike '%' || p_buscar || '%'
+       or coalesce(u.raw_user_meta_data->>'negocio', '') ilike '%' || p_buscar || '%'
+    order by u.created_at desc
+    limit 1000;
+end $$;
+revoke execute on function public.admin_usuarios(text) from public, anon;
+grant execute on function public.admin_usuarios(text) to authenticated;
+
+create or replace function public.mi_plan() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'plan', public.plan_de(auth.uid()),
+    'plan_contratado', coalesce((select plan from public.suscripciones where user_id = auth.uid()), 'gratis'),
+    'vence', (select vence from public.suscripciones where user_id = auth.uid()),
+    'productos', (select count(*) from public.productos where user_id = auth.uid()),
+    'es_admin', public.es_admin()
+  );
+$$;

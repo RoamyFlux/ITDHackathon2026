@@ -16,6 +16,7 @@ export const usePlan = defineStore('plan', () => {
   const planId = ref('gratis')
   const contratado = ref('gratis') // el que pagó (si ya venció, planId vuelve a gratis)
   const vence = ref(null)
+  const esAdmin = ref(false) // para la coronita (también lo sabe el store de soporte)
   const error = ref('')
 
   const plan = computed(() => planPorId(planId.value))
@@ -23,7 +24,7 @@ export const usePlan = defineStore('plan', () => {
 
   async function cargar () {
     error.value = ''
-    if (!sb || sesion.modo !== 'dentro') { planId.value = 'gratis'; contratado.value = 'gratis'; vence.value = null; return }
+    if (!sb || sesion.modo !== 'dentro') { planId.value = 'gratis'; contratado.value = 'gratis'; vence.value = null; esAdmin.value = false; return }
     const r = await sb.rpc('mi_plan')
     if (r.error) {
       // Si la base aún no tiene los planes (falta ejecutar schema.sql), se trata como Gratis sin bloquear la app.
@@ -34,6 +35,7 @@ export const usePlan = defineStore('plan', () => {
     planId.value = planPorId(r.data.plan).id
     contratado.value = planPorId(r.data.plan_contratado).id
     vence.value = r.data.vence || null
+    esAdmin.value = r.data.es_admin === true
   }
   watch(() => sesion.usuario && sesion.usuario.id, () => { cargar() }, { immediate: true })
 
@@ -41,5 +43,5 @@ export const usePlan = defineStore('plan', () => {
   const puedeAgregar = (usados, nuevos = 1) => cabenProductos(planId.value, usados, nuevos)
   const puedeOfertar = activas => cabenOfertas(planId.value, activas)
 
-  return { planId, contratado, vence, error, plan, vencido, cargar, puedeAgregar, puedeOfertar }
+  return { planId, contratado, vence, esAdmin, error, plan, vencido, cargar, puedeAgregar, puedeOfertar }
 })

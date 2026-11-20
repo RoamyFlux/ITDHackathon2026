@@ -11,11 +11,16 @@ import { useUI } from '../../stores/ui.js'
 import Ventana from '../Ventana.vue'
 import Icono from '../Icono.vue'
 import Avatar from '../Avatar.vue'
+import InsigniaPlan from '../InsigniaPlan.vue'
+import { usePlan } from '../../stores/plan.js'
+import { useSoporte } from '../../stores/soporte.js'
 
 const emit = defineEmits(['cerrar'])
 const sesion = useSesion()
 const avisos = useAvisos()
 const ui = useUI()
+const plan = usePlan()
+const soporte = useSoporte()
 const negocio = ref(sesion.perfil.negocio)
 const archivo = ref(null)
 const subiendo = ref(false)
@@ -62,6 +67,7 @@ const salir = async () => { emit('cerrar'); await sesion.salir('Desde el perfil'
   <Ventana titulo="Mi perfil" :subtitulo="sesion.esDemo ? 'Demostración' : sesion.perfil.email" icono="user" ancho="sm" @cerrar="emit('cerrar')">
     <div class="perfil-foto">
       <Avatar grande />
+      <InsigniaPlan :plan="plan.planId" :admin="soporte.esAdmin || plan.esAdmin" grande />
       <div class="botones">
         <button type="button" class="sec sm" :disabled="subiendo" @click="archivo.click()"><Icono n="camera" sm />{{ subiendo ? 'Subiendo…' : sesion.perfil.avatar ? 'Cambiar foto' : 'Subir foto' }}</button>
         <button v-if="sesion.perfil.avatar" type="button" class="peligro sm" @click="quitar">Quitar</button>
