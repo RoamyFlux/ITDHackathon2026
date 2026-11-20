@@ -196,6 +196,3 @@ supabase/plantillas/     correos en español (confirmar cuenta y recuperar contr
 presentacion/            presentación del proyecto (.pptx) y el código que la genera
 .github/                 publicar, seguridad y dependabot
 ```
-
-## Equipo
-Abel, Joto, Marika
