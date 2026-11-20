@@ -68,7 +68,7 @@ const texto = p => (p.id === 'gratis' ? 'Cambiar a Gratis' : `Contratar ${p.nomb
       <ol class="pasos">
         <li>Escríbenos con un toque (el mensaje ya incluye el plan y el correo de tu cuenta).</li>
         <li>Te enviamos los datos de pago: transferencia, depósito en OXXO o tarjeta.</li>
-        <li>Activamos tu plan el mismo día hábil. Lo verás aquí en "Tu plan".</li>
+        <li>Activamos tu plan a más tardar el siguiente día hábil después de recibir tu pago. Lo verás aquí en "Tu plan".</li>
       </ol>
       <p v-if="sesion.esDemo" class="nota">Primero crea tu cuenta gratis; después contrata desde "Planes".</p>
       <ul v-else-if="contactos.length" class="contactos">
@@ -78,6 +78,6 @@ const texto = p => (p.id === 'gratis' ? 'Cambiar a Gratis' : `Contratar ${p.nomb
       </ul>
       <p v-else class="nota">Aún no hay contactos de soporte. <button type="button" class="enlace en-linea" @click="ui.abrir('soporte')">Ver Ayuda y soporte</button></p>
     </section>
-    <p v-else-if="elegido === 'gratis'" class="nota">Para bajar a Gratis o cancelar, escríbenos desde <button type="button" class="enlace en-linea" @click="ui.abrir('soporte')">Ayuda y soporte</button>. Tus datos se conservan; si tienes más de 1,000 productos podrás verlos y venderlos, pero no agregar nuevos.</p>
+    <p v-else-if="elegido === 'gratis'" class="nota">Para bajar a Gratis o cancelar, escríbenos desde <button type="button" class="enlace en-linea" @click="ui.abrir('soporte')">Ayuda y soporte</button>. Tus datos se conservan; si tienes más de {{ limiteTxt(planPorId('gratis').limites.productos) }} productos podrás verlos y venderlos, pero no agregar nuevos.</p>
   </Ventana>
 </template>

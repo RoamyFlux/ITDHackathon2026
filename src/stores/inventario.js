@@ -2,7 +2,8 @@
  * INVENTARIO (datos y acciones)
  * productos / movimientos = copia de lo que hay en la base para esta sesión. La pantalla se dibuja a partir
  * de aquí. Todas las acciones que cambian datos pasan por guardar():
- *   1) bloquea botones  2) escribe en la base  3) vuelve a leer  4) avisa "listo" (con "Deshacer" si aplica).
+ *   1) entran a una COLA (si llegan dos seguidas, la segunda espera a la primera; ninguna se pierde)
+ *   2) escribe en la base  3) vuelve a leer  4) avisa "listo" (con "Deshacer" si aplica).
  * Rendimiento: productos se guarda en un shallowRef con objetos "crudos" (markRaw): Vue no vigila cada
  * campo de cada producto, solo cuando llega la lista nueva. Así 1000+ productos se dibujan rápido.
  * ===================================================================== */
@@ -15,10 +16,10 @@ import { usePlan } from './plan.js'
 import { useUI } from './ui.js'
 import { limiteTxt } from '../logica/planes.js'
 import { deDB, aDB } from '../lib/almacen.js'
-import { DIA, hoy0, fechaISO, totalPiezas, descontar, consumirLotes, ajustarLotes, lotesDe, piezasCaducadas, crearAnalisis, claveProducto, nombreCompleto, ofertaVigente, agruparPorNombre, stockPorCategoria } from '../logica/inventario.js'
+import { DIA, hoy0, fechaISO, totalPiezas, descontar, consumirLotes, ajustarLotes, lotesDe, piezasCaducadas, crearAnalisis, claveProducto, nombreCompleto, ofertaVigente, stockPorCategoria } from '../logica/inventario.js'
 import { generarSugerencias } from '../logica/sugerencias.js'
 import { cambiosPara } from '../logica/excel.js'
-import { dinero, norm, plural } from '../logica/formato.js'
+import { dinero, norm, plural, msgError } from '../logica/formato.js'
 
 /* Tienda de ejemplo. Cada fila: nombre, presentación, sabor, categoría, paquetes, piezas por paquete, sueltas,
  * mínimo (paq), objetivo (paq), costo, precio y ventas de cada uno de los últimos 7 días.
@@ -52,11 +53,13 @@ export const useInventario = defineStore('inventario', () => {
   const movimientos = shallowRef([])
   const ofertas = shallowRef([]) // {id, pid, tipo, valor, termina, nota}
   const cargando = ref(false)
-  const ocupado = ref(false)
+  const pendientes = ref(0) // acciones en la cola de guardado
+  const ocupado = computed(() => pendientes.value > 0)
   const animar = ref(false) // la próxima vez que se dibuje, entrar con animación
   watch(animar, v => { if (v) setTimeout(() => { animar.value = false }, 1500) })
-  const reloj = ref(Date.now()) // se actualiza cada minuto para que "caduca hoy" cambie solo a medianoche
-  setInterval(() => { reloj.value = Date.now() }, 60000)
+  // "Hoy" para los cálculos. Se revisa cada minuto, pero solo cambia (y recalcula todo) cuando empieza otro día.
+  const reloj = ref(Date.now())
+  setInterval(() => { if (hoy0() !== hoy0(reloj.value)) reloj.value = Date.now() }, 60000)
 
   // Filtros de la lista (los usan el panel, la paleta de comandos y las alertas).
   const filtros = ref({ q: '', estado: '', categoria: '' })
@@ -71,8 +74,7 @@ export const useInventario = defineStore('inventario', () => {
   // Ofertas vigentes por producto (las vencidas se ocultan solas).
   const ofertaDe = computed(() => new Map(ofertas.value.filter(o => ofertaVigente(o, reloj.value)).map(o => [o.pid, o])))
   const sugerencias = computed(() => generarSugerencias(productos.value, analisis.value, { conOferta: new Set(ofertaDe.value.keys()) }))
-  const grupos = computed(() => agruparPorNombre(productos.value))
-  const porCategoria = computed(() => stockPorCategoria(productos.value, p => analisis.value.estado(p)))
+  const porCategoria = computed(() => stockPorCategoria(productos.value, p => analisis.value.estadoTotal(p)))
   // Índice "nombre|presentación|sabor" -> producto, para no crear duplicados.
   const porClave = computed(() => new Map(productos.value.map(p => [claveProducto(p), p])))
   const buscarIgual = datos => porClave.value.get(claveProducto(datos)) || null
@@ -102,7 +104,7 @@ export const useInventario = defineStore('inventario', () => {
   async function cargarInicial () {
     cargando.value = true
     try { await cargarTodo() } catch (e) {
-      const m = (e && e.message) || 'revisa tu conexión'
+      const m = msgError(e)
       avisos.avisar('No se pudieron cargar tus datos: ' + m + (/does not exist|column|schema cache|relation/i.test(m) ? '. Actualiza la base: ejecuta de nuevo supabase/schema.sql en Supabase.' : ''))
     }
     cargando.value = false
@@ -118,21 +120,27 @@ export const useInventario = defineStore('inventario', () => {
 
   /* ---- guardar(fn, okMsg, {anim, reg}) ----
    * Envoltorio para TODA acción que cambia datos. Si algo falla, avisa y vuelve a leer para no dejar datos a medias.
-   * reg = registro para DESHACER (fotos de cómo estaban los productos + movimientos creados). */
-  async function guardar (fn, okMsg, { anim = false, reg = null } = {}) {
-    if (ocupado.value) return false
-    ocupado.value = true
+   * reg = registro para DESHACER (fotos de cómo estaban los productos + movimientos creados).
+   * COLA: cada acción espera a que termine la anterior. Así una venta rápida tras otra no se pierde y cada una
+   * trabaja con los datos ya actualizados por la anterior. */
+  let cola = Promise.resolve()
+  function guardar (fn, okMsg, opciones = {}) {
+    pendientes.value++
+    const turno = cola.then(() => ejecutar(fn, okMsg, opciones))
+    cola = turno.catch(() => {})
+    return turno.finally(() => { pendientes.value-- })
+  }
+  async function ejecutar (fn, okMsg, { anim = false, reg = null } = {}) {
     let ok = true
     try { await fn(); await cargarTodo() } catch (e) {
       ok = false
-      const msg = (e && e.message) || 'revisa tu conexión'
+      const msg = msgError(e)
       // Límite del plan aplicado por la base de datos (schema.sql §16): mensaje claro + botón "Ver planes".
       if (/LIMITE_PLAN/.test(msg)) avisos.avisar(msg.replace(/^.*LIMITE_PLAN:\s*/, ''), 'error', { texto: 'Ver planes', fn: () => ui.abrir('planes') })
       else avisos.avisar('No se pudo guardar: ' + msg + (/permission denied|does not exist/i.test(msg) ? '. Ejecuta de nuevo supabase/schema.sql en Supabase.' : ''))
       try { await cargarTodo() } catch (_) {}
     }
     animar.value = anim
-    ocupado.value = false
     if (ok && okMsg) avisos.avisar(typeof okMsg === 'function' ? okMsg() : okMsg, 'ok', reg && reg.fotos.length ? { texto: 'Deshacer', fn: () => deshacer(reg) } : null)
     return ok
   }
@@ -354,29 +362,32 @@ export const useInventario = defineStore('inventario', () => {
         await db().insertarLotes(bloque.filter(x => x.cad && totalPiezas(x.vista) > 0 && idDe.has(claveProducto(x.vista)))
           .map(x => ({ producto_id: idDe.get(claveProducto(x.vista)), piezas: totalPiezas(x.vista), caducidad: x.cad })))
       }
+      // Si la fecha del Excel es la misma que la del lote más próximo (por ejemplo, al reimportar lo exportado),
+      // NO se tocan los lotes: solo se ajustan si el stock bajó. Así exportar -> importar no altera las caducidades.
       const cambiados = act.map(x => {
         const p = copia(x.p.id)
         if (!p) return null
         const antes = fotoLotes(p)
+        const fechaNueva = x.cad && x.cad !== (lotesDe(p)[0] || {}).cad ? x.cad : null
         Object.assign(p, cambiosPara(x, p, x.modo))
-        if (!x.cad) ajustarLotes(p)
-        return { x, p, antes }
+        if (!fechaNueva) ajustarLotes(p)
+        return { x, p, antes, fechaNueva }
       }).filter(Boolean)
       for (let i = 0; i < cambiados.length; i += 200) await db().upsertProductos(cambiados.slice(i, i + 200).map(({ p }) => ({ id: p.id, ...aDB(p) })))
-      // Con fecha: los lotes del producto se reemplazan por uno con todo su stock. Sin fecha: se recortan los que sobren.
-      const conFecha = cambiados.filter(c => c.x.cad)
+      // Con fecha NUEVA: los lotes del producto se reemplazan por uno con todo su stock. Si no: se recortan los que sobren.
+      const conFecha = cambiados.filter(c => c.fechaNueva)
       for (let i = 0; i < conFecha.length; i += 200) {
         const b = conFecha.slice(i, i + 200)
         await db().borrarLotesDe(b.map(c => c.p.id))
-        await db().insertarLotes(b.filter(c => totalPiezas(c.p) > 0).map(c => ({ producto_id: c.p.id, piezas: totalPiezas(c.p), caducidad: c.x.cad })))
+        await db().insertarLotes(b.filter(c => totalPiezas(c.p) > 0).map(c => ({ producto_id: c.p.id, piezas: totalPiezas(c.p), caducidad: c.fechaNueva })))
       }
-      for (const c of cambiados) if (!c.x.cad) await sincronizarLotes(c.antes, c.p)
+      for (const c of cambiados) if (!c.fechaNueva) await sincronizarLotes(c.antes, c.p)
       sesion.registrarEvento('importacion', `${nuevos.length} nuevos, ${act.length} actualizados`)
     }, `Importación lista: ${plural(nuevos.length, 'nuevo')}, ${plural(act.length, 'actualizado')}${sumados ? `, ${plural(sumados, 'repetido sumado', 'repetidos sumados')}` : ''}${omit ? `, ${plural(omit, 'omitido')}` : ''}`, { anim: true })
   }
 
   return {
-    productos, movimientos, ofertas, ofertaDe, grupos, porCategoria, buscarIgual, variantesDe, crearOferta, quitarOferta, cargando, ocupado, animar, filtros, ordenTabla, reloj,
+    productos, movimientos, ofertas, ofertaDe, porCategoria, buscarIgual, variantesDe, crearOferta, quitarOferta, cargando, ocupado, animar, filtros, ordenTabla, reloj,
     analisis, resumen, sugerencias, categorias, unificarCategoria,
     cargarTodo, guardar, deshacer, guardarProducto, eliminar, vender, llegada, retirarCaducados, borrarTodo, cargarEjemplo, importar
   }

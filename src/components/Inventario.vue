@@ -101,7 +101,7 @@ defineExpose({ irAProducto })
         <p><span class="dot crit" /><b>Urgente:</b> se agotó, está en tu mínimo o tiene lotes caducados.</p>
         <p><span class="dot low" /><b>Atención:</b> cerca del mínimo, alcanza 2 días o menos, o caduca en {{ prefs.prefs.diasAviso }} días o menos.</p>
         <p><span class="dot ok" /><b>Bien surtido:</b> tienes suficiente.</p>
-        <p class="nota"><Icono n="clock" sm />"Alcanza ~N días" = piezas que tienes ÷ lo que vendes al día (últimos 7 días). Pasa el mouse sobre él para ver la cuenta.</p>
+        <p class="nota"><Icono n="clock" sm />"Alcanza ~N días" = piezas que tienes ÷ lo que vendes al día (≈ N/día, promedio de los últimos 7 días). En computadora, pasa el mouse sobre él para ver la cuenta completa.</p>
       </div>
     </Transition>
     <div v-if="cats.length > 1" class="chips cats">

@@ -23,7 +23,8 @@ const tiene = (j, tipoNum) => (j.Answer || []).some(a => a.type === tipoNum && a
 
 export async function dominioRecibeCorreo (dominio) {
   dominio = String(dominio || '').trim().toLowerCase().replace(/\.$/, '')
-  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(dominio)) return 'no'
+  // Dominio válido: letras, números, guiones y puntos; la terminación puede ser internacional (xn--…).
+  if (!/^[a-z0-9.-]+\.(?:[a-z]{2,}|xn--[a-z0-9-]{2,})$/.test(dominio)) return 'no'
   if (cache.has(dominio)) return cache.get(dominio)
   const ctl = new AbortController()
   const t = setTimeout(() => ctl.abort(), 5000)
@@ -35,8 +36,10 @@ export async function dominioRecibeCorreo (dominio) {
     // "MX nulo" (0 .) = el dominio declara que NO recibe correo.
     else if ((mx.Answer || []).some(a => a.type === 15 && /^0 \.?$/.test(String(a.data).trim()))) res = 'no'
     else {
+      // Sin MX: vale si el dominio tiene dirección IPv4 (A) o IPv6 (AAAA), "MX implícito".
       const a = await consultar(dominio, 'A', ctl.signal)
-      res = tiene(a, 1) ? 'si' : 'no'
+      if (tiene(a, 1)) res = 'si'
+      else res = tiene(await consultar(dominio, 'AAAA', ctl.signal), 28) ? 'si' : 'no'
     }
   } catch (e) { res = 'desconocido' }
   clearTimeout(t)

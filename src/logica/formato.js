@@ -45,3 +45,14 @@ export function iniciales (negocio, email) {
 
 // Fecha y hora cortas para la actividad de seguridad: "20 nov, 14:05".
 export const fechaHora = ms => new Date(ms).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+
+/* ---- Mensaje de error en español ----
+ * Los errores de red del navegador llegan en inglés ("Failed to fetch"). Se traducen a algo que el dueño entienda.
+ * Los demás mensajes (de la base de datos) se dejan tal cual. */
+export function msgError (e) {
+  const m = String((e && e.message) || e || '').trim()
+  if (!m || /failed to fetch|networkerror|load failed|network request failed|fetch failed/i.test(m)) return 'sin conexión a internet; revisa tu señal e intenta de nuevo'
+  if (/timeout|timed out|aborted/i.test(m)) return 'el servidor tardó demasiado en responder; intenta de nuevo'
+  if (/JWT expired|invalid jwt|not authenticated/i.test(m)) return 'tu sesión expiró; vuelve a entrar'
+  return m
+}

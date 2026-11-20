@@ -11,7 +11,7 @@
  *   exhibir     -> nadie lo ha comprado en 7 días: ponerlo más a la vista.
  *   estrella    -> el más vendido de la semana: que nunca falte.
  * ===================================================================== */
-import { totalPiezas, lotesDe, diasA, paquetesAPedir, piezasCaducadas, nombreCompleto, DIA } from './inventario.js'
+import { totalPiezas, lotesDe, diasA, paquetesAPedir, piezasCaducadas, nombreCompleto, finDeOferta, hoy0, fechaISO, DIA } from './inventario.js'
 import { cadTxt, diasCorto, dinero, plural } from './formato.js'
 
 /* ---- ¿Qué descuento conviene? ----
@@ -40,11 +40,16 @@ export function sobrantesPorLote (p, consumoDiario, ahora = Date.now()) {
   })
 }
 
-// Último día de la oferta: un día antes de que caduque (o "hoy" si caduca hoy o mañana).
-function hastaCuando (cad, d) {
-  if (d <= 1) return 'solo hoy'
-  const f = new Date(new Date(cad + 'T00:00:00').getTime() - DIA)
-  return 'hasta el ' + f.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })
+/* ---- Qué tan urgente es una sugerencia ----
+ * URGENTE: cuenta en el número de la pestaña "Hoy" (caducados, se acabó, oferta de algo que caduca ya).
+ * PENDIENTE: entra a la campana y a la notificación del día. */
+export const PRIORIDAD = Object.freeze({ urgente: 80, pendiente: 60 })
+
+// Último día de la oferta: un día antes de que caduque (o "solo hoy" si caduca hoy o mañana).
+function hastaCuando (cad, ahora) {
+  const fin = finDeOferta(cad, ahora)
+  if (fin === fechaISO(hoy0(ahora))) return 'solo hoy'
+  return 'hasta el ' + new Date(fin + 'T00:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })
 }
 
 // conOferta = conjunto de ids de productos que ya tienen una oferta activa (no se vuelve a sugerir oferta).
@@ -82,7 +87,7 @@ export function generarSugerencias (productos, analisis, { conOferta = new Set()
         detalle: `${plural(s.sobrante, 'pieza')} de ${s.lote.piezas} no se venderán antes de que caduquen (${cadTxt(s.d)}). ` +
           `Te sugerimos ${desc.texto}${precioOferta ? ` (de ${dinero(p.precio)} a ${dinero(precioOferta)})` : ''}` +
           `${p.costo ? `: así evitas perder hasta ${dinero(s.sobrante * p.costo)}` : ''}.`,
-        datos: { cad: s.lote.cad, dias: s.d, sobrante: s.sobrante, pct: desc.pct, textoDescuento: desc.texto, precioOferta, hasta: hastaCuando(s.lote.cad, s.d) }
+        datos: { cad: s.lote.cad, dias: s.d, sobrante: s.sobrante, pct: desc.pct, textoDescuento: desc.texto, precioOferta, hasta: hastaCuando(s.lote.cad, ahora) }
       })
     }
 

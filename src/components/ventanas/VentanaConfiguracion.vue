@@ -10,6 +10,7 @@ import { useAvisos } from '../../stores/avisos.js'
 import Ventana from '../Ventana.vue'
 import Icono from '../Icono.vue'
 import GuiaInstalar from '../GuiaInstalar.vue'
+import { notificar } from '../../lib/notificar.js'
 import Plegable from '../Plegable.vue'
 
 const emit = defineEmits(['cerrar'])
@@ -26,7 +27,7 @@ async function alternarNotificaciones () {
   permiso.value = await Notification.requestPermission()
   if (permiso.value === 'granted') {
     ps.cambiar('notificaciones', true)
-    new Notification('EarlyStock', { body: 'Listo: te avisaremos de lo urgente una vez al día al abrir la app.', icon: 'icon-192.png' })
+    notificar('EarlyStock', { body: 'Listo: te avisaremos de lo urgente una vez al día al abrir la app.', icon: 'icon-192.png' })
   } else avisos.avisar('No se dio permiso. Puedes activarlo en la configuración del navegador (ícono del candado junto a la dirección).')
 }
 function restablecer () { ps.restablecer(); avisos.avisar('Configuración restablecida', 'ok') }

@@ -25,8 +25,16 @@ const plan = usePlan()
 // Al bajar en la página, el encabezado se vuelve más opaco (clase "scrolled").
 const bajo = ref(false)
 const alScroll = () => { bajo.value = scrollY > 8 }
-onMounted(() => addEventListener('scroll', alScroll, { passive: true }))
-onUnmounted(() => removeEventListener('scroll', alScroll))
+// Ctrl+K (Cmd+K en Mac): abre o cierra la paleta de comandos en cualquier página con encabezado (panel y Admin).
+// No reemplaza otra ventana abierta: así no se pierde un formulario a medias.
+function atajoComandos (e) {
+  if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'k') return
+  e.preventDefault()
+  if (ui.ventana && ui.ventana.tipo === 'comandos') ui.cerrar()
+  else if (!document.querySelector('dialog[open]')) ui.abrir('comandos')
+}
+onMounted(() => { addEventListener('scroll', alScroll, { passive: true }); addEventListener('keydown', atajoComandos) })
+onUnmounted(() => { removeEventListener('scroll', alScroll); removeEventListener('keydown', atajoComandos) })
 
 // Cambio rápido de tema: si se ve oscuro pasa a Claro; si se ve claro pasa a Oscuro.
 const alternarTema = () => prefs.cambiar('tema', prefs.esOscuro() ? 'light' : 'dark')
@@ -49,7 +57,7 @@ const alternarTema = () => prefs.cambiar('tema', prefs.esOscuro() ? 'light' : 'd
           <template v-if="plan.planId === 'gratis'"><Icono n="star" sm /><span class="ocultar-movil">Mejorar plan</span></template>
           <InsigniaPlan v-else :plan="plan.planId" />
         </button>
-        <router-link v-if="soporte.esAdmin" to="/admin" class="btn-top admin-btn" title="Administración"><Icono n="shield" sm /><span class="ocultar-movil">Admin</span></router-link>
+        <router-link v-if="soporte.esAdmin || plan.esAdmin" to="/admin" class="btn-top admin-btn" title="Administración"><Icono n="shield" sm /><span class="ocultar-movil">Admin</span></router-link>
         <router-link v-if="$route.name !== 'app'" to="/app" class="btn-top icono" title="Mi inventario" aria-label="Mi inventario"><Icono n="box" /></router-link>
         <button type="button" class="btn-top icono ocultar-chico" aria-label="Ayuda y soporte" title="Ayuda y soporte" @click="ui.abrir('soporte')"><Icono n="help" /></button>
         <button type="button" class="btn-top icono ocultar-chico" aria-label="Configuración" title="Configuración" @click="ui.abrir('configuracion')"><Icono n="gear" /></button>

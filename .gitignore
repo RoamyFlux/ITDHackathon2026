@@ -1,7 +1,11 @@
 node_modules/
 dist/
-.env
-.env.local
+dist-e2e/
+# Variables locales: nunca se suben (puede haber claves). Solo el ejemplo sí.
+.env*
+!.env.example
 *.log
 test-results/
 playwright-report/
+presentacion/fuente/node_modules/
+presentacion/fuente/trabajo/

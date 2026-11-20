@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 import { useInventario } from '../stores/inventario.js'
 import { useUI } from '../stores/ui.js'
-import { totalPiezas, lotesDe, diasA, etiquetaOferta } from '../logica/inventario.js'
+import { totalPiezas, lotesDe, diasA, etiquetaOferta, nombreCompleto } from '../logica/inventario.js'
 import { ETIQ, cadTxt, fechaCorta, fmt, diasCorto, plural } from '../logica/formato.js'
 import Icono from './Icono.vue'
 import Spark from './Spark.vue'
@@ -82,14 +82,14 @@ const totPz = computed(() => suma(props.filas.map(totalPiezas)))
           </td>
           <td class="num"><span class="ventas-celda"><Spark :dias="a.ventasDe(x.p.id).dias" /><b>{{ x.v7 }}</b></span></td>
           <td class="num"><span class="acc">
-            <button type="button" class="sm icono" :aria-label="'Vendí ' + x.p.nombre" title="Vendí" @click="ui.abrir('movimiento', { tipo: 'venta', producto: x.p })"><Icono n="minus" sm /></button>
-            <button type="button" class="sm sec icono" :aria-label="'Llegó ' + x.p.nombre" title="Llegó mercancía" @click="ui.abrir('movimiento', { tipo: 'llegada', producto: x.p })"><Icono n="truck" sm /></button>
-            <button type="button" class="sm ghost icono" :aria-label="'Editar ' + x.p.nombre" title="Editar" @click="ui.abrir('producto', { producto: x.p })"><Icono n="edit" sm /></button>
-            <button type="button" class="sm ghost icono" :aria-label="'Eliminar ' + x.p.nombre" title="Eliminar" @click="inv.eliminar(x.p)"><Icono n="trash" sm /></button>
+            <button type="button" class="sm icono" :aria-label="'Vendí ' + nombreCompleto(x.p)" title="Vendí" @click="ui.abrir('movimiento', { tipo: 'venta', producto: x.p })"><Icono n="minus" sm /></button>
+            <button type="button" class="sm sec icono" :aria-label="'Llegó ' + nombreCompleto(x.p)" title="Llegó mercancía" @click="ui.abrir('movimiento', { tipo: 'llegada', producto: x.p })"><Icono n="truck" sm /></button>
+            <button type="button" class="sm ghost icono" :aria-label="'Editar ' + nombreCompleto(x.p)" title="Editar" @click="ui.abrir('producto', { producto: x.p })"><Icono n="edit" sm /></button>
+            <button type="button" class="sm ghost icono" :aria-label="'Eliminar ' + nombreCompleto(x.p)" title="Eliminar" @click="inv.eliminar(x.p)"><Icono n="trash" sm /></button>
           </span></td>
         </tr>
       </tbody>
-      <tfoot><tr><td>{{ plural(filas.length, 'variante') }}</td><td colspan="7" /><td class="num">{{ totPz }} pzas</td><td colspan="6" /></tr></tfoot>
+      <tfoot><tr><td>{{ plural(filas.length, 'variante') }}</td><td colspan="7" /><td class="num">{{ totPz }} pzas</td><td colspan="5" /></tr></tfoot>
     </table>
   </div>
 </template>

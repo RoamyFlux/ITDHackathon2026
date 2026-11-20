@@ -1,0 +1,62 @@
+/* =====================================================================
+ * PASO 2 de 5 · CAPTURAS DE LA APP REAL (node capturas.cjs)
+ * Abre la app compilada con el Supabase simulado de las pruebas (tests/e2e/simulado.cjs), carga la tienda de
+ * ejemplo y toma capturas en computadora (1600×900) y celular (390×844) al doble de resolución.
+ * Requisito: haber corrido "npm run e2e" (o al menos su compilación) para que exista dist-e2e/.
+ * Salida: trabajo/capturas/
+ * ===================================================================== */
+const path = require('path')
+const fs = require('fs')
+const { abrir, USER } = require('../../tests/e2e/simulado.cjs')
+const OUT = path.join(__dirname, 'trabajo', 'capturas')
+fs.mkdirSync(OUT, { recursive: true })
+if (!fs.existsSync(path.join(__dirname, '..', '..', 'dist-e2e', 'index.html'))) { console.error('Falta dist-e2e/: corre "npm run e2e" en la raíz del proyecto.'); process.exit(1) }
+const w = ms => new Promise(r => setTimeout(r, ms))
+;(async () => {
+  USER.user_metadata = { acepto_politicas: '2026-11b', negocio: 'Abarrotes Don Pepe' }
+  const { b, pg } = await abrir({ ancho: 1600, alto: 900, escala: 2 })
+  await pg.addInitScript(() => localStorage.setItem('earlystock.guia', '1'))
+  await pg.goto('https://app.test/ITDHackaton2026/'); await pg.waitForSelector('.portada'); await w(1500)
+  await pg.screenshot({ path: OUT + '/inicio.png' })
+  await pg.locator('#planes').scrollIntoViewIfNeeded(); await w(800)
+  await pg.locator('#planes').screenshot({ path: OUT + '/planes.png' })
+  await pg.locator('#conoce').scrollIntoViewIfNeeded(); await w(600)
+  await pg.locator('#conoce').screenshot({ path: OUT + '/conoce.png' })
+  await pg.evaluate(() => scrollTo(0, 0))
+  await pg.click('.nav-der >> text=Entrar')
+  await pg.fill('.form-acceso input[type=email]', 'dueno@tienda.mx'); await pg.fill('.form-acceso .campo-clave input', 'tienda2026')
+  await pg.click('.form-acceso button[type=submit]'); await pg.waitForSelector('.pestanas-panel')
+  await pg.click('text=Probar con una tienda de ejemplo'); await pg.waitForSelector('#aviso:has-text("cargada")'); await w(4500)
+  await pg.mouse.move(5, 880)
+  await pg.screenshot({ path: OUT + '/hoy.png' })
+  // Crear una oferta desde la sugerencia
+  await pg.locator('.sug', { hasText: 'Huevo' }).locator('text=Crear oferta').click(); await pg.waitForSelector('dialog >> textarea'); await w(500)
+  await pg.screenshot({ path: OUT + '/oferta-ventana.png' })
+  await pg.click('dialog button[type=submit]'); await w(4500)
+  await pg.keyboard.press('2'); await w(900); await pg.screenshot({ path: OUT + '/inventario.png' })
+  await pg.keyboard.press('3'); await w(900); await pg.screenshot({ path: OUT + '/compras.png' })
+  await pg.keyboard.press('4'); await w(900); await pg.screenshot({ path: OUT + '/ofertas.png' })
+  await pg.keyboard.press('5'); await w(1800); await pg.screenshot({ path: OUT + '/reportes.png' })
+  await pg.keyboard.press('6'); await w(900); await pg.screenshot({ path: OUT + '/mas.png' })
+  await pg.click('.btn-perfil'); await pg.click('text=Llaves de acceso, actividad y dispositivos'); await pg.waitForSelector('text=Revisión automática'); await w(700)
+  await pg.screenshot({ path: OUT + '/seguridad.png' }); await pg.keyboard.press('Escape'); await w(300)
+  await pg.keyboard.press('Control+k'); await pg.fill('.cmd-buscar input', 'grafito'); await pg.keyboard.press('Enter'); await w(300)
+  await pg.keyboard.press('Escape'); await pg.keyboard.press('1'); await w(1500); await pg.mouse.move(5, 880)
+  await pg.screenshot({ path: OUT + '/hoy-grafito.png' })
+  await pg.keyboard.press('Control+k'); await w(500); await pg.fill('.cmd-buscar input', 'ir a'); await w(400)
+  await pg.screenshot({ path: OUT + '/comandos.png' })
+  await b.close()
+  // Celular
+  const m = await abrir({ ancho: 390, alto: 844, movil: true, escala: 2 })
+  await m.pg.addInitScript(() => localStorage.setItem('earlystock.guia', '1'))
+  await m.pg.goto('https://app.test/ITDHackaton2026/'); await m.pg.waitForSelector('.portada'); await w(1200)
+  await m.pg.screenshot({ path: OUT + '/m-inicio.png' })
+  await m.pg.click('text=Probar demo sin registrarse'); await m.pg.waitForSelector('.pestanas-panel')
+  await m.pg.click('text=Probar con una tienda de ejemplo').catch(() => {})
+  await m.pg.waitForSelector('#aviso', { state: 'detached', timeout: 20000 }).catch(() => {}); await w(800)
+  await m.pg.screenshot({ path: OUT + '/m-hoy.png' })
+  await m.pg.click('.pestanas-panel [data-pestana=inventario]'); await w(900); await m.pg.screenshot({ path: OUT + '/m-inventario.png' })
+  await m.pg.click('.pestanas-panel [data-pestana=reportes]'); await w(1800); await m.pg.screenshot({ path: OUT + '/m-reportes.png' })
+  await m.b.close()
+  console.log('listo')
+})().catch(e => { console.error(e); process.exit(1) })

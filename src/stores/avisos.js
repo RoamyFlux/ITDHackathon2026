@@ -21,6 +21,8 @@ export const useAvisos = defineStore('avisos', () => {
   const cerrarAviso = () => { aviso.value = null }
 
   function confirmar ({ titulo, mensaje, boton = 'Confirmar', peligro = true }) {
+    // Si había otra confirmación abierta, se responde "no" para que quien la pidió no se quede esperando.
+    if (confirmacion.value) confirmacion.value.resolver(false)
     return new Promise(resolver => { confirmacion.value = { titulo, mensaje, boton, peligro, resolver } })
   }
   function responder (si) {

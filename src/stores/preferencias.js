@@ -72,7 +72,11 @@ export const usePreferencias = defineStore('preferencias', () => {
   const conectarCuenta = fn => { alGuardarEnCuenta = fn }
 
   // ¿Se ve oscura la app ahora? (Oscuro/Grafito, o Automático con el dispositivo en modo oscuro)
-  const esOscuro = () => ['dark', 'grafito'].includes(prefs.value.tema) || (prefs.value.tema === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
+  // sistemaOscuro sigue al dispositivo en vivo: si cambia a modo oscuro, el ícono del tema cambia solo.
+  const mq = matchMedia('(prefers-color-scheme: dark)')
+  const sistemaOscuro = ref(mq.matches)
+  try { mq.addEventListener('change', e => { sistemaOscuro.value = e.matches }) } catch (e) {}
+  const esOscuro = () => ['dark', 'grafito'].includes(prefs.value.tema) || (prefs.value.tema === 'auto' && sistemaOscuro.value)
   const movimientoActivo = () => prefs.value.movimiento !== 'off' && !matchMedia('(prefers-reduced-motion: reduce)').matches
 
   return { prefs, cambiar, aplicarDeCuenta, restablecer, conectarCuenta, esOscuro, movimientoActivo }

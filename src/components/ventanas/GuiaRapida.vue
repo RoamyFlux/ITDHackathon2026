@@ -1,6 +1,6 @@
 <!--
   GUÍA RÁPIDA (5 pasos)
-  Aparece la primera vez que se entra en un dispositivo y siempre desde el botón "?" del encabezado.
+  Aparece la primera vez que se entra en un dispositivo; después se abre desde Ctrl + K → "Guía rápida".
   Explica con palabras simples cómo se usa EarlyStock. Se avanza con Siguiente / Atrás o las flechas.
 -->
 <script setup>
@@ -27,7 +27,7 @@ function terminar () { emit('cerrar'); if (!inv.productos.length) setTimeout(() 
 </script>
 
 <template>
-  <Ventana ancho="sm" sin-cabecera @cerrar="emit('cerrar')">
+  <Ventana ancho="sm" sin-cabecera etiqueta="Guía rápida de EarlyStock" @cerrar="emit('cerrar')">
     <div class="guia" tabindex="-1" @keydown="tecla">
       <Transition name="paso" mode="out-in">
         <div :key="i" class="guia-paso">

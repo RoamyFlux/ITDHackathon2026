@@ -1,10 +1,12 @@
 # =====================================================================
-# REVISIÓN DE SEGURIDAD AUTOMÁTICA
+# REVISIÓN DE SEGURIDAD Y CALIDAD AUTOMÁTICA
 # Corre en cada pull request, en cada cambio a main y cada lunes:
 #   - pruebas de la lógica (Vitest) y compilación
 #   - npm audit: dependencias con vulnerabilidades conocidas (solo las que llegan a la página)
 #   - revisar-seguridad: claves secretas en el código, CSP, scripts en línea, v-html / eval
-#   - CodeQL: análisis estático de código de GitHub (gratis en repositorios públicos)
+#   - e2e: recorridos completos en un navegador real (Playwright + Chromium) con un Supabase simulado
+#   - CodeQL: análisis estático del código y de estos mismos flujos (gratis en repositorios públicos)
+# Las acciones están fijadas por commit (SHA); Dependabot las mantiene al día.
 # =====================================================================
 name: Seguridad
 on:
@@ -19,8 +21,10 @@ jobs:
   revisar:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -30,15 +34,35 @@ jobs:
       - run: npm run revisar-seguridad
       - name: Dependencias de la página sin vulnerabilidades altas
         run: npm audit --omit=dev --audit-level=high
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Navegador para las pruebas
+        run: npx playwright install --with-deps chromium
+      - name: Recorridos completos en el navegador
+        run: npm run e2e
   codeql:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
     permissions:
       security-events: write
       contents: read
+    strategy:
+      matrix:
+        lenguaje: [javascript-typescript, actions]
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          languages: javascript-typescript
-      - uses: github/codeql-action/analyze@v3
+          persist-credentials: false
+      - uses: github/codeql-action/init@9418214df1f2c4b8128c770156c409013b07d6b9 # v3.39.3
+        with:
+          languages: ${{ matrix.lenguaje }}
+      - uses: github/codeql-action/analyze@9418214df1f2c4b8128c770156c409013b07d6b9 # v3.39.3

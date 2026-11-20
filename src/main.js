@@ -18,6 +18,11 @@ import './styles/panel.css'
 import './styles/ventanas.css'
 import './styles/inicio.css'
 
+// "Instalar app": el navegador avisa una sola vez (beforeinstallprompt), normalmente al cargar la página.
+// Se guarda aquí para que el botón "Instalar EarlyStock" de Configuración funcione aunque se abra después.
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); window.__eventoInstalar = e })
+addEventListener('appinstalled', () => { window.__eventoInstalar = null })
+
 const app = createApp(App)
 app.use(createPinia())
 useSesion().iniciar()

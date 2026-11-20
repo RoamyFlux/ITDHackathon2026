@@ -7,6 +7,7 @@
 import { ref } from 'vue'
 import { useSesion } from '../../stores/sesion.js'
 import { useAvisos } from '../../stores/avisos.js'
+import { msgError } from '../../logica/formato.js'
 import { useUI } from '../../stores/ui.js'
 import Ventana from '../Ventana.vue'
 import Icono from '../Icono.vue'
@@ -47,11 +48,11 @@ async function subir (e) {
   const f = e.target.files[0]
   e.target.value = ''
   if (!f) return
-  if (!/^image\/(jpeg|png|webp|gif)$/.test(f.type)) return avisos.avisar('Elige una imagen JPG, PNG o WebP.')
+  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return avisos.avisar('Elige una imagen JPG, PNG o WebP.')
   if (f.size > 8 * 1024 * 1024) return avisos.avisar('La imagen pesa más de 8 MB. Elige una más ligera.')
   subiendo.value = true
   try { await sesion.subirFoto(await recortar(f)); avisos.avisar('Foto de perfil actualizada', 'ok') } catch (err) {
-    const m = (err && err.message) || 'revisa tu conexión'
+    const m = msgError(err)
     avisos.avisar('No se pudo subir la foto: ' + m + (/bucket|not found|policy|security/i.test(m) ? '. Ejecuta de nuevo supabase/schema.sql.' : ''))
   }
   subiendo.value = false

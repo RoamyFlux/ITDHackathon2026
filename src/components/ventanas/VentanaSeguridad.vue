@@ -15,7 +15,7 @@ import { useAvisos } from '../../stores/avisos.js'
 import { fechaHora } from '../../logica/formato.js'
 import Ventana from '../Ventana.vue'
 import Icono from '../Icono.vue'
-import Pestanas from '../Pestanas.vue'
+import Pestanas, { idsPestana } from '../Pestanas.vue'
 
 const emit = defineEmits(['cerrar'])
 const sesion = useSesion()
@@ -65,16 +65,16 @@ async function eliminar () {
 
 <template>
   <Ventana titulo="Seguridad" subtitulo="Tu cuenta se revisa sola; aquí ves y ajustas todo" icono="shield" ancho="md" @cerrar="emit('cerrar')">
-    <Pestanas v-model="tab" :opciones="TABS" etiqueta="Secciones de seguridad" class="pestanas-ventana" />
+    <Pestanas v-model="tab" :opciones="TABS" prefijo="seg" etiqueta="Secciones de seguridad" class="pestanas-ventana" />
     <div class="seg-tabs">
-      <section v-show="tab === 'resumen'" class="card-in" role="tabpanel">
+      <section v-show="tab === 'resumen'" class="card-in" v-bind="idsPestana('seg', 'resumen')">
         <h3><Icono n="check" sm />Revisión automática <span class="contador" :class="seg.puntaje === seg.revision.length ? 'ok' : 'low'">{{ seg.puntaje }}/{{ seg.revision.length }}</span></h3>
         <ul class="revision">
           <li v-for="r in seg.revision" :key="r.id" :class="r.ok ? 'ok' : 'low'"><Icono :n="r.ok ? 'check' : 'alert'" sm /><span><b>{{ r.t }}</b><small>{{ r.d }}</small></span></li>
         </ul>
       </section>
 
-      <section v-show="tab === 'llaves'" class="card-in" role="tabpanel">
+      <section v-show="tab === 'llaves'" class="card-in" v-bind="idsPestana('seg', 'llaves')">
         <h3><Icono n="finger" sm />Llaves de acceso</h3>
         <p class="hint">Entra con tu huella, rostro o el PIN de tu dispositivo. Es más seguro que una contraseña: no se puede adivinar ni robar con un correo falso.</p>
         <p v-if="sesion.esDemo" class="nota">Disponible con una cuenta real.</p>
@@ -94,7 +94,7 @@ async function eliminar () {
         </template>
       </section>
 
-      <section v-show="tab === 'sesiones'" class="card-in" role="tabpanel">
+      <section v-show="tab === 'sesiones'" class="card-in" v-bind="idsPestana('seg', 'sesiones')">
         <h3><Icono n="phone" sm />Sesiones</h3>
         <p class="hint">Cerrar la sesión sola si nadie usa la app:</p>
         <div class="seg compacto" role="group" aria-label="Cierre por inactividad">
@@ -107,7 +107,7 @@ async function eliminar () {
         </section>
       </section>
 
-      <section v-show="tab === 'actividad'" class="card-in actividad" role="tabpanel">
+      <section v-show="tab === 'actividad'" class="card-in actividad" v-bind="idsPestana('seg', 'actividad')">
         <h3><Icono n="activity" sm />Actividad reciente</h3>
         <p v-if="seg.errorEventos" class="nota low">{{ seg.errorEventos }}</p>
         <ul v-else-if="seg.eventos.length" class="eventos">

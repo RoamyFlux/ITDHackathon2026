@@ -27,7 +27,9 @@ import OfertasActivas from '../components/OfertasActivas.vue'
 import TuPlan from '../components/TuPlan.vue'
 import Pie from '../components/Pie.vue'
 import Icono from '../components/Icono.vue'
-import Pestanas from '../components/Pestanas.vue'
+import Pestanas, { idsPestana } from '../components/Pestanas.vue'
+import { PRIORIDAD } from '../logica/sugerencias.js'
+import { notificar } from '../lib/notificar.js'
 
 const inv = useInventario()
 const sesion = useSesion()
@@ -43,25 +45,27 @@ function irAProducto (id) {
 
 /* ---- Pestañas ----
  * Cada una con su contador: Hoy = pendientes urgentes, Compras = productos por comprar, Ofertas = activas. */
-const urgentes = computed(() => inv.sugerencias.filter(s => s.prioridad >= 80).length)
+const urgentes = computed(() => inv.sugerencias.filter(s => s.prioridad >= PRIORIDAD.urgente).length)
 const opciones = computed(() => [
-  { id: 'hoy', t: 'Hoy', icono: 'spark', n: urgentes.value, alerta: true },
-  { id: 'inventario', t: 'Inventario', icono: 'box', n: inv.productos.length },
-  { id: 'compras', t: 'Compras', icono: 'cart', n: inv.resumen.nCompras, alerta: inv.resumen.crit.length > 0 },
-  { id: 'ofertas', t: 'Ofertas', icono: 'gift', n: inv.ofertaDe.size },
+  { id: 'hoy', t: 'Hoy', icono: 'spark', n: urgentes.value, nTxt: urgentes.value === 1 ? 'urgente' : 'urgentes', alerta: true },
+  { id: 'inventario', t: 'Inventario', icono: 'box', n: inv.productos.length, nTxt: 'productos' },
+  { id: 'compras', t: 'Compras', icono: 'cart', n: inv.resumen.nCompras, nTxt: 'por comprar', alerta: inv.resumen.crit.length > 0 },
+  { id: 'ofertas', t: 'Ofertas', icono: 'gift', n: inv.ofertaDe.size, nTxt: 'activas' },
   { id: 'reportes', t: 'Reportes', icono: 'chart' },
   { id: 'mas', t: 'Más', icono: 'sliders' }
 ])
 // Al cambiar de pestaña se sube al inicio del contenido (sin brincos si ya se ve).
 watch(() => ui.pestana, () => { if (scrollY > 120) scrollTo({ top: 0, behavior: 'smooth' }) })
-// La paleta de comandos también puede pedir ir a un producto.
-watch(() => ui.ventana, v => { if (v === null && ui.irProducto) { const id = ui.irProducto; ui.irProducto = null; setTimeout(() => irAProducto(id), 60) } })
+// La paleta de comandos también puede pedir ir a un producto (al cerrarse, o al llegar al panel desde otra página).
+function irPendiente () { if (!ui.ventana && ui.irProducto) { const id = ui.irProducto; ui.irProducto = null; setTimeout(() => irAProducto(id), 60) } }
+watch(() => ui.ventana, irPendiente)
+onMounted(() => setTimeout(irPendiente, 200))
 
 /* ---- Atajos de teclado ----
  * Ctrl+K paleta de comandos · N nuevo producto · / buscar · ? atajos · 1 a 6 cambian de pestaña. No se activan mientras escribes ni con
- * una ventana abierta (salvo Ctrl+K). */
+ * una ventana abierta. Ctrl+K (paleta de comandos) vive en Encabezado.vue: no reemplaza otra ventana abierta. */
 function teclas (e) {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); ui.ventana && ui.ventana.tipo === 'comandos' ? ui.cerrar() : ui.abrir('comandos'); return }
+  // (Ctrl+K lo maneja el encabezado, igual en el panel y en Administración.)
   if (document.querySelector('dialog[open]')) return
   if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return
   if (e.ctrlKey || e.metaKey || e.altKey) return
@@ -85,18 +89,21 @@ watch(() => inv.cargando || sesion.debeAceptarPoliticas, ocupado => {
 }, { immediate: true })
 function notificarDelDia () {
   if (!prefs.prefs.notificaciones || !('Notification' in window) || Notification.permission !== 'granted') return
-  const urg = inv.sugerencias.filter(s => s.prioridad >= 60)
+  const urg = inv.sugerencias.filter(s => s.prioridad >= PRIORIDAD.pendiente)
   if (!urg.length) return
   const hoy = new Date().toDateString()
   try { if (localStorage.getItem('earlystock.notificado') === hoy) return; localStorage.setItem('earlystock.notificado', hoy) } catch (e) { return }
-  new Notification('EarlyStock: ' + (urg.length === 1 ? 'tienes 1 pendiente' : `tienes ${urg.length} pendientes`), {
+  notificar('EarlyStock: ' + (urg.length === 1 ? 'tienes 1 pendiente' : `tienes ${urg.length} pendientes`), {
     body: urg.slice(0, 3).map(s => '• ' + s.titulo).join('\n'), icon: 'icon-192.png', tag: 'earlystock-diario'
   })
 }
 
-// Aviso de conexión: sin internet no se puede guardar en la base de datos.
+// Aviso de conexión: sin internet no se puede guardar en la base de datos (no hay cola sin conexión).
+// Al volver la señal se vuelven a leer los datos (entra a la cola de guardado, así no choca con nada).
 const enLinea = ref(navigator.onLine)
 const alCambiarRed = () => { enLinea.value = navigator.onLine; if (navigator.onLine && !sesion.esDemo) inv.guardar(async () => {}) }
+// "Crear cuenta" desde la demostración: sale de la demo y la página de inicio abre directo "Crear cuenta".
+function crearCuentaDesdeDemo () { ui.accesoInicial = 'crear'; sesion.salir() }
 onMounted(() => { addEventListener('online', alCambiarRed); addEventListener('offline', alCambiarRed) })
 onUnmounted(() => { removeEventListener('online', alCambiarRed); removeEventListener('offline', alCambiarRed) })
 </script>
@@ -106,13 +113,13 @@ onUnmounted(() => { removeEventListener('online', alCambiarRed); removeEventList
   <main>
     <div v-if="sesion.esDemo" class="banner demo noprint">
       <Icono n="spark" /><span><b>Estás en la demostración.</b> Nada se guarda: al salir se borra. ¿Te gustó? Crea tu cuenta para guardar tu inventario.</span>
-      <button type="button" class="sm" @click="sesion.salir().then(() => $router.push({ path: '/', query: { ver: 1 } }))">Crear cuenta</button>
+      <button type="button" class="sm" @click="crearCuentaDesdeDemo">Crear cuenta</button>
     </div>
-    <div v-if="!enLinea && !sesion.esDemo" class="banner low noprint"><Icono n="alert" />Sin conexión a internet: los cambios no se guardarán hasta que vuelva.</div>
-    <Pestanas :model-value="ui.pestana" :opciones="opciones" etiqueta="Secciones del panel" class="pestanas-panel" @update:model-value="ui.cambiarPestana" />
+    <div v-if="!enLinea && !sesion.esDemo" class="banner low noprint"><Icono n="alert" />Sin conexión a internet: puedes consultar tu inventario, pero no se puede guardar nada hasta que vuelva la señal.</div>
+    <Pestanas :model-value="ui.pestana" :opciones="opciones" prefijo="panel" etiqueta="Secciones del panel" class="pestanas-panel" @update:model-value="ui.cambiarPestana" />
     <div id="appBox" :class="'en-' + ui.pestana">
       <!-- HOY -->
-      <section v-show="ui.pestana === 'hoy'" class="pagina pagina-hoy" role="tabpanel" aria-label="Hoy">
+      <section v-show="ui.pestana === 'hoy'" class="pagina pagina-hoy" v-bind="idsPestana('panel', 'hoy')">
         <ResumenHero />
         <div class="dos-columnas">
           <PanelSugerencias />
@@ -120,20 +127,20 @@ onUnmounted(() => { removeEventListener('online', alCambiarRed); removeEventList
         </div>
       </section>
       <!-- INVENTARIO -->
-      <section v-show="ui.pestana === 'inventario'" class="pagina" role="tabpanel" aria-label="Inventario">
+      <section v-show="ui.pestana === 'inventario'" class="pagina" v-bind="idsPestana('panel', 'inventario')">
         <Inventario ref="inventario" />
       </section>
       <!-- COMPRAS -->
-      <section v-show="ui.pestana === 'compras'" class="pagina angosta" role="tabpanel" aria-label="Compras">
+      <section v-show="ui.pestana === 'compras'" class="pagina angosta" v-bind="idsPestana('panel', 'compras')">
         <ListaCompras />
       </section>
       <!-- OFERTAS -->
-      <section v-show="ui.pestana === 'ofertas'" class="pagina angosta" role="tabpanel" aria-label="Ofertas">
+      <section v-show="ui.pestana === 'ofertas'" class="pagina angosta" v-bind="idsPestana('panel', 'ofertas')">
         <OfertasActivas />
         <p v-if="!inv.productos.length" class="vacio-mini">Agrega productos para poder ponerlos en oferta.</p>
       </section>
       <!-- REPORTES -->
-      <section v-show="ui.pestana === 'reportes'" class="pagina" role="tabpanel" aria-label="Reportes">
+      <section v-show="ui.pestana === 'reportes'" class="pagina" v-bind="idsPestana('panel', 'reportes')">
         <div v-if="inv.productos.length" class="dos-columnas">
           <GraficaVentas />
           <StockCategorias />
@@ -141,7 +148,7 @@ onUnmounted(() => { removeEventListener('online', alCambiarRed); removeEventList
         <p v-else class="card vacio-lista">Cuando agregues productos y registres ventas, aquí verás tus reportes.</p>
       </section>
       <!-- MÁS -->
-      <section v-show="ui.pestana === 'mas'" class="pagina" role="tabpanel" aria-label="Más">
+      <section v-show="ui.pestana === 'mas'" class="pagina" v-bind="idsPestana('panel', 'mas')">
         <div class="dos-columnas">
           <TuPlan />
           <Herramientas />

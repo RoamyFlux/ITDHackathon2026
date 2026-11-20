@@ -11,14 +11,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useSesion } from '../stores/sesion.js'
 import { usePlan } from '../stores/plan.js'
 import InsigniaPlan from '../components/InsigniaPlan.vue'
-import Pestanas from '../components/Pestanas.vue'
+import Pestanas, { idsPestana } from '../components/Pestanas.vue'
 import { useSoporte } from '../stores/soporte.js'
 import { useAvisos } from '../stores/avisos.js'
 import { REDES, validarContacto, enlaceContacto } from '../logica/soporte.js'
 import { PLANES, planPorId, precioTxt } from '../logica/planes.js'
 import { sb } from '../lib/supabase.js'
 import { fechaISO, DIA } from '../logica/inventario.js'
-import { fechaCorta } from '../logica/formato.js'
+import { fechaCorta, fechaHora } from '../logica/formato.js'
 import Encabezado from '../components/Encabezado.vue'
 import Pie from '../components/Pie.vue'
 import Icono from '../components/Icono.vue'
@@ -90,9 +90,9 @@ async function borrar (c) {
         <h1><Icono n="shield" />Administración</h1>
         <p>Los contactos que agregues aquí aparecen en "Ayuda y soporte" para todos los usuarios (y en la página de inicio).</p>
       </div>
-      <Pestanas v-model="tab" etiqueta="Secciones de administración" class="pestanas-admin"
+      <Pestanas v-model="tab" prefijo="admin" etiqueta="Secciones de administración" class="pestanas-admin"
                 :opciones="[{ id: 'usuarios', t: 'Usuarios y planes', icono: 'user', n: usuarios.length }, { id: 'soporte', t: 'Contactos de soporte', icono: 'chat', n: soporte.contactos.length }]" />
-      <div v-show="tab === 'usuarios'" class="admin-rejilla" role="tabpanel">
+      <div v-show="tab === 'usuarios'" class="admin-rejilla" v-bind="idsPestana('admin', 'usuarios')">
         <form id="form-plan" class="card admin-form" @submit.prevent="asignarPlan">
           <h2>Asignar plan</h2>
           <p class="hint">Elige una cuenta de la lista (o escribe su correo), el plan y hasta qué día está pagado. Al pasar esa fecha vuelve sola a Gratis. Puedes dar planes de cortesía sin vencimiento.</p>
@@ -118,7 +118,7 @@ async function borrar (c) {
                 <span class="avatar-mini" :class="'aro-' + u.plan_vigente">{{ (u.negocio || u.email).slice(0, 2).toUpperCase() }}</span>
                 <span>
                   <b>{{ u.negocio || u.email }} <InsigniaPlan :plan="u.plan_vigente" :admin="u.es_admin" /></b>
-                  <small>{{ u.negocio ? u.email + ' · ' : '' }}{{ planPorId(u.plan_vigente).nombre }}{{ u.vence && u.plan_vigente !== 'gratis' ? ' hasta el ' + fechaCorta(u.vence) : '' }}{{ u.plan !== u.plan_vigente ? ' (su ' + planPorId(u.plan).nombre + ' venció)' : '' }} · {{ u.productos }} productos{{ u.confirmado ? '' : ' · sin confirmar correo' }}{{ u.ultimo_acceso ? ' · último acceso ' + fechaCorta(String(u.ultimo_acceso).slice(0, 10)) : '' }}</small>
+                  <small>{{ u.negocio ? u.email + ' · ' : '' }}{{ planPorId(u.plan_vigente).nombre }}{{ u.vence && u.plan_vigente !== 'gratis' ? ' hasta el ' + fechaCorta(u.vence) : '' }}{{ u.plan !== u.plan_vigente ? ' (su ' + planPorId(u.plan).nombre + ' venció)' : '' }} · {{ u.productos }} productos{{ u.confirmado ? '' : ' · sin confirmar correo' }}{{ u.ultimo_acceso ? ' · último acceso ' + fechaHora(Date.parse(u.ultimo_acceso)) : '' }}</small>
                 </span>
                 <span class="admin-acc"><button type="button" class="sec sm" @click="elegirUsuario(u)"><Icono n="star" sm />Asignar plan</button></span>
               </div>
@@ -128,7 +128,7 @@ async function borrar (c) {
         </section>
       </div>
 
-      <div v-show="tab === 'soporte'" class="admin-rejilla" role="tabpanel">
+      <div v-show="tab === 'soporte'" class="admin-rejilla" v-bind="idsPestana('admin', 'soporte')">
         <form id="form-contacto" class="card admin-form" @submit.prevent="guardar">
           <h2>{{ form.id ? 'Editar contacto' : 'Agregar contacto' }}</h2>
           <div class="campo"><span>Red</span>

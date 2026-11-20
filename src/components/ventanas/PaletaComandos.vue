@@ -2,9 +2,11 @@
   PALETA DE COMANDOS (Ctrl + K)
   Un buscador para hacer cualquier cosa sin el mouse: acciones, apariencia, cuenta, categorías y productos
   ("Vender: Leche", "Llegó: Arroz"…). Flechas para moverse, Enter para ejecutar, Esc para cerrar.
+  Si se abre desde otra página (por ejemplo Administración), los comandos del panel primero regresan al panel.
 -->
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useInventario } from '../../stores/inventario.js'
 import { useUI } from '../../stores/ui.js'
 import { useSesion } from '../../stores/sesion.js'
@@ -25,14 +27,22 @@ const ps = usePreferencias()
 const q = ref('')
 const sel = ref(0)
 const lista = ref(null)
+const router = useRouter()
+const route = useRoute()
+// Ejecuta algo del panel: si no estamos en él, primero va al panel y luego lo hace.
+function enPanel (fn) {
+  ui.cerrar()
+  if (route.name === 'app') return setTimeout(fn, 60)
+  router.push({ name: 'app' }).then(() => setTimeout(fn, 250))
+}
 
 // Cada comando: g (grupo), i (ícono), t (texto), d (detalle), k (atajo), f (qué hace).
 function comandos () {
-  const ir = id => () => { ui.cerrar(); setTimeout(() => ui.irA(id), 60) }
+  const ir = id => () => enPanel(() => ui.irA(id))
   const c = [
     { g: 'Acciones', i: 'plus', t: 'Nuevo producto', k: 'N', f: () => ui.abrir('producto') },
     ...[['hoy', 'Hoy', 'spark'], ['inventario', 'Inventario', 'box'], ['compras', 'Compras', 'cart'], ['ofertas', 'Ofertas', 'gift'], ['reportes', 'Reportes', 'chart'], ['mas', 'Más (plan y herramientas)', 'sliders']]
-      .map(([id, t, i], k) => ({ g: 'Ir a', i, t: `Ir a ${t}`, k: String(k + 1), f: () => { ui.cerrar(); ui.cambiarPestana(id) } })),
+      .map(([id, t, i], k) => ({ g: 'Ir a', i, t: `Ir a ${t}`, k: String(k + 1), f: () => enPanel(() => ui.cambiarPestana(id)) })),
     { g: 'Acciones', i: 'bulb', t: 'Ver sugerencias para hoy', f: ir('sugerencias') },
     { g: 'Acciones', i: 'cart', t: 'Ver lista de compras', f: ir('compras') },
     { g: 'Acciones', i: 'chart', t: 'Ver ventas de la semana', f: ir('ventas') },
@@ -63,7 +73,7 @@ function comandos () {
     { g: 'Productos', i: 'truck', t: `Llegó: ${nombreCompleto(p)}`, f: () => ui.abrir('movimiento', { tipo: 'llegada', producto: p }) },
     { g: 'Productos', i: 'edit', t: `Editar: ${nombreCompleto(p)}`, f: () => ui.abrir('producto', { producto: p }) },
     { g: 'Productos', i: 'gift', t: `Oferta: ${nombreCompleto(p)}`, f: () => ui.abrir('oferta', { producto: p }) },
-    { g: 'Productos', i: 'search', t: `Ver: ${nombreCompleto(p)}`, d: ETIQ[inv.analisis.estado(p)], f: () => { ui.irProducto = p.id; ui.cerrar() } }
+    { g: 'Productos', i: 'search', t: `Ver: ${nombreCompleto(p)}`, d: ETIQ[inv.analisis.estado(p)], f: () => { ui.irProducto = p.id; ui.cerrar(); if (route.name !== 'app') router.push({ name: 'app' }) } }
   ))
   return c
 }
@@ -84,8 +94,8 @@ const muestraGrupo = i => i === 0 || items.value[i - 1].g !== items.value[i].g
 </script>
 
 <template>
-  <Ventana ancho="cmd" sin-cabecera @cerrar="emit('cerrar')">
-    <div class="cmd-buscar"><Icono n="search" /><input v-model="q" type="text" placeholder="¿Qué quieres hacer? Ej. vender leche, tema oscuro…" aria-label="Buscar comando" role="combobox" aria-controls="cmd-lista" :aria-activedescendant="'cmd-' + sel" autofocus @keydown="tecla"><kbd>Esc</kbd></div>
+  <Ventana ancho="cmd" sin-cabecera etiqueta="Buscar o ejecutar un comando" @cerrar="emit('cerrar')">
+    <div class="cmd-buscar"><Icono n="search" /><input v-model="q" type="text" placeholder="¿Qué quieres hacer? Ej. vender leche, tema oscuro…" aria-label="Buscar comando" role="combobox" aria-controls="cmd-lista" :aria-activedescendant="items.length ? 'cmd-' + sel : undefined" aria-expanded="true" aria-autocomplete="list" autofocus @keydown="tecla"><kbd>Esc</kbd></div>
     <ul id="cmd-lista" ref="lista" class="cmd-lista" role="listbox">
       <template v-for="(c, i) in items" :key="c.g + c.t">
         <li v-if="muestraGrupo(i)" class="cmd-grupo" role="presentation">{{ c.g }}</li>
