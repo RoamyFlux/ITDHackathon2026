@@ -2,7 +2,8 @@
   RESUMEN (mosaico "bento" de arriba)
   Izquierda: saludo, fecha, anillo "% en riesgo" y botón "Nuevo producto".
   Derecha: números clave. El valor del inventario NO aparece aquí a propósito: lo importante es qué hacer hoy.
-    Productos · Urgentes · Por acabarse · Por caducar · Por comprar
+    Productos · Urgentes · Atención · Por caducar · Por comprar
+  Urgentes y Atención cuentan cantidad Y caducidad (igual que los filtros del Inventario al tocarlos).
   ANILLO: % de productos con alguna alerta (cantidad o caducidad). < 30 % verde, 30–59 % ámbar, ≥ 60 % rojo.
   r = 27 -> circunferencia 169.65; stroke-dashoffset es la parte "vacía".
 -->
@@ -25,7 +26,9 @@ const plan = usePlan()
 const soporte = useSoporte()
 const r = computed(() => inv.resumen)
 const total = computed(() => inv.productos.length)
-const fecha = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, c => c.toUpperCase())
+// La fecha sale del "reloj" del inventario: cambia sola a medianoche si la app sigue abierta.
+const fecha = computed(() => new Date(inv.reloj).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, c => c.toUpperCase()))
+const cuantos = e => inv.productos.filter(p => inv.analisis.estadoTotal(p) === e).length
 const nivel = computed(() => (r.value.pct >= 60 ? 'crit' : r.value.pct >= 30 ? 'low' : 'ok'))
 const textoNivel = computed(() => ({ crit: 'Riesgo alto', low: 'Atención', ok: 'Inventario sano' })[nivel.value])
 
@@ -42,10 +45,10 @@ function contar (clave, fin) {
   requestAnimationFrame(paso)
 }
 const STATS = computed(() => [
-  { k: 'productos', i: 'box', t: 'Productos', n: total.value, c: '', ayuda: 'Productos registrados' },
-  { k: 'crit', i: 'alert', t: 'Urgentes', n: r.value.crit.length, c: 'crit', ayuda: 'Agotados o en su mínimo', filtro: 'crit' },
-  { k: 'low', i: 'down', t: 'Por acabarse', n: r.value.low.length, c: 'low', ayuda: 'Cerca del mínimo o alcanzan ≤ 2 días', filtro: 'low' },
-  { k: 'cad', i: 'clock', t: 'Por caducar', n: r.value.nCad, c: 'low', ayuda: `Caducan en ${prefs.prefs.diasAviso} días o menos` },
+  { k: 'productos', i: 'box', t: 'Productos', n: total.value, c: '', ayuda: 'Productos registrados', filtro: '' },
+  { k: 'crit', i: 'alert', t: 'Urgentes', n: cuantos('crit'), c: 'crit', ayuda: 'Agotados, en su mínimo o caducados', filtro: 'crit' },
+  { k: 'low', i: 'down', t: 'Atención', n: cuantos('low'), c: 'low', ayuda: 'Por acabarse o por caducar pronto', filtro: 'low' },
+  { k: 'cad', i: 'clock', t: 'Por caducar', n: r.value.nCad, c: 'low', ayuda: `Caducan en ${prefs.prefs.diasAviso} días o menos`, ir: 'alertas' },
   { k: 'compras', i: 'cart', t: 'Por comprar', n: r.value.nCompras, c: 'marca', ayuda: 'Productos en tu lista de compras', ir: 'compras' }
 ])
 const anim = ref(false)
@@ -65,7 +68,7 @@ watch(() => r.value.pct, p => { requestAnimationFrame(() => { arco.value = 169.6
 onMounted(() => animarTodo())
 
 function tocar (s) {
-  if (s.filtro) { inv.filtros = { q: '', estado: s.filtro, categoria: '' }; ui.irA('inventario') } else if (s.ir) ui.irA(s.ir)
+  if (s.filtro !== undefined) { inv.filtros = { q: '', estado: s.filtro, categoria: '' }; ui.irA('inventario') } else if (s.ir) ui.irA(s.ir)
 }
 </script>
 

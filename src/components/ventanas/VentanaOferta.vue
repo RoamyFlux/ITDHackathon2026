@@ -10,7 +10,7 @@ import { ref, computed } from 'vue'
 import { useInventario } from '../../stores/inventario.js'
 import { useSesion } from '../../stores/sesion.js'
 import { useAvisos } from '../../stores/avisos.js'
-import { nombreCompleto, precioConOferta, etiquetaOferta, fechaISO, hoy0, DIA } from '../../logica/inventario.js'
+import { nombreCompleto, precioConOferta, etiquetaOferta, fechaISO, hoy0, finDeOferta } from '../../logica/inventario.js'
 import { dinero, fechaCorta } from '../../logica/formato.js'
 import Ventana from '../Ventana.vue'
 import Icono from '../Icono.vue'
@@ -27,7 +27,8 @@ const s = props.sugerencia
 // Valores iniciales: la oferta actual, o la sugerida, o 10 % por defecto.
 const tipo = ref(actual ? actual.tipo : 'porcentaje')
 const valor = ref(actual ? actual.valor : s ? s.datos.pct : 10)
-const termina = ref(actual ? (actual.termina || '') : s && s.datos.cad ? fechaISO(new Date(s.datos.cad + 'T00:00:00').getTime() - DIA) : '')
+// Fin sugerido: el día antes de que caduque el lote (o hoy, si caduca hoy). Nunca una fecha pasada.
+const termina = ref(actual ? (actual.termina || '') : s && s.datos.cad ? finDeOferta(s.datos.cad) : '')
 const nota = ref(actual ? actual.nota : '')
 const hoy = fechaISO(hoy0())
 

@@ -61,7 +61,7 @@ async function guardar () {
       <datalist id="lista-sabores"><option v-for="x in sabores" :key="x" :value="x" /></datalist>
       <p v-if="igual && !p" class="nota" role="status"><Icono n="layers" sm /> "{{ nombreCompleto(igual) }}" ya existe ({{ totalPiezas(igual) }} pzas): no se creará otro, se le <b>sumarán</b> las piezas que escribas.</p>
       <p v-else-if="igual && p" class="nota low" role="alert">Ya existe otro producto "{{ nombreCompleto(igual) }}". Cambia la presentación o el sabor.</p>
-      <p v-else-if="hermanas.length && !p" class="hint">"{{ f.nombre }}" ya tiene {{ hermanas.length }} presentación(es) o sabor(es): esta se agregará dentro de la misma tarjeta.</p>
+      <p v-else-if="hermanas.length && !p" class="hint">"{{ f.nombre }}" ya tiene {{ hermanas.length === 1 ? '1 presentación o sabor' : hermanas.length + ' presentaciones o sabores' }}: esta se agregará dentro de la misma tarjeta.</p>
       <label>Categoría <small>(opcional)</small><input v-model="f.categoria" maxlength="30" list="lista-categorias" placeholder="Ej. Bebidas"></label>
       <datalist id="lista-categorias"><option v-for="c in inv.categorias" :key="c" :value="c" /></datalist>
       <div class="fieldset">

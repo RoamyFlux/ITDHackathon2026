@@ -10,7 +10,7 @@
 import { computed, ref } from 'vue'
 import { useInventario } from '../stores/inventario.js'
 import { useUI } from '../stores/ui.js'
-import { totalPiezas, lotesDe, diasA, peor, nombreVariante, etiquetaOferta, precioConOferta } from '../logica/inventario.js'
+import { totalPiezas, lotesDe, diasA, peor, nombreVariante, nombreCompleto, etiquetaOferta, precioConOferta } from '../logica/inventario.js'
 import { ETIQ, cadTxt, fechaCorta, fmt, diasCorto, plural, dinero } from '../logica/formato.js'
 import Icono from './Icono.vue'
 import Spark from './Spark.vue'
@@ -33,6 +33,7 @@ const filas = computed(() => props.g.variantes.map(p => {
   return {
     p, tot, consumo, oferta,
     nombre: nombreVariante(p) || 'Presentación única',
+    completo: nombreCompleto(p), // para los botones: "Editar Refresco · 600 ml · Cola" (lector de pantalla)
     es: a.value.estado(p), ec: a.value.estadoCad(p), e: a.value.estadoTotal(p),
     dias: diasCorto(a.value.diasRestantes(p)),
     explicacion: consumo > 0 ? `Vende ≈ ${consumo.toFixed(1)} pzas/día (últimos ${h} día${h === 1 ? '' : 's'}). ${tot} pzas ÷ ${consumo.toFixed(1)} = ${(tot / consumo).toFixed(1)} días.` : '',
@@ -94,11 +95,11 @@ const nuevaVariante = () => ui.abrir('producto', { base: { nombre: props.g.nombr
           </div>
         </div>
         <div class="actions">
-          <button type="button" class="sm principal" @click="ui.abrir('movimiento', { tipo: 'venta', producto: f.p })"><Icono n="minus" sm />Vendí</button>
-          <button type="button" class="sm sec principal" @click="ui.abrir('movimiento', { tipo: 'llegada', producto: f.p })"><Icono n="truck" sm />Llegó</button>
-          <button type="button" class="sm ghost icono" :class="{ activo: f.oferta }" :aria-label="'Oferta de ' + f.nombre" :title="f.oferta ? 'Cambiar o quitar la oferta' : 'Poner en oferta'" @click="ui.abrir('oferta', { producto: f.p })"><Icono n="gift" sm /></button>
-          <button type="button" class="sm ghost icono" :aria-label="'Editar ' + f.nombre" title="Editar" @click="ui.abrir('producto', { producto: f.p })"><Icono n="edit" sm /></button>
-          <button type="button" class="sm ghost icono" :aria-label="'Eliminar ' + f.nombre" title="Eliminar" @click="inv.eliminar(f.p)"><Icono n="trash" sm /></button>
+          <button type="button" class="sm principal" :aria-label="'Vendí ' + f.completo" @click="ui.abrir('movimiento', { tipo: 'venta', producto: f.p })"><Icono n="minus" sm />Vendí</button>
+          <button type="button" class="sm sec principal" :aria-label="'Llegó ' + f.completo" @click="ui.abrir('movimiento', { tipo: 'llegada', producto: f.p })"><Icono n="truck" sm />Llegó</button>
+          <button type="button" class="sm ghost icono" :class="{ activo: f.oferta }" :aria-label="'Oferta de ' + f.completo" :title="f.oferta ? 'Cambiar o quitar la oferta' : 'Poner en oferta'" @click="ui.abrir('oferta', { producto: f.p })"><Icono n="gift" sm /></button>
+          <button type="button" class="sm ghost icono" :aria-label="'Editar ' + f.completo" title="Editar" @click="ui.abrir('producto', { producto: f.p })"><Icono n="edit" sm /></button>
+          <button type="button" class="sm ghost icono" :aria-label="'Eliminar ' + f.completo" title="Eliminar" @click="inv.eliminar(f.p)"><Icono n="trash" sm /></button>
         </div>
       </li>
     </ul>

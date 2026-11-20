@@ -3,27 +3,32 @@
   El número rojo = sugerencias urgentes (retirar caducados, ofertas, pedir lo que se acaba).
   Al abrirla muestra las más importantes; tocar una lleva a la acción. "Ver todas" baja al panel de sugerencias.
   Las ya vistas se recuerdan en este dispositivo para que el contador no moleste con lo mismo.
+  Teclado: al abrir, el foco entra a la primera notificación; con Esc se cierra y el foco vuelve a la campana.
 -->
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useInventario } from '../stores/inventario.js'
 import { useUI } from '../stores/ui.js'
 import Icono from './Icono.vue'
 import { ICONO_SUG, accionSugerencia } from './sugerenciaAcciones.js'
+import { PRIORIDAD } from '../logica/sugerencias.js'
 
 const inv = useInventario()
 const ui = useUI()
 const abierto = ref(false)
 const caja = ref(null)
+const campana = ref(null)
 const CLAVE = 'earlystock.vistas'
 const vistas = ref(new Set((() => { try { return JSON.parse(localStorage.getItem(CLAVE)) || [] } catch (e) { return [] } })()))
 
-const urgentes = computed(() => inv.sugerencias.filter(s => s.prioridad >= 60))
+const urgentes = computed(() => inv.sugerencias.filter(s => s.prioridad >= PRIORIDAD.pendiente))
 const nuevas = computed(() => urgentes.value.filter(s => !vistas.value.has(s.id)).length)
 
-function alternar () {
+async function alternar () {
   abierto.value = !abierto.value
   if (abierto.value) {
+    await nextTick()
+    caja.value && caja.value.querySelector('.notif-panel button')?.focus()
     // Al abrir, todas cuentan como vistas.
     vistas.value = new Set([...vistas.value, ...urgentes.value.map(s => s.id)].slice(-300))
     try { localStorage.setItem(CLAVE, JSON.stringify([...vistas.value])) } catch (e) {}
@@ -33,14 +38,14 @@ function elegir (s) { abierto.value = false; accionSugerencia(s, inv, ui) }
 function verTodas () { abierto.value = false; ui.irA('sugerencias') }
 // Clic fuera o Esc la cierran.
 const fuera = e => { if (abierto.value && caja.value && !caja.value.contains(e.target)) abierto.value = false }
-const esc = e => { if (e.key === 'Escape') abierto.value = false }
+const esc = e => { if (e.key === 'Escape' && abierto.value) { abierto.value = false; campana.value && campana.value.focus() } }
 onMounted(() => { addEventListener('pointerdown', fuera); addEventListener('keydown', esc) })
 onUnmounted(() => { removeEventListener('pointerdown', fuera); removeEventListener('keydown', esc) })
 </script>
 
 <template>
   <div ref="caja" class="notif">
-    <button type="button" class="btn-top icono" :aria-expanded="abierto" :aria-label="`Notificaciones${nuevas ? ': ' + nuevas + ' nuevas' : ''}`" title="Notificaciones" @click="alternar">
+    <button ref="campana" type="button" class="btn-top icono" :aria-expanded="abierto" :aria-label="`Notificaciones${nuevas ? ': ' + nuevas + ' nuevas' : ''}`" title="Notificaciones" @click="alternar">
       <Icono n="bell" /><span v-if="nuevas" class="burbuja">{{ nuevas > 9 ? '9+' : nuevas }}</span>
     </button>
     <Transition name="baja">

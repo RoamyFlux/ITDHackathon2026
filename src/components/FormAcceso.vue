@@ -77,9 +77,10 @@ const usarSugerencia = () => { f.value.email = vCorreo.value.sugerencia }
   <div class="card acceso">
     <div v-if="!sesion.configurado" class="banner low"><Icono n="sliders" />Falta conectar Supabase (config/supabase.json). Mientras, puedes usar la demostración.</div>
 
-    <div v-if="tab !== 'revisa'" class="seg pestanas" role="tablist">
-      <button type="button" role="tab" :aria-pressed="tab === 'entrar'" :aria-selected="tab === 'entrar'" @click="tab = 'entrar'; error = ''">Entrar</button>
-      <button type="button" role="tab" :aria-pressed="tab === 'crear'" :aria-selected="tab === 'crear'" @click="tab = 'crear'; error = ''">Crear cuenta</button>
+    <!-- Entrar / Crear cuenta: dos botones segmentados (aria-pressed marca el elegido). -->
+    <div v-if="tab !== 'revisa'" class="seg pestanas" role="group" aria-label="Elige una opción">
+      <button type="button" :aria-pressed="tab === 'entrar'" @click="tab = 'entrar'; error = ''">Entrar</button>
+      <button type="button" :aria-pressed="tab === 'crear'" @click="tab = 'crear'; error = ''">Crear cuenta</button>
     </div>
 
     <!-- ENTRAR -->

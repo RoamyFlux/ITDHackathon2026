@@ -10,7 +10,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, shallowRef } from 'vue'
 import { sb, configurado, urlRegreso, BUCKET_FOTOS } from '../lib/supabase.js'
 import { almacenSupabase, crearAlmacenDemo } from '../lib/almacen.js'
-import { validarContrasena, validarCorreo, esperaTrasFallos } from '../logica/validacion.js'
+import { validarContrasena, validarCorreo, esperaTrasFallos, MAX_INTENTOS } from '../logica/validacion.js'
 import { dominioRecibeCorreo } from '../lib/correo.js'
 import { usePreferencias } from './preferencias.js'
 
@@ -112,7 +112,7 @@ export const useSesion = defineStore('sesion', () => {
   }
 
   /* ---- ENTRAR CON CONTRASEÑA ----
-   * Tras 5 intentos fallidos con el mismo correo hay que esperar (ver logica/validacion.js). */
+   * Tras MAX_INTENTOS (5) intentos fallidos con el mismo correo hay que esperar (ver logica/validacion.js). */
   function esperaPara (email) {
     const f = leerFallos()[huella(email)]
     return f ? esperaTrasFallos(f.n, f.t) : 0
@@ -126,7 +126,7 @@ export const useSesion = defineStore('sesion', () => {
     const k = huella(email)
     if (r.error) {
       if (/Invalid login/i.test(r.error.message)) { fallos[k] = { n: ((fallos[k] && fallos[k].n) || 0) + 1, t: Date.now() }; guardarFallos(fallos) }
-      const quedan = 5 - ((fallos[k] && fallos[k].n) || 0)
+      const quedan = MAX_INTENTOS - ((fallos[k] && fallos[k].n) || 0)
       throw new Error(msgAuth(r.error) + (quedan > 0 && quedan <= 2 ? ` Te quedan ${quedan} intento${quedan === 1 ? '' : 's'}.` : ''))
     }
     delete fallos[k]; guardarFallos(fallos)

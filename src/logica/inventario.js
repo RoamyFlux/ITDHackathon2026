@@ -32,6 +32,21 @@ export function diasA (cad, ahora = Date.now()) {
   return Math.round((new Date(cad + 'T00:00:00').getTime() - hoy0(ahora)) / DIA)
 }
 
+// sumarDias("2026-11-20", -1) -> "2026-11-19". Usa días de CALENDARIO (no 24 h), así no falla en cambios de horario.
+export function sumarDias (cad, n) {
+  const d = new Date(cad + 'T00:00:00')
+  d.setDate(d.getDate() + n)
+  return fechaISO(d.getTime())
+}
+
+// Último día de una oferta para un lote: el día antes de que caduque, pero nunca antes de hoy.
+// (Si caduca hoy, la oferta es "solo hoy"; nunca se propone una fecha que ya pasó.)
+export function finDeOferta (cad, ahora = Date.now()) {
+  const hoy = fechaISO(hoy0(ahora))
+  const antes = sumarDias(cad, -1)
+  return antes < hoy ? hoy : antes
+}
+
 // Total de piezas sin contar una por una. Ejemplo: 5 paquetes × 12 + 3 sueltas = 63 piezas.
 export const totalPiezas = p => p.paquetes * p.porPaquete + p.sueltas
 
@@ -94,8 +109,8 @@ export const piezasCaducadas = (p, ahora = Date.now()) => caducadosDe(p, ahora).
 
 /* ---- ÍNDICE DE VENTAS ----
  * Recorre los movimientos UNA vez y guarda por producto:
- *   dias    = piezas vendidas en cada uno de los últimos 7 días [hace 6 días, …, hoy]
- *   suma    = total vendido en esos 7 días
+ *   dias    = piezas vendidas en cada uno de los últimos 7 días de CALENDARIO [hace 6 días, …, hoy]
+ *   suma    = total vendido en esos mismos 7 días (siempre igual a la suma de las barras de la gráfica)
  *   primera = momento de la primera venta (para saber cuántos días de historial hay)
  *   merma   = piezas retiradas por caducidad (no cuentan como venta)
  *   ultima  = momento de la última venta (para "sin ventas en 7 días")
@@ -105,7 +120,7 @@ export const SIN_VENTAS = Object.freeze({ dias: Object.freeze([0, 0, 0, 0, 0, 0,
 
 export function indiceVentas (movimientos, ahora = Date.now()) {
   const hoy = hoy0(ahora)
-  const desde = ahora - 7 * DIA
+  const desde = hoy - 6 * DIA // desde las 00:00 de hace 6 días
   const por = new Map()
   const todos = vacio()
   for (const m of movimientos) {
@@ -113,12 +128,13 @@ export function indiceVentas (movimientos, ahora = Date.now()) {
     let v = por.get(m.pid)
     if (!v) por.set(m.pid, (v = vacio()))
     if (m.tipo === 'merma') { v.merma += m.piezas; todos.merma += m.piezas; continue }
-    const d = Math.floor((m.t - hoy) / DIA) // 0 = hoy, -1 = ayer, …, -6
+    // Día de calendario de la venta: 0 = hoy, -1 = ayer, …, -6 (cuenta días reales, no bloques de 24 h).
+    const d = -Math.round((hoy - hoy0(m.t)) / DIA)
     for (const x of [v, todos]) {
       x.suma += m.piezas
       x.primera = Math.min(x.primera, m.t)
       x.ultima = Math.max(x.ultima, m.t)
-      if (d >= -6 && d <= 0) x.dias[6 + d] += m.piezas
+      x.dias[6 + Math.max(-6, Math.min(0, d))] += m.piezas
     }
   }
   return { por, todos }

@@ -13,7 +13,7 @@ defineProps({ plan: { type: String, default: 'gratis' }, admin: Boolean, grande:
 
 <template>
   <span v-if="plan !== 'gratis' || admin" class="insignias" :class="{ grande }">
-    <span v-if="admin" class="corona" title="Administrador" aria-label="Administrador"><Icono n="crown" sm /></span>
+    <span v-if="admin" class="corona" title="Administrador" role="img" aria-label="Administrador"><Icono n="crown" sm /></span>
     <span v-if="plan === 'pro'" class="insignia-plan plata" title="Plan Pro">PRO</span>
     <span v-else-if="plan === 'max'" class="insignia-plan oro" title="Plan Max">MAX</span>
   </span>

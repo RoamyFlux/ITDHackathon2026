@@ -15,7 +15,7 @@ const android = /Android/.test(ua)
 const guardar = e => { e.preventDefault(); evento.value = e }
 onMounted(() => { addEventListener('beforeinstallprompt', guardar); if (window.__eventoInstalar) evento.value = window.__eventoInstalar })
 onUnmounted(() => removeEventListener('beforeinstallprompt', guardar))
-async function instalar () { evento.value.prompt(); await evento.value.userChoice; evento.value = null }
+async function instalar () { evento.value.prompt(); await evento.value.userChoice; evento.value = null; window.__eventoInstalar = null }
 </script>
 
 <template>

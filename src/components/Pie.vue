@@ -7,7 +7,7 @@ const ui = useUI()
 <template>
   <footer class="foot">
     <span class="foot-marca"><svg aria-hidden="true"><use href="#logo" /></svg>EarlyStock</span>
-    <nav aria-label="Políticas">
+    <nav aria-label="Enlaces del pie de página">
       <router-link to="/privacidad">Aviso de Privacidad</router-link>
       <router-link to="/terminos">Términos de Uso</router-link>
       <a href="#" @click.prevent="ui.abrir('soporte')">Ayuda y soporte</a>

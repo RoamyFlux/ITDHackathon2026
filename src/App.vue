@@ -60,6 +60,6 @@ watch(() => sesion.recuperando && sesion.modo === 'dentro', r => { if (r) ui.abr
   </div>
   <router-view v-else />
   <component :is="actual" v-if="actual" :key="ui.ventana.id" v-bind="ui.ventana.datos" @cerrar="ui.cerrar()" />
-  <AceptarPoliticas v-if="sesion.debeAceptarPoliticas && route.name === 'app'" />
+  <AceptarPoliticas v-if="sesion.debeAceptarPoliticas && (route.name === 'app' || route.name === 'admin')" />
   <Avisos />
 </template>

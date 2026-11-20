@@ -49,7 +49,7 @@ const alternarTema = () => prefs.cambiar('tema', prefs.esOscuro() ? 'light' : 'd
           <template v-if="plan.planId === 'gratis'"><Icono n="star" sm /><span class="ocultar-movil">Mejorar plan</span></template>
           <InsigniaPlan v-else :plan="plan.planId" />
         </button>
-        <router-link v-if="soporte.esAdmin" to="/admin" class="btn-top admin-btn" title="Administración"><Icono n="shield" sm /><span class="ocultar-movil">Admin</span></router-link>
+        <router-link v-if="soporte.esAdmin || plan.esAdmin" to="/admin" class="btn-top admin-btn" title="Administración"><Icono n="shield" sm /><span class="ocultar-movil">Admin</span></router-link>
         <router-link v-if="$route.name !== 'app'" to="/app" class="btn-top icono" title="Mi inventario" aria-label="Mi inventario"><Icono n="box" /></router-link>
         <button type="button" class="btn-top icono ocultar-chico" aria-label="Ayuda y soporte" title="Ayuda y soporte" @click="ui.abrir('soporte')"><Icono n="help" /></button>
         <button type="button" class="btn-top icono ocultar-chico" aria-label="Configuración" title="Configuración" @click="ui.abrir('configuracion')"><Icono n="gear" /></button>

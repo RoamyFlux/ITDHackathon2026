@@ -7,7 +7,8 @@
   Sin testimonios ni cifras inventadas: todo lo que se dice aquí lo hace la app.
 -->
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useSesion } from '../stores/sesion.js'
 import { useUI } from '../stores/ui.js'
 import Icono from '../components/Icono.vue'
@@ -27,13 +28,20 @@ async function irAcceso (p) {
   document.getElementById('acceso').scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
+// Llegó desde "Crear cuenta" de la demostración (o con ?acceso=crear en la dirección): abrir ese formulario.
+const route = useRoute()
+onMounted(() => {
+  const pedido = ui.accesoInicial || route.query.acceso
+  if (pedido === 'crear' || pedido === 'entrar') { ui.accesoInicial = ''; setTimeout(() => irAcceso(pedido), 150) }
+})
+
 // Pestañas de "Conoce EarlyStock". Los enlaces del menú abren la pestaña y bajan hasta el bloque.
 const tema = ref('como')
 const TEMAS_INICIO = [
-  { id: 'como', t: 'Cómo funciona', icono: 'spark' },
-  { id: 'beneficios', t: 'Beneficios', icono: 'star' },
-  { id: 'sugerencias', t: 'Sugerencias', icono: 'bulb' },
-  { id: 'seguridad', t: 'Seguridad', icono: 'shield' }
+  { id: 'como', t: 'Cómo funciona', icono: 'spark', panel: 'como' },
+  { id: 'beneficios', t: 'Beneficios', icono: 'star', panel: 'beneficios' },
+  { id: 'sugerencias', t: 'Sugerencias', icono: 'bulb', panel: 'tema-sugerencias' },
+  { id: 'seguridad', t: 'Seguridad', icono: 'shield', panel: 'seguridad' }
 ]
 function irA (id) {
   if (TEMAS_INICIO.some(t => t.id === id)) { tema.value = id; id = 'conoce' }
@@ -103,20 +111,20 @@ const SEGURIDAD = [
     <main class="inicio-main">
       <!-- CONOCE EARLYSTOCK: cuatro temas en pestañas (antes eran cuatro secciones largas que había que deslizar). -->
       <section id="conoce" class="bloque conoce">
-        <Pestanas v-model="tema" :opciones="TEMAS_INICIO" etiqueta="Conoce EarlyStock" class="pestanas-inicio" />
-        <div v-show="tema === 'como'" id="como" class="tema" role="tabpanel">
+        <Pestanas v-model="tema" :opciones="TEMAS_INICIO" prefijo="inicio" etiqueta="Conoce EarlyStock" class="pestanas-inicio" />
+        <div v-show="tema === 'como'" id="como" class="tema" role="tabpanel" aria-labelledby="inicio-tab-como">
         <h2 class="tit-bloque">Así de fácil, en <span class="grad-t">3 pasos</span></h2>
         <ol class="tres-pasos">
           <li v-for="(p, i) in PASOS" :key="p.t" class="card"><span class="num">{{ i + 1 }}</span><span class="ico-b"><Icono :n="p.i" /></span><h3>{{ p.t }}</h3><p>{{ p.d }}</p></li>
         </ol>
       </div>
-        <div v-show="tema === 'beneficios'" id="beneficios" class="tema" role="tabpanel">
+        <div v-show="tema === 'beneficios'" id="beneficios" class="tema" role="tabpanel" aria-labelledby="inicio-tab-beneficios">
         <h2 class="tit-bloque">Todo lo que tu tienda necesita <span class="grad-t">saber hoy</span></h2>
         <div class="rejilla-beneficios">
           <article v-for="b in BENEFICIOS" :key="b.t" class="card beneficio"><span class="ico-b"><Icono :n="b.i" /></span><h3>{{ b.t }}</h3><p>{{ b.d }}</p></article>
         </div>
       </div>
-        <div v-show="tema === 'sugerencias'" class="tema destacado" role="tabpanel">
+        <div v-show="tema === 'sugerencias'" id="tema-sugerencias" class="tema destacado" role="tabpanel" aria-labelledby="inicio-tab-sugerencias">
         <div>
           <span class="etiqueta"><Icono n="bulb" sm />Sugerencias inteligentes</span>
           <h2 class="tit-bloque izq">Te dice <span class="grad-t">qué hacer</span>, no solo qué pasa</h2>
@@ -128,7 +136,7 @@ const SEGURIDAD = [
           <div class="card sug-ej"><Icono n="star" /><div><b>Tu más vendido: Refresco 600 ml</b><small>Asegura que nunca falte: considera subir su mínimo.</small></div></div>
         </div>
       </div>
-        <div v-show="tema === 'seguridad'" id="seguridad" class="tema" role="tabpanel">
+        <div v-show="tema === 'seguridad'" id="seguridad" class="tema" role="tabpanel" aria-labelledby="inicio-tab-seguridad">
         <h2 class="tit-bloque">Seguridad <span class="grad-t">seria</span>, fácil de usar</h2>
         <div class="rejilla-beneficios cuatro">
           <article v-for="b in SEGURIDAD" :key="b.t" class="card beneficio"><span class="ico-b"><Icono :n="b.i" /></span><h3>{{ b.t }}</h3><p>{{ b.d }}</p></article>

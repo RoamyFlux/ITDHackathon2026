@@ -1,6 +1,6 @@
 <!--
   PANEL "REQUIERE ATENCIÓN"
-  Tres grupos: se acaba (rojo), pronto hay que comprar (ámbar) y caducidad. Tocar un renglón lleva al producto.
+  Tres grupos: se acaba (rojo), por acabarse (ámbar) y caducidad. Tocar un renglón lleva al producto.
   Sin productos: tarjeta de bienvenida con pasos y botones para importar o cargar la tienda de ejemplo.
 -->
 <script setup>
@@ -44,7 +44,7 @@ function verGrupo (estado) { inv.filtros = { q: '', estado, categoria: '' }; ui.
         <li v-if="r.crit.length > MAX"><button type="button" class="ghost sm ver-mas" @click="verGrupo('crit')">Ver {{ r.crit.length - MAX }} más</button></li>
       </ul>
     </Plegable>
-    <Plegable v-if="r.low.length" clase="grupo low" :titulo="`Pronto hay que comprar (${r.low.length})`" :abierto="!r.crit.length">
+    <Plegable v-if="r.low.length" clase="grupo low" :titulo="`Por acabarse (${r.low.length})`" :abierto="!r.crit.length">
       <ul>
         <li v-for="p in r.low.slice(0, MAX)" :key="p.id"><button type="button" class="fila-alerta" @click="emit('ir', p.id)"><b>{{ nombreCompleto(p) }}</b><span>{{ detalle(p) }}</span></button></li>
         <li v-if="r.low.length > MAX"><button type="button" class="ghost sm ver-mas" @click="verGrupo('low')">Ver {{ r.low.length - MAX }} más</button></li>

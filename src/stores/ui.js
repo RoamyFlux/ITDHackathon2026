@@ -25,6 +25,7 @@ const CLAVE_PESTANA = 'earlystock.pestana'
 export const useUI = defineStore('ui', () => {
   const ventana = shallowRef(null) // {tipo, datos}
   const irProducto = ref(null) // id de un producto al que hay que bajar cuando se cierre la ventana actual
+  const accesoInicial = ref('') // 'crear' -> la página de inicio abre directo "Crear cuenta" (desde la demo)
   const pestana = ref((() => { try { const v = localStorage.getItem(CLAVE_PESTANA); return PESTANAS.includes(v) ? v : 'hoy' } catch (e) { return 'hoy' } })())
   function cambiarPestana (p) {
     if (!PESTANAS.includes(p)) return
@@ -45,5 +46,5 @@ export const useUI = defineStore('ui', () => {
       if (cambio || id !== 'inventario') { el.classList.remove('resaltar-bloque'); void el.offsetWidth; el.classList.add('resaltar-bloque') }
     }, cambio ? 60 : 0)
   }
-  return { ventana, irProducto, pestana, cambiarPestana, abrir, cerrar, irA }
+  return { ventana, irProducto, accesoInicial, pestana, cambiarPestana, abrir, cerrar, irA }
 })
