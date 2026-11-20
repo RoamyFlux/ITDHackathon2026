@@ -1,0 +1,44 @@
+# =====================================================================
+# REVISIÓN DE SEGURIDAD AUTOMÁTICA
+# Corre en cada pull request, en cada cambio a main y cada lunes:
+#   - pruebas de la lógica (Vitest) y compilación
+#   - npm audit: dependencias con vulnerabilidades conocidas (solo las que llegan a la página)
+#   - revisar-seguridad: claves secretas en el código, CSP, scripts en línea, v-html / eval
+#   - CodeQL: análisis estático de código de GitHub (gratis en repositorios públicos)
+# =====================================================================
+name: Seguridad
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 9 * * 1'
+permissions:
+  contents: read
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run revisar-seguridad
+      - name: Dependencias de la página sin vulnerabilidades altas
+        run: npm audit --omit=dev --audit-level=high
+  codeql:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3
