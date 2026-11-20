@@ -4,13 +4,17 @@
  *   npm run build   -> versión final optimizada en la carpeta dist/ (la que se publica en GitHub Pages)
  *   npm run preview -> sirve dist/ para probar la versión final
  * ===================================================================== */
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { readFileSync } from 'node:fs'
 
 const supa = JSON.parse(readFileSync(new URL('./config/supabase.json', import.meta.url)))
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || supa.url
+// La URL de Supabase sale del mismo lugar que usa la app: variables VITE_* (del sistema o de un archivo .env)
+// o, si no hay, config/supabase.json. Así la CSP siempre permite el proyecto al que la app se conecta.
+// loadEnv lee los archivos .env (process.env solo trae las variables del sistema).
+const env = loadEnv(process.env.NODE_ENV === 'production' ? 'production' : 'development', process.cwd(), 'VITE_')
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || supa.url
 const SUPABASE_HOST = new URL(SUPABASE_URL).host
 
 /* ---- POLÍTICA DE SEGURIDAD DE CONTENIDO (CSP) ----
@@ -60,6 +64,7 @@ export default defineConfig(({ command, isPreview }) => ({
       injectRegister: 'script', // archivo registerSW.js aparte (compatible con la CSP, sin scripts en línea)
       includeAssets: ['logo.svg', 'apple-touch-icon.png', 'prefs.js'],
       manifest: {
+        id: '/ITDHackaton2026/',
         name: 'EarlyStock · Inventario inteligente',
         short_name: 'EarlyStock',
         description: 'Avisa antes de que se acabe o caduque un producto, sugiere ofertas y arma tu lista de compras.',
@@ -70,6 +75,8 @@ export default defineConfig(({ command, isPreview }) => ({
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          // "maskable": fondo a sangre para que Android lo recorte en círculo sin dejar bordes blancos.
+          { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           { src: 'logo.svg', sizes: 'any', type: 'image/svg+xml' }
         ]
       },

@@ -1,7 +1,11 @@
 # =====================================================================
 # PUBLICAR EN GITHUB PAGES (automático)
-# Cada vez que se fusiona algo a "main": instala, prueba, compila y publica la carpeta dist/.
+# Cada vez que se fusiona algo a "main": instala, prueba, revisa seguridad, compila y publica dist/.
 # Requisito (una sola vez): Settings -> Pages -> Source: "GitHub Actions".
+# Seguridad del propio flujo:
+#   - Las acciones están fijadas por commit (SHA) con su versión en el comentario; Dependabot las actualiza.
+#   - Solo el job que publica tiene permiso de escribir en Pages; el que compila (y corre npm) solo lee.
+#   - checkout sin guardar credenciales en el disco.
 # =====================================================================
 name: Publicar en GitHub Pages
 on:
@@ -10,35 +14,40 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false # no cortar una publicación a medias
 jobs:
   compilar:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Dependencias de la página sin vulnerabilidades altas
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
       - run: npm run revisar-seguridad
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: dist
   publicar:
     needs: compilar
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.despliegue.outputs.page_url }}
     steps:
       - id: despliegue
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

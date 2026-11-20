@@ -63,14 +63,9 @@ onMounted(() => setTimeout(irPendiente, 200))
 
 /* ---- Atajos de teclado ----
  * Ctrl+K paleta de comandos · N nuevo producto · / buscar · ? atajos · 1 a 6 cambian de pestaña. No se activan mientras escribes ni con
- * una ventana abierta. Ctrl+K abre o cierra la paleta, pero NO reemplaza otra ventana (no se pierde un formulario a medias). */
+ * una ventana abierta. Ctrl+K (paleta de comandos) vive en Encabezado.vue: no reemplaza otra ventana abierta. */
 function teclas (e) {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-    e.preventDefault()
-    if (ui.ventana && ui.ventana.tipo === 'comandos') ui.cerrar()
-    else if (!document.querySelector('dialog[open]')) ui.abrir('comandos')
-    return
-  }
+  // (Ctrl+K lo maneja el encabezado, igual en el panel y en Administración.)
   if (document.querySelector('dialog[open]')) return
   if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return
   if (e.ctrlKey || e.metaKey || e.altKey) return
