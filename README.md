@@ -8,6 +8,22 @@
 
 EarlyStock avisa al dueño de un negocio **antes** de que se le acabe un producto o de que algo caduque, le **sugiere qué hacer** (pedir, retirar, hacer una oferta) y arma su lista de compras. Está hecha con **Vue 3 + Vite**, guarda los datos en **Supabase** y se publica sola en **GitHub Pages**.
 
+## Interfaz compacta con pestañas (2.4)
+El panel ya no es una página larga que hay que deslizar: está dividido en **pestañas**.
+
+| Pestaña | Qué tiene |
+| --- | --- |
+| **Hoy** | Resumen, sugerencias y "Requiere atención" (grupos plegables) |
+| **Inventario** | Buscador, filtros y productos (tarjetas o tabla); las tarjetas con 3+ presentaciones muestran 2 y "Ver más" |
+| **Compras** | Lista de compras |
+| **Ofertas** | Ofertas activas |
+| **Reportes** | Ventas de 7 días y stock por categoría |
+| **Más** | Tu plan y herramientas |
+
+- En computadora las pestañas van arriba; en celular, en una barra fija abajo (como una app). Llevan contadores (urgentes, por comprar, ofertas).
+- Atajos `1`–`6` y "Ir a…" en Ctrl + K. Los botones como "Ver lista de compras" o una alerta cambian solos de pestaña.
+- La página de inicio agrupa "Cómo funciona / Beneficios / Sugerencias / Seguridad" en pestañas. Configuración usa bloques plegables, y Seguridad y Admin usan pestañas.
+
 ## Insignias y administración de usuarios (2.3)
 - **Botón de plan** en el encabezado: en Gratis dice "Mejorar plan"; en Pro y Max muestra su insignia. Abre la ventana de planes.
 - **Insignias:** Gratis no tiene; **Pro** lleva una insignia **plateada** (y aro plateado en la foto) y **Max** una **dorada brillante** con destello (y aro dorado). La tarjeta del saludo lleva una banda en la esquina con el plan.

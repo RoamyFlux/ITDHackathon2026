@@ -1,8 +1,9 @@
 <!--
   PÁGINA DE INICIO (presentación para clientes nuevos)
-  1) Barra con logo y botones.  2) Portada: qué resuelve + vista previa animada.  3) Cómo funciona en 3 pasos.
-  4) Beneficios.  5) Sugerencias inteligentes.  6) Seguridad.  7) Formulario para entrar / crear cuenta.
-  8) Pie con Aviso de Privacidad y Términos.
+  1) Barra con logo y botones.  2) Portada: qué resuelve + vista previa animada.
+  3) "Conoce EarlyStock" en PESTAÑAS: Cómo funciona · Beneficios · Sugerencias · Seguridad.  4) Planes y precios.
+  5) Formulario para entrar / crear cuenta.
+  6) Pie con Aviso de Privacidad y Términos.
   Sin testimonios ni cifras inventadas: todo lo que se dice aquí lo hace la app.
 -->
 <script setup>
@@ -14,6 +15,7 @@ import VistaPrevia from '../components/VistaPrevia.vue'
 import FormAcceso from '../components/FormAcceso.vue'
 import Pie from '../components/Pie.vue'
 import PlanesTabla from '../components/PlanesTabla.vue'
+import Pestanas from '../components/Pestanas.vue'
 
 const sesion = useSesion()
 const ui = useUI()
@@ -25,7 +27,18 @@ async function irAcceso (p) {
   document.getElementById('acceso').scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
-const irA = id => document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' })
+// Pestañas de "Conoce EarlyStock". Los enlaces del menú abren la pestaña y bajan hasta el bloque.
+const tema = ref('como')
+const TEMAS_INICIO = [
+  { id: 'como', t: 'Cómo funciona', icono: 'spark' },
+  { id: 'beneficios', t: 'Beneficios', icono: 'star' },
+  { id: 'sugerencias', t: 'Sugerencias', icono: 'bulb' },
+  { id: 'seguridad', t: 'Seguridad', icono: 'shield' }
+]
+function irA (id) {
+  if (TEMAS_INICIO.some(t => t.id === id)) { tema.value = id; id = 'conoce' }
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 const PASOS = [
   { i: 'box', t: 'Registra tus productos', d: 'Cuéntalos por paquetes (cajas × piezas + sueltas) o súbelos desde tu Excel en un minuto.' },
@@ -88,24 +101,22 @@ const SEGURIDAD = [
     </section>
 
     <main class="inicio-main">
-      <!-- CÓMO FUNCIONA -->
-      <section id="como" class="bloque">
+      <!-- CONOCE EARLYSTOCK: cuatro temas en pestañas (antes eran cuatro secciones largas que había que deslizar). -->
+      <section id="conoce" class="bloque conoce">
+        <Pestanas v-model="tema" :opciones="TEMAS_INICIO" etiqueta="Conoce EarlyStock" class="pestanas-inicio" />
+        <div v-show="tema === 'como'" id="como" class="tema" role="tabpanel">
         <h2 class="tit-bloque">Así de fácil, en <span class="grad-t">3 pasos</span></h2>
         <ol class="tres-pasos">
           <li v-for="(p, i) in PASOS" :key="p.t" class="card"><span class="num">{{ i + 1 }}</span><span class="ico-b"><Icono :n="p.i" /></span><h3>{{ p.t }}</h3><p>{{ p.d }}</p></li>
         </ol>
-      </section>
-
-      <!-- BENEFICIOS -->
-      <section id="beneficios" class="bloque">
+      </div>
+        <div v-show="tema === 'beneficios'" id="beneficios" class="tema" role="tabpanel">
         <h2 class="tit-bloque">Todo lo que tu tienda necesita <span class="grad-t">saber hoy</span></h2>
         <div class="rejilla-beneficios">
           <article v-for="b in BENEFICIOS" :key="b.t" class="card beneficio"><span class="ico-b"><Icono :n="b.i" /></span><h3>{{ b.t }}</h3><p>{{ b.d }}</p></article>
         </div>
-      </section>
-
-      <!-- SUGERENCIAS -->
-      <section class="bloque destacado">
+      </div>
+        <div v-show="tema === 'sugerencias'" class="tema destacado" role="tabpanel">
         <div>
           <span class="etiqueta"><Icono n="bulb" sm />Sugerencias inteligentes</span>
           <h2 class="tit-bloque izq">Te dice <span class="grad-t">qué hacer</span>, no solo qué pasa</h2>
@@ -116,14 +127,13 @@ const SEGURIDAD = [
           <div class="card sug-ej low"><Icono n="truck" /><div><b>Pide pronto: 3 paquetes de Refresco</b><small>Quedan 15 piezas y alcanzan ~1 día.</small></div></div>
           <div class="card sug-ej"><Icono n="star" /><div><b>Tu más vendido: Refresco 600 ml</b><small>Asegura que nunca falte: considera subir su mínimo.</small></div></div>
         </div>
-      </section>
-
-      <!-- SEGURIDAD -->
-      <section id="seguridad" class="bloque">
+      </div>
+        <div v-show="tema === 'seguridad'" id="seguridad" class="tema" role="tabpanel">
         <h2 class="tit-bloque">Seguridad <span class="grad-t">seria</span>, fácil de usar</h2>
         <div class="rejilla-beneficios cuatro">
           <article v-for="b in SEGURIDAD" :key="b.t" class="card beneficio"><span class="ico-b"><Icono :n="b.i" /></span><h3>{{ b.t }}</h3><p>{{ b.d }}</p></article>
         </div>
+      </div>
       </section>
 
       <!-- PLANES Y PRECIOS -->

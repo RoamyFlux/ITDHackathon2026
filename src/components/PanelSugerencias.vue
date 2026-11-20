@@ -1,7 +1,7 @@
 <!--
   PANEL "SUGERENCIAS PARA HOY"
   Muestra las ideas del motor de sugerencias (logica/sugerencias.js), las más urgentes primero, cada una con
-  su botón de acción (Crear oferta, Retirar, Ver lista de compras…). Al principio se ven 4; "Ver todas" despliega el resto.
+  su botón de acción (Crear oferta, Retirar, Ver lista de compras…). Al principio se ven 3; "Ver todas" despliega el resto.
 -->
 <script setup>
 import { ref, computed } from 'vue'
@@ -13,7 +13,7 @@ import { ICONO_SUG, BOTON_SUG, accionSugerencia } from './sugerenciaAcciones.js'
 const inv = useInventario()
 const ui = useUI()
 const todas = ref(false)
-const lista = computed(() => (todas.value ? inv.sugerencias : inv.sugerencias.slice(0, 4)))
+const lista = computed(() => (todas.value ? inv.sugerencias : inv.sugerencias.slice(0, 3)))
 const color = s => (s.prioridad >= 80 ? 'crit' : s.prioridad >= 60 ? 'low' : s.tipo === 'estrella' ? 'marca' : '')
 </script>
 
@@ -31,7 +31,7 @@ const color = s => (s.prioridad >= 80 ? 'crit' : s.prioridad >= 60 ? 'low' : s.t
         <button type="button" class="sm" :class="{ sec: s.prioridad < 60 }" @click="accionSugerencia(s, inv, ui)">{{ BOTON_SUG[s.tipo] }}</button>
       </li>
     </TransitionGroup>
-    <button v-if="inv.sugerencias.length > 4" type="button" class="ghost sm ver-mas" @click="todas = !todas">
+    <button v-if="inv.sugerencias.length > 3" type="button" class="ghost sm ver-mas" @click="todas = !todas">
       <Icono :n="todas ? 'up' : 'dn'" sm />{{ todas ? 'Ver menos' : `Ver todas (${inv.sugerencias.length})` }}
     </button>
   </section>

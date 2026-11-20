@@ -1,5 +1,5 @@
 <!--
-  CONFIGURACIÓN
+  CONFIGURACIÓN (en bloques plegables para no deslizar de más: Apariencia, Avisos e Instalar como app)
   Tema (Claro, Niebla, Grafito, Oscuro, Automático) · color de acento · densidad · animaciones ·
   días de aviso de caducidad · notificaciones del navegador · cómo instalar la app · restablecer.
 -->
@@ -10,6 +10,7 @@ import { useAvisos } from '../../stores/avisos.js'
 import Ventana from '../Ventana.vue'
 import Icono from '../Icono.vue'
 import GuiaInstalar from '../GuiaInstalar.vue'
+import Plegable from '../Plegable.vue'
 
 const emit = defineEmits(['cerrar'])
 const ps = usePreferencias()
@@ -33,6 +34,7 @@ function restablecer () { ps.restablecer(); avisos.avisar('Configuración restab
 
 <template>
   <Ventana titulo="Configuración" subtitulo="Se guarda en tu cuenta y se aplica en tus dispositivos" icono="gear" ancho="md" @cerrar="emit('cerrar')">
+    <Plegable titulo="Apariencia" icono="palette" resumen="Tema, color, densidad y animaciones" abierto recordar="config-apariencia" clase="grupo-ajustes">
     <div class="ajuste">
       <h3>Tema</h3>
       <p>Elige qué tan claro u oscuro quieres ver EarlyStock. Niebla y Grafito son grises: ni tan blanco ni tan negro.</p>
@@ -48,19 +50,6 @@ function restablecer () { ps.restablecer(); avisos.avisar('Configuración restab
       <div class="swatches">
         <button v-for="a in ACENTOS" :key="a.v" type="button" class="swatch" :class="'s-' + a.v" :aria-pressed="p.acento === a.v" @click="ps.cambiar('acento', a.v)"><i />{{ a.t }}</button>
       </div>
-    </div>
-    <div class="ajuste">
-      <h3>Avisar caducidad con</h3>
-      <p>Días de anticipación para marcar un lote "Por caducar" y sugerir ofertas.</p>
-      <div class="seg">
-        <button v-for="d in [3, 5, 7, 10, 15]" :key="d" type="button" :aria-pressed="p.diasAviso === d" @click="ps.cambiar('diasAviso', d)">{{ d }} días</button>
-      </div>
-    </div>
-    <div class="ajuste">
-      <h3>Notificaciones</h3>
-      <p>Un resumen de lo urgente (lo que se acaba, caduca u ofertas sugeridas) al abrir la app, máximo una vez al día.</p>
-      <button type="button" class="interruptor" role="switch" :aria-checked="p.notificaciones" @click="alternarNotificaciones"><i /><span>{{ p.notificaciones ? 'Activadas' : 'Desactivadas' }}</span></button>
-      <p v-if="permiso === 'denied'" class="nota low">El navegador bloqueó las notificaciones de esta página.</p>
     </div>
     <div class="ajuste fila2">
       <div>
@@ -78,10 +67,25 @@ function restablecer () { ps.restablecer(); avisos.avisar('Configuración restab
         </div>
       </div>
     </div>
-    <div id="ajuste-instalar" class="ajuste">
-      <h3>Instalar como app</h3>
-      <GuiaInstalar />
+    </Plegable>
+    <Plegable titulo="Avisos" icono="bell" resumen="Caducidad y notificaciones del navegador" recordar="config-avisos" clase="grupo-ajustes">
+    <div class="ajuste">
+      <h3>Avisar caducidad con</h3>
+      <p>Días de anticipación para marcar un lote "Por caducar" y sugerir ofertas.</p>
+      <div class="seg">
+        <button v-for="d in [3, 5, 7, 10, 15]" :key="d" type="button" :aria-pressed="p.diasAviso === d" @click="ps.cambiar('diasAviso', d)">{{ d }} días</button>
+      </div>
     </div>
+    <div class="ajuste">
+      <h3>Notificaciones</h3>
+      <p>Un resumen de lo urgente (lo que se acaba, caduca u ofertas sugeridas) al abrir la app, máximo una vez al día.</p>
+      <button type="button" class="interruptor" role="switch" :aria-checked="p.notificaciones" @click="alternarNotificaciones"><i /><span>{{ p.notificaciones ? 'Activadas' : 'Desactivadas' }}</span></button>
+      <p v-if="permiso === 'denied'" class="nota low">El navegador bloqueó las notificaciones de esta página.</p>
+    </div>
+    </Plegable>
+    <Plegable titulo="Instalar como app" icono="phone" resumen="En tu celular o computadora" recordar="config-instalar" clase="grupo-ajustes">
+      <div id="ajuste-instalar" class="ajuste"><GuiaInstalar /></div>
+    </Plegable>
     <div class="dlg-acciones">
       <button type="button" class="ghost" @click="restablecer"><Icono n="refresh" sm />Restablecer</button>
       <button type="button" @click="emit('cerrar')">Listo</button>

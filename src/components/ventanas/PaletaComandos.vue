@@ -31,6 +31,8 @@ function comandos () {
   const ir = id => () => { ui.cerrar(); setTimeout(() => ui.irA(id), 60) }
   const c = [
     { g: 'Acciones', i: 'plus', t: 'Nuevo producto', k: 'N', f: () => ui.abrir('producto') },
+    ...[['hoy', 'Hoy', 'spark'], ['inventario', 'Inventario', 'box'], ['compras', 'Compras', 'cart'], ['ofertas', 'Ofertas', 'gift'], ['reportes', 'Reportes', 'chart'], ['mas', 'Más (plan y herramientas)', 'sliders']]
+      .map(([id, t, i], k) => ({ g: 'Ir a', i, t: `Ir a ${t}`, k: String(k + 1), f: () => { ui.cerrar(); ui.cambiarPestana(id) } })),
     { g: 'Acciones', i: 'bulb', t: 'Ver sugerencias para hoy', f: ir('sugerencias') },
     { g: 'Acciones', i: 'cart', t: 'Ver lista de compras', f: ir('compras') },
     { g: 'Acciones', i: 'chart', t: 'Ver ventas de la semana', f: ir('ventas') },

@@ -7,7 +7,7 @@
   La franja de color de la izquierda = el estado más urgente de todas sus variantes.
 -->
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useInventario } from '../stores/inventario.js'
 import { useUI } from '../stores/ui.js'
 import { totalPiezas, lotesDe, diasA, peor, nombreVariante, etiquetaOferta, precioConOferta } from '../logica/inventario.js'
@@ -41,7 +41,11 @@ const filas = computed(() => props.g.variantes.map(p => {
     precioOferta: oferta ? precioConOferta(p.precio, oferta) : null,
     lotes: lotesDe(p).map(l => { const d = diasA(l.cad, inv.reloj); return { ...l, d, c: d < 0 ? 'crit' : d <= a.value.diasAviso ? 'low' : '' } })
   }
-}))
+}).sort((x, y) => ({ crit: 0, low: 1, ok: 2 })[x.e] - ({ crit: 0, low: 1, ok: 2 })[y.e])) // las más urgentes primero
+// Con 3 o más presentaciones/sabores se muestran 2 (las más urgentes van primero) y "Ver N más".
+const verTodas = ref(false)
+const MOSTRAR = 2
+const filasVisibles = computed(() => (verTodas.value || filas.value.length < 3 ? filas.value : filas.value.slice(0, MOSTRAR)))
 const nuevaVariante = () => ui.abrir('producto', { base: { nombre: props.g.nombre, categoria: props.g.categoria } })
 </script>
 
@@ -63,7 +67,7 @@ const nuevaVariante = () => ui.abrir('producto', { base: { nombre: props.g.nombr
     </header>
 
     <ul class="variantes">
-      <li v-for="f in filas" :key="f.p.id" class="variante" :class="f.e" :data-fila="f.p.id">
+      <li v-for="f in filasVisibles" :key="f.p.id" class="variante" :class="f.e" :data-fila="f.p.id">
         <div class="var-info">
           <div class="var-top">
             <span v-if="multiples" class="var-nombre"><span class="dot" :class="f.e" />{{ f.nombre }}</span>
@@ -98,6 +102,7 @@ const nuevaVariante = () => ui.abrir('producto', { base: { nombre: props.g.nombr
         </div>
       </li>
     </ul>
+    <button v-if="filas.length >= 3" type="button" class="ghost sm ver-variantes" @click="verTodas = !verTodas"><Icono :n="verTodas ? 'up' : 'dn'" sm />{{ verTodas ? 'Ver menos' : `Ver ${filas.length - MOSTRAR} más` }}</button>
     <button type="button" class="ghost sm agregar-var" @click="nuevaVariante"><Icono n="plus" sm />Agregar presentación o sabor</button>
   </article>
 </template>

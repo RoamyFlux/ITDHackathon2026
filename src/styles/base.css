@@ -227,3 +227,18 @@ dialog::backdrop{background:var(--overlay);backdrop-filter:blur(4px)}
   #appBox{display:block!important} body{background:#fff;color:#000} .card{box-shadow:none;border:0}
 }
 .pista.ok-txt{color:var(--ok);display:flex;align-items:center;gap:4px}
+
+/* ---- 13) Bloque plegable (componente Plegable.vue) ----
+ * Título con flecha; al abrirse, la flecha gira y el contenido aparece. */
+.plegable > summary{list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 0;font-weight:800;font-size:.92rem;border-radius:10px;user-select:none}
+.plegable > summary::-webkit-details-marker{display:none}
+.plegable > summary:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:2px}
+.plegable > summary > .ic:first-child{color:var(--brand)}
+.plegable .pl-tit{flex:1;min-width:0}
+.plegable .pl-tit small{display:block;font-weight:600;font-size:.76rem}
+.plegable .pl-flecha{transition:transform .2s var(--ease);color:var(--muted)}
+.plegable[open] .pl-flecha{transform:rotate(180deg)}
+.plegable[open] > .pl-cuerpo{animation:aparecer .2s ease}
+.grupo.crit > summary{color:var(--crit)} .grupo.low > summary{color:var(--low)}
+.grupo > summary{font-size:.76rem;text-transform:uppercase;letter-spacing:.05em}
+.retirar-todo{margin:0 0 8px}

@@ -1,5 +1,5 @@
 <!--
-  ADMINISTRACIÓN (solo la cuenta administradora)
+  ADMINISTRACIÓN (solo la cuenta administradora), en dos PESTAÑAS:
   1) Planes de clientes: cuando un cliente paga, se le asigna Pro o Max por su correo y hasta qué fecha
      (función admin_asignar_plan de schema.sql §16). Al vencer, la cuenta vuelve sola a Gratis.
   2) Contactos de soporte: agregar varios de distintas redes, editar, ocultar/mostrar, ordenar y borrar, con
@@ -11,6 +11,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useSesion } from '../stores/sesion.js'
 import { usePlan } from '../stores/plan.js'
 import InsigniaPlan from '../components/InsigniaPlan.vue'
+import Pestanas from '../components/Pestanas.vue'
 import { useSoporte } from '../stores/soporte.js'
 import { useAvisos } from '../stores/avisos.js'
 import { REDES, validarContacto, enlaceContacto } from '../logica/soporte.js'
@@ -28,6 +29,8 @@ const sesion = useSesion()
 const planStore = usePlan()
 const avisos = useAvisos()
 const revisando = ref(true)
+// Pestañas: Usuarios y planes · Contactos de soporte.
+const tab = ref('usuarios')
 const vacio = () => ({ id: null, red: 'whatsapp', etiqueta: '', valor: '', activo: true })
 const form = ref(vacio())
 const guardando = ref(false)
@@ -87,8 +90,9 @@ async function borrar (c) {
         <h1><Icono n="shield" />Administración</h1>
         <p>Los contactos que agregues aquí aparecen en "Ayuda y soporte" para todos los usuarios (y en la página de inicio).</p>
       </div>
-      <h2 class="admin-sub"><Icono n="star" />Usuarios y planes</h2>
-      <div class="admin-rejilla">
+      <Pestanas v-model="tab" etiqueta="Secciones de administración" class="pestanas-admin"
+                :opciones="[{ id: 'usuarios', t: 'Usuarios y planes', icono: 'user', n: usuarios.length }, { id: 'soporte', t: 'Contactos de soporte', icono: 'chat', n: soporte.contactos.length }]" />
+      <div v-show="tab === 'usuarios'" class="admin-rejilla" role="tabpanel">
         <form id="form-plan" class="card admin-form" @submit.prevent="asignarPlan">
           <h2>Asignar plan</h2>
           <p class="hint">Elige una cuenta de la lista (o escribe su correo), el plan y hasta qué día está pagado. Al pasar esa fecha vuelve sola a Gratis. Puedes dar planes de cortesía sin vencimiento.</p>
@@ -124,8 +128,7 @@ async function borrar (c) {
         </section>
       </div>
 
-      <h2 class="admin-sub"><Icono n="chat" />Contactos de soporte</h2>
-      <div class="admin-rejilla">
+      <div v-show="tab === 'soporte'" class="admin-rejilla" role="tabpanel">
         <form id="form-contacto" class="card admin-form" @submit.prevent="guardar">
           <h2>{{ form.id ? 'Editar contacto' : 'Agregar contacto' }}</h2>
           <div class="campo"><span>Red</span>
