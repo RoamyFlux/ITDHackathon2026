@@ -1,0 +1,20 @@
+{
+  "name": "earlystock-presentacion",
+  "private": true,
+  "description": "Genera la presentación de EarlyStock (ver presentacion/README.md).",
+  "scripts": {
+    "recursos": "node recursos.cjs",
+    "capturas": "node capturas.cjs",
+    "preparar": "python3 preparar.py",
+    "generar": "node generar.cjs",
+    "postproceso": "python3 postproceso.py",
+    "todo": "npm run recursos && npm run capturas && npm run preparar && npm run generar && npm run postproceso"
+  },
+  "dependencies": {
+    "pptxgenjs": "4.0.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-icons": "5.7.0",
+    "sharp": "0.35.5"
+  }
+}

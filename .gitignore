@@ -7,3 +7,5 @@ dist-e2e/
 *.log
 test-results/
 playwright-report/
+presentacion/fuente/node_modules/
+presentacion/fuente/trabajo/
