@@ -145,3 +145,161 @@ create policy "avatars: borrar propias" on storage.objects
 -- ---------------------------------------------------------------------
 alter table public.movimientos drop constraint if exists movimientos_tipo_check;
 alter table public.movimientos add constraint movimientos_tipo_check check (tipo in ('entrada', 'salida', 'merma'));
+
+-- =====================================================================
+-- EarlyStock 2.0 · SEGURIDAD AUTOMÁTICA Y PROTECCIÓN DE DATOS
+-- (todo lo de abajo también se puede ejecutar varias veces)
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 8) LÍMITES DE LOS DATOS (restricciones)
+--    Aunque alguien se salte la página y escriba directo a la API, la base rechaza datos absurdos:
+--    textos demasiado largos o cantidades gigantes. "not valid" = no revisa filas viejas (no falla si ya había).
+-- ---------------------------------------------------------------------
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'productos_limites') then
+    alter table public.productos add constraint productos_limites check (
+      char_length(categoria) <= 30 and paquetes <= 1000000 and por_paquete <= 100000 and sueltas <= 1000000
+      and minimo <= 100000 and objetivo <= 100000 and coalesce(costo, 0) <= 1000000 and coalesce(precio, 0) <= 1000000
+    ) not valid;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'lotes_limites') then
+    alter table public.lotes add constraint lotes_limites check (piezas <= 100000000) not valid;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'movimientos_limites') then
+    alter table public.movimientos add constraint movimientos_limites check (piezas <= 100000000) not valid;
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- 9) BITÁCORA DE SEGURIDAD (eventos_seguridad)
+--    Guarda inicios de sesión, cambios de contraseña, llaves de acceso, importaciones y exportaciones
+--    (los anota la app) y, AUTOMÁTICAMENTE con triggers, borrados, retiros de caducados y cambios masivos.
+--    Cada usuario solo ve sus propios eventos. Los eventos no se pueden editar ni borrar desde la app.
+-- ---------------------------------------------------------------------
+create table if not exists public.eventos_seguridad (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  tipo       text not null check (tipo in ('inicio_sesion','cierre_sesion','cierre_otros','cuenta_creada','contrasena_cambiada',
+                                            'llave_agregada','llave_borrada','importacion','exportacion','borrado','retiro','cambio_masivo')),
+  detalle    text not null default '' check (char_length(detalle) <= 300),
+  created_at timestamptz not null default now()
+);
+create index if not exists eventos_user_idx on public.eventos_seguridad (user_id, created_at desc);
+
+grant select, insert on public.eventos_seguridad to authenticated;
+alter table public.eventos_seguridad enable row level security;
+drop policy if exists "eventos: ver propios" on public.eventos_seguridad;
+create policy "eventos: ver propios" on public.eventos_seguridad
+  for select to authenticated using (user_id = (select auth.uid()));
+-- Desde la app solo se pueden anotar eventos "de la app"; los automáticos (borrado, retiro, cambio_masivo)
+-- solo los escribe la base de datos (así nadie puede fingirlos ni ocultarlos).
+drop policy if exists "eventos: anotar propios" on public.eventos_seguridad;
+create policy "eventos: anotar propios" on public.eventos_seguridad
+  for insert to authenticated
+  with check (user_id = (select auth.uid()) and tipo not in ('borrado','retiro','cambio_masivo'));
+
+-- Limpieza automática: al anotar un evento se borran los de ese usuario con más de 90 días.
+create or replace function public.limpiar_eventos_viejos() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  delete from public.eventos_seguridad where user_id = new.user_id and created_at < now() - interval '90 days';
+  return new;
+end $$;
+drop trigger if exists eventos_limpieza on public.eventos_seguridad;
+create trigger eventos_limpieza after insert on public.eventos_seguridad
+  for each row execute function public.limpiar_eventos_viejos();
+
+-- Trigger: productos borrados (uno o muchos en una sola operación) -> un evento con cuántos.
+create or replace function public.registrar_borrado_productos() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare n int; u uuid;
+begin
+  select count(*), min(user_id::text)::uuid into n, u from viejas;
+  if n > 0 and u is not null and exists (select 1 from auth.users where id = u) then
+    insert into public.eventos_seguridad (user_id, tipo, detalle)
+    values (u, 'borrado', n || case when n = 1 then ' producto eliminado' else ' productos eliminados' end);
+  end if;
+  return null;
+end $$;
+drop trigger if exists productos_borrado_evento on public.productos;
+create trigger productos_borrado_evento after delete on public.productos
+  referencing old table as viejas for each statement execute function public.registrar_borrado_productos();
+
+-- Trigger: cambios masivos (20 o más productos modificados en una sola operación, por ejemplo al importar).
+create or replace function public.registrar_cambio_masivo() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare n int; u uuid;
+begin
+  select count(*), min(user_id::text)::uuid into n, u from nuevas;
+  if n >= 20 then
+    insert into public.eventos_seguridad (user_id, tipo, detalle) values (u, 'cambio_masivo', n || ' productos modificados a la vez');
+  end if;
+  return null;
+end $$;
+drop trigger if exists productos_masivo_evento on public.productos;
+create trigger productos_masivo_evento after update on public.productos
+  referencing new table as nuevas for each statement execute function public.registrar_cambio_masivo();
+
+-- Trigger: retiro de caducados (movimientos tipo 'merma').
+create or replace function public.registrar_retiro() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare n int; pz int; u uuid;
+begin
+  select count(*), coalesce(sum(piezas), 0), min(user_id::text)::uuid into n, pz, u from nuevos where tipo = 'merma';
+  if n > 0 then
+    insert into public.eventos_seguridad (user_id, tipo, detalle) values (u, 'retiro', pz || ' piezas caducadas retiradas');
+  end if;
+  return null;
+end $$;
+drop trigger if exists movimientos_retiro_evento on public.movimientos;
+create trigger movimientos_retiro_evento after insert on public.movimientos
+  referencing new table as nuevos for each statement execute function public.registrar_retiro();
+
+-- Las funciones de los triggers no se pueden llamar directo desde la API.
+revoke execute on function public.limpiar_eventos_viejos(), public.registrar_borrado_productos(),
+  public.registrar_cambio_masivo(), public.registrar_retiro() from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------
+-- 10) ELIMINAR MI CUENTA (derecho de cancelación, ARCO)
+--     Borra al usuario que la llama. Por "on delete cascade" se borran también todos sus productos,
+--     lotes, movimientos y eventos. La foto se borra antes desde la app (Storage no permite borrarla aquí).
+-- ---------------------------------------------------------------------
+create or replace function public.eliminar_mi_cuenta() returns void
+language plpgsql security definer set search_path = '' as $$
+declare u uuid := auth.uid();
+begin
+  if u is null then raise exception 'Sin sesión'; end if;
+  delete from public.productos where user_id = u;
+  delete from public.eventos_seguridad where user_id = u;
+  delete from auth.users where id = u;
+end $$;
+revoke execute on function public.eliminar_mi_cuenta() from public, anon;
+grant execute on function public.eliminar_mi_cuenta() to authenticated;
+
+-- ---------------------------------------------------------------------
+-- 11) (OPCIONAL) BLOQUEAR CORREOS TEMPORALES EN EL SERVIDOR
+--     La página ya los rechaza, pero esto lo hace también en Supabase (no se puede saltar).
+--     Para activarlo: Authentication -> Hooks -> "Before User Created" -> Postgres -> public.hook_correos_reales.
+-- ---------------------------------------------------------------------
+create or replace function public.hook_correos_reales(event jsonb) returns jsonb
+language plpgsql set search_path = '' as $$
+declare dominio text := lower(split_part(coalesce(event->'user'->>'email', ''), '@', 2));
+begin
+  if dominio = any (array['mailinator.com','guerrillamail.com','guerrillamail.net','sharklasers.com','10minutemail.com',
+      '10minutemail.net','tempmail.com','temp-mail.org','temp-mail.io','tempmail.net','throwawaymail.com','yopmail.com',
+      'yopmail.net','getnada.com','nada.email','trashmail.com','trashmail.de','dispostable.com','maildrop.cc','mintemail.com',
+      'fakeinbox.com','mailnesia.com','mohmal.com','emailondeck.com','tempail.com','tempr.email','discard.email',
+      'spamgourmet.com','mytemp.email','burnermail.io','mailcatch.com','inboxkitten.com','moakt.com','tmail.ws',
+      'tmpmail.org','tmpmail.net','emailfake.com','fakemail.net','luxusmail.org','mail.tm','linshiyouxiang.net']) then
+    return jsonb_build_object('error', jsonb_build_object('http_code', 400, 'message', 'No se permiten correos temporales.'));
+  end if;
+  return '{}'::jsonb;
+end $$;
+revoke execute on function public.hook_correos_reales(jsonb) from public, anon, authenticated;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'supabase_auth_admin') then
+    grant execute on function public.hook_correos_reales(jsonb) to supabase_auth_admin;
+  end if;
+end $$;

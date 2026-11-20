@@ -1,0 +1,5 @@
+{
+  "comentario": "Datos PÚBLICOS de conexión a Supabase (Project URL y publishable key). La seguridad la dan las reglas RLS de supabase/schema.sql. NUNCA pongas aquí la secret key ni la service_role key.",
+  "url": "https://nfmanfduefulqwzuoueh.supabase.co",
+  "publishableKey": "sb_publishable_LWuugii57u_iu30WsqVlfA_3369oPG6"
+}

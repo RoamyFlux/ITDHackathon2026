@@ -1,0 +1,94 @@
+/* =====================================================================
+ * TEMAS Y COLORES (variables CSS)
+ * Todo el CSS usa estas variables con var(--nombre). Se controlan con atributos en <html>:
+ *   data-theme  = light (Claro) | niebla (gris claro) | grafito (gris medio) | dark (Oscuro) | auto
+ *   data-accent = vice | neon | ocaso | lila | oceano | bosque
+ * a) Cada ACENTO define 3 colores de degradado (--a1..--a3), su color principal para fondos claros (--brand-l)
+ *    y oscuros (--brand-d), y los del fondo de portada (--hero-*).
+ * b) Cada TEMA define fondos, textos, bordes y el semáforo (verde/ámbar/rojo, iguales en significado en todos).
+ * c) El resto se CALCULA con color-mix, así cualquier tema + acento combina bien.
+ * ===================================================================== */
+
+/* a) ACENTOS */
+:root{ --a1:#6d28d9; --a2:#a21caf; --a3:#db2777; --brand-l:#7c3aed; --brand-d:#a78bfa; --hero-a:#4c1d95; --hero-b:#ec4899; --hero-c:#fb923c; }
+:root[data-accent="neon"]{ --a1:#7c3aed; --a2:#4f46e5; --a3:#0891b2; --brand-l:#4f46e5; --brand-d:#818cf8; --hero-a:#312e81; --hero-b:#0ea5e9; --hero-c:#22d3ee; }
+:root[data-accent="ocaso"]{ --a1:#be185d; --a2:#e11d48; --a3:#ea580c; --brand-l:#db2777; --brand-d:#f472b6; --hero-a:#831843; --hero-b:#f43f5e; --hero-c:#fbbf24; }
+:root[data-accent="lila"]{ --a1:#7c3aed; --a2:#9333ea; --a3:#c026d3; --brand-l:#8b5cf6; --brand-d:#c4b5fd; --hero-a:#5b21b6; --hero-b:#c084fc; --hero-c:#f9a8d4; }
+/* Océano: azul profundo -> turquesa, tranquilo y confiable. */
+:root[data-accent="oceano"]{ --a1:#1d4ed8; --a2:#0284c7; --a3:#0d9488; --brand-l:#0369a1; --brand-d:#38bdf8; --hero-a:#0c4a6e; --hero-b:#06b6d4; --hero-c:#5eead4; }
+/* Bosque: verdes naturales con un toque dorado. */
+:root[data-accent="bosque"]{ --a1:#166534; --a2:#15803d; --a3:#65a30d; --brand-l:#15803d; --brand-d:#4ade80; --hero-a:#14532d; --hero-b:#22c55e; --hero-c:#facc15; }
+
+/* b) TEMAS */
+/* Claro (por defecto) */
+:root{
+  --bg:#f6f4fb; --surface:#ffffff; --surface-2:#f2eff8; --text:#1d1530; --muted:#655d7c; --line:#e6e0f0;
+  --brand:var(--brand-l);
+  --ok:#0b8a5f; --ok-bg:#e1f6ec; --low:#b45d04; --low-bg:#fff0d9; --crit:#d61545; --crit-bg:#ffe3e9;
+  --shadow:0 1px 2px rgba(45,20,90,.06), 0 4px 14px rgba(45,20,90,.06);
+  --shadow-hover:0 2px 4px rgba(45,20,90,.08), 0 12px 28px rgba(45,20,90,.12);
+  --shadow-lg:0 24px 60px rgba(27,13,51,.3);
+  --overlay:rgba(15,8,30,.5);
+  color-scheme:light;
+}
+/* Niebla: gris claro suave, menos brillante que el blanco (descansa la vista). */
+:root[data-theme="niebla"]{
+  --bg:#e4e6eb; --surface:#f1f2f5; --surface-2:#e2e4ea; --text:#1e2129; --muted:#585e6b; --line:#d0d4dc;
+  --brand:var(--brand-l);
+  --ok:#0a7d56; --ok-bg:#d8efe4; --low:#a85604; --low-bg:#f6e7cf; --crit:#c8143f; --crit-bg:#f7dce2;
+  --shadow:0 1px 2px rgba(20,24,35,.07), 0 4px 14px rgba(20,24,35,.06);
+  --shadow-hover:0 2px 4px rgba(20,24,35,.09), 0 12px 28px rgba(20,24,35,.12);
+  --shadow-lg:0 24px 60px rgba(15,18,28,.3);
+  --overlay:rgba(20,22,30,.5);
+  color-scheme:light;
+}
+/* Grafito: gris medio, ni tan blanco ni tan negro. Texto claro con buen contraste. */
+:root[data-theme="grafito"]{
+  --bg:#33363d; --surface:#3f434b; --surface-2:#4a4e57; --text:#f1f2f5; --muted:#c0c4cc; --line:#575c66;
+  --brand:var(--brand-d);
+  --ok:#4ade80; --ok-bg:#2f4a3c; --low:#fbbf24; --low-bg:#544628; --crit:#fb7185; --crit-bg:#5a3640;
+  --shadow:0 1px 2px rgba(0,0,0,.25), 0 4px 14px rgba(0,0,0,.18);
+  --shadow-hover:0 10px 28px rgba(0,0,0,.35);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.5);
+  --overlay:rgba(10,11,14,.55);
+  color-scheme:dark;
+}
+/* Oscuro */
+:root[data-theme="dark"]{
+  --bg:#0f0a1a; --surface:#18112a; --surface-2:#221838; --text:#efe9fb; --muted:#a9a0c2; --line:#2f2549;
+  --brand:var(--brand-d);
+  --ok:#34d399; --ok-bg:#0f2e25; --low:#fbbf24; --low-bg:#33260d; --crit:#fb7185; --crit-bg:#3a1424;
+  --shadow:0 1px 2px rgba(0,0,0,.45); --shadow-hover:0 10px 28px rgba(0,0,0,.55); --shadow-lg:0 24px 60px rgba(0,0,0,.7);
+  --overlay:rgba(5,3,10,.65);
+  color-scheme:dark;
+}
+/* Automático con el dispositivo en modo oscuro: mismos valores que Oscuro. */
+@media (prefers-color-scheme: dark){
+  :root[data-theme="auto"], :root:not([data-theme]){
+    --bg:#0f0a1a; --surface:#18112a; --surface-2:#221838; --text:#efe9fb; --muted:#a9a0c2; --line:#2f2549;
+    --brand:var(--brand-d);
+    --ok:#34d399; --ok-bg:#0f2e25; --low:#fbbf24; --low-bg:#33260d; --crit:#fb7185; --crit-bg:#3a1424;
+    --shadow:0 1px 2px rgba(0,0,0,.45); --shadow-hover:0 10px 28px rgba(0,0,0,.55); --shadow-lg:0 24px 60px rgba(0,0,0,.7);
+    --overlay:rgba(5,3,10,.65);
+    color-scheme:dark;
+  }
+}
+
+/* c) CALCULADOS Y MEDIDAS */
+:root{
+  --brand-soft:color-mix(in srgb,var(--brand) 14%,var(--surface));
+  --brand-text:color-mix(in srgb,var(--brand) 75%,var(--text));
+  --lila:color-mix(in srgb,var(--brand) 45%,#fff);
+  --glow:color-mix(in srgb,var(--a1) 30%,transparent);
+  --grad:linear-gradient(135deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);
+  --grad-texto:linear-gradient(90deg,var(--a1),var(--a2),var(--a3),var(--hero-c),var(--a3),var(--a2),var(--a1));
+  --oscuro-base:color-mix(in srgb,var(--hero-a) 30%,#0b0912);
+  --grad-hero:linear-gradient(140deg,var(--oscuro-base) 0%,var(--hero-a) 38%,var(--a2) 68%,var(--hero-b) 86%,var(--hero-c) 100%);
+  --radius:20px; --radius-sm:13px;
+  --font:"Plus Jakarta Sans Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display:"Bricolage Grotesque Variable", "Plus Jakarta Sans Variable", system-ui, sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+/* Colores del logo (se pintan con clases porque los atributos SVG no aceptan variables). */
+.lg-a{stop-color:var(--hero-a)} .lg-b{stop-color:var(--a2)} .lg-c{stop-color:var(--hero-b)} .lg-d{stop-color:var(--hero-c)}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}

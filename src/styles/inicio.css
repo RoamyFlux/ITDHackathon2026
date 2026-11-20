@@ -1,0 +1,163 @@
+/* =====================================================================
+ * PÁGINA DE INICIO (presentación) Y PÁGINAS LEGALES
+ * Portada oscura con degradado "atardecer" del acento, vista previa animada de la app,
+ * bloques de beneficios, formulario de acceso y páginas de Privacidad/Términos.
+ * ===================================================================== */
+
+/* ---- 1) Barra superior ---- */
+.inicio{min-height:100vh}
+.nav-inicio{position:relative;z-index:5;max-width:1200px;margin:0 auto;padding:18px 20px;display:flex;align-items:center;gap:18px;color:#fff}
+.nav-inicio .marca svg{width:40px;height:40px}
+.nav-links{display:flex;gap:22px;margin-left:auto}
+.nav-links a{color:rgba(255,255,255,.8);text-decoration:none;font-weight:600;font-size:.9rem}
+.nav-links a:hover{color:#fff}
+.nav-der{display:flex;gap:8px}
+button.ghost.claro{color:#fff}
+button.ghost.claro:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* ---- 2) Portada ---- */
+.inicio::before{content:"";position:absolute;inset:0 0 auto 0;height:min(900px,100vh);z-index:-1;background:var(--grad-hero);
+  -webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+.inicio{position:relative;isolation:isolate}
+.portada{max-width:1200px;margin:0 auto;padding:40px 20px 70px;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;color:#fff;position:relative}
+.portada::before,.portada::after{content:"";position:absolute;border-radius:50%;filter:blur(70px);z-index:-1;animation:flotar 14s ease-in-out infinite alternate;pointer-events:none}
+.portada::before{width:380px;height:380px;background:var(--a1);top:-80px;left:-80px;opacity:.55}
+.portada::after{width:340px;height:340px;background:var(--hero-c);bottom:-60px;right:10%;opacity:.4;animation-delay:-6s}
+.etiqueta{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);font-size:.8rem;font-weight:700;backdrop-filter:blur(6px)}
+.portada h1{font-size:clamp(2.3rem,5vw,3.7rem);font-weight:800;line-height:1.02;letter-spacing:-.04em;margin:18px 0 16px}
+.portada h1 .grad{background:linear-gradient(90deg,#fde68a,#f9a8d4,#c4b5fd,#f9a8d4,#fde68a);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:brilloTexto 7s ease-in-out infinite alternate}
+.portada-txt > p{font-size:1.08rem;color:rgba(255,255,255,.85);max-width:52ch;margin:0 0 26px}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.cta .grande:first-child{background:#fff;color:var(--hero-a);box-shadow:0 14px 34px rgba(0,0,0,.25)}
+.cta .grande:first-child:hover{background:#fff}
+button.sec-oscuro{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);box-shadow:none;backdrop-filter:blur(6px)}
+button.sec-oscuro:hover{background:rgba(255,255,255,.18)}
+.mini-beneficios{list-style:none;padding:0;margin:22px 0 0;display:flex;flex-wrap:wrap;gap:8px 20px;font-size:.86rem;color:rgba(255,255,255,.85);font-weight:600}
+.mini-beneficios li{display:inline-flex;align-items:center;gap:6px}
+
+/* ---- 3) Vista previa animada ---- */
+.previa-app{position:relative;border-radius:24px;background:var(--surface);color:var(--text);box-shadow:0 40px 90px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.15);overflow:visible;transform:perspective(1400px) rotateY(-8deg) rotateX(3deg);animation:aparecer .8s ease both}
+.pa-barra{display:flex;align-items:center;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:.72rem;color:var(--muted);font-weight:700}
+.pa-barra i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.pa-barra i:nth-child(1){background:#f87171} .pa-barra i:nth-child(2){background:#fbbf24} .pa-barra i:nth-child(3){background:#34d399}
+.pa-barra span{margin-left:10px}
+.pa-cuerpo{padding:18px;display:grid;gap:10px}
+.pa-hola{display:flex;justify-content:space-between;align-items:center}
+.pa-hola small{display:block;font-size:.75rem}
+.pa-hola b{font:800 1.15rem var(--font-display);background:var(--grad-texto);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:brilloTexto 7s ease-in-out infinite alternate}
+.pa-anillo{position:relative;width:62px;height:62px}
+.pa-anillo svg{width:100%;height:100%;transform:rotate(-90deg)}
+.pa-anillo circle{fill:none;stroke-width:7}
+.pa-anillo .pista{stroke:var(--surface-2)}
+.pa-anillo .valor{stroke:var(--low);stroke-linecap:round;stroke-dasharray:169.65;stroke-dashoffset:169.65;animation:anilloPrevia 1.6s .4s var(--ease) forwards}
+.pa-anillo span{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:.8rem}
+@keyframes anilloPrevia{to{stroke-dashoffset:105}}
+.pa-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pa-stats div{padding:10px;border-radius:12px;background:var(--surface-2)}
+.pa-stats small{display:block;font-size:.68rem;font-weight:700}
+.pa-stats b{font:800 1.3rem var(--font-display)}
+.pa-stats .crit{color:var(--crit)} .pa-stats .low{color:var(--low)}
+.pa-alerta,.pa-sugerencia{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:var(--surface-2);font-size:.82rem;opacity:0;animation:subir .5s var(--ease) forwards}
+.pa-alerta em{margin-left:auto;font-style:normal;color:var(--muted);font-size:.74rem;font-weight:600}
+.pa-a1{animation-delay:.9s} .pa-a2{animation-delay:1.2s}
+.pa-sugerencia{background:color-mix(in srgb,var(--low) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--low) 25%,transparent);animation-delay:1.6s}
+.pa-sugerencia small{display:block;font-size:.72rem}
+.pa-ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--low-bg);color:var(--low);flex:none}
+.pa-grafica{display:flex;align-items:flex-end;gap:6px;height:64px;padding:4px 2px 0}
+.pa-grafica i{flex:1;border-radius:6px 6px 3px 3px;background:var(--grad);transform-origin:bottom;animation:crecer .9s var(--ease) both}
+.pa-grafica .b1{height:60%;animation-delay:1s} .pa-grafica .b2{height:52%;animation-delay:1.06s} .pa-grafica .b3{height:72%;animation-delay:1.12s} .pa-grafica .b4{height:45%;animation-delay:1.18s}
+.pa-grafica .b5{height:66%;animation-delay:1.24s} .pa-grafica .b6{height:84%;animation-delay:1.3s} .pa-grafica .b7{height:58%;animation-delay:1.36s;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--glow)}
+.pa-flotante{position:absolute;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:var(--surface);color:var(--text);font-size:.8rem;font-weight:700;box-shadow:var(--shadow-lg);border:1px solid var(--line);opacity:0;animation:aparecer .5s ease forwards,subeBaja 5s ease-in-out infinite}
+.pa-flotante .ic{color:var(--brand)}
+.pa-f1{top:70px;left:-40px;animation-delay:2s,2.5s}
+.pa-f2{bottom:-18px;right:24px;animation-delay:2.4s,3s}
+
+/* ---- 4) Bloques de contenido ---- */
+.inicio-main{max-width:1200px;margin:0 auto;padding:0 20px 30px}
+.bloque{padding:46px 0}
+.tit-bloque{font-size:clamp(1.6rem,3vw,2.3rem);font-weight:800;letter-spacing:-.035em;text-align:center;margin-bottom:30px}
+.tit-bloque.izq{text-align:left;margin-bottom:14px}
+.tres-pasos{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.tres-pasos li{padding:24px;overflow:hidden}
+.tres-pasos .num{position:absolute;right:18px;top:6px;font:800 4.4rem var(--font-display);color:var(--brand);opacity:.12;line-height:1}
+.ico-b{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--grad);color:#fff;margin-bottom:14px;box-shadow:0 10px 24px var(--glow)}
+.tres-pasos h3,.beneficio h3{font-size:1.08rem;margin-bottom:6px}
+.tres-pasos p,.beneficio p{margin:0;color:var(--muted);font-size:.9rem}
+.rejilla-beneficios{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.rejilla-beneficios.cuatro{grid-template-columns:repeat(4,1fr)}
+.beneficio{padding:22px}
+.beneficio:hover,.tres-pasos li:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover)}
+.beneficio .ico-b{background:var(--brand-soft);color:var(--brand-text);box-shadow:none}
+.destacado{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center}
+.destacado .etiqueta{background:var(--brand-soft);color:var(--brand-text);border-color:transparent}
+.destacado p{color:var(--muted);font-size:1rem}
+.ejemplos-sug{display:grid;gap:12px}
+.sug-ej{display:flex;gap:14px;align-items:flex-start;padding:16px 18px}
+.sug-ej > .ic{width:22px;height:22px;color:var(--brand);margin-top:2px}
+.sug-ej.crit{border-color:color-mix(in srgb,var(--crit) 30%,var(--line))} .sug-ej.crit > .ic{color:var(--crit)}
+.sug-ej.low{border-color:color-mix(in srgb,var(--low) 30%,var(--line))} .sug-ej.low > .ic{color:var(--low)}
+.sug-ej b{display:block} .sug-ej small{font-size:.84rem}
+.sug-ej:nth-child(2){margin-left:24px} .sug-ej:nth-child(3){margin-left:48px}
+.acceso-bloque{display:grid;grid-template-columns:1fr minmax(0,440px);gap:40px;align-items:center;scroll-margin-top:20px}
+.acceso-txt p{color:var(--muted);font-size:1rem}
+
+/* ---- 5) Formulario de acceso ---- */
+.acceso{padding:24px}
+.pestanas{margin-bottom:18px}
+.form-acceso h3{font-size:1.35rem;font-weight:800;margin-bottom:4px}
+.form-acceso .sub{color:var(--muted);font-size:.88rem;margin:0 0 18px}
+.form-acceso > button[type="submit"]{margin-top:4px}
+.llave{width:100%;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:12px;text-align:left;padding:12px 16px;background:var(--surface-2);color:var(--text);border:1px solid var(--line);box-shadow:none}
+.llave:hover{background:var(--brand-soft);border-color:color-mix(in srgb,var(--brand) 40%,var(--line));box-shadow:none}
+.llave .ic{grid-row:span 2;width:28px;height:28px;color:var(--brand)}
+.llave small{font-weight:500;font-size:.76rem}
+.separador{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:.76rem;font-weight:700}
+.separador::before,.separador::after{content:"";flex:1;height:1px;background:var(--line)}
+.revisa{text-align:center}
+.ico-correo{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;margin:0 auto 14px;background:var(--grad);color:#fff;box-shadow:0 14px 30px var(--glow)}
+.ico-correo .ic{width:30px;height:30px}
+.tips{text-align:left;font-size:.84rem;color:var(--muted);padding-left:20px;margin:0 0 16px}
+.seguro{display:flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted);margin-top:16px;justify-content:center}
+
+/* ---- 6) Páginas legales ---- */
+.legal::before{content:"";position:absolute;inset:0 0 auto 0;height:260px;z-index:-1;background:var(--grad-hero);-webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
+.legal{position:relative;isolation:isolate}
+.legal-nav{justify-content:space-between}
+.btn-link{display:inline-flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-weight:700;font-size:.88rem;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2)}
+.btn-link .ic{transform:rotate(180deg)}
+.legal-main{max-width:1100px;margin:0 auto;padding:10px 20px 40px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px;align-items:start}
+.legal-indice{position:sticky;top:20px;padding:16px;display:grid;gap:6px;font-size:.84rem}
+.legal-indice a{color:var(--muted);text-decoration:none;font-weight:600}
+.legal-indice a:hover{color:var(--brand-text)}
+.legal-texto{padding:32px 36px;line-height:1.65}
+.legal-texto h1{font-size:2rem;font-weight:800}
+.legal-texto .actualizado{color:var(--muted);margin:4px 0 16px}
+.legal-texto h2{font-size:1.15rem;margin:26px 0 8px;scroll-margin-top:20px}
+.legal-texto p,.legal-texto li{font-size:.94rem}
+.legal-texto ul{padding-left:20px}
+
+/* ---- 7) Responsivo ---- */
+@media (max-width:1000px){
+  .portada,.destacado,.acceso-bloque{grid-template-columns:1fr}
+  .previa-app{transform:none;max-width:560px;margin:0 auto;width:100%}
+  .pa-f1{left:-8px}
+  .rejilla-beneficios,.rejilla-beneficios.cuatro{grid-template-columns:1fr 1fr}
+  .nav-links{display:none}
+  .nav-der{margin-left:auto}
+  .legal-main{grid-template-columns:1fr}
+  .legal-indice{position:static}
+}
+@media (max-width:600px){
+  .nav-inicio{padding:14px 16px}
+  .nav-inicio .marca .nombre{display:none}
+  .nav-der button{padding:8px 12px;font-size:.84rem}
+  .portada{padding:24px 16px 50px;gap:34px}
+  .cta .grande{width:100%}
+  .tres-pasos,.rejilla-beneficios,.rejilla-beneficios.cuatro{grid-template-columns:1fr}
+  .sug-ej:nth-child(2),.sug-ej:nth-child(3){margin-left:0}
+  .pa-flotante{display:none}
+  .inicio-main{padding:0 16px 20px}
+  .bloque{padding:30px 0}
+  .acceso{padding:18px}
+  .legal-texto{padding:22px 18px}
+}
