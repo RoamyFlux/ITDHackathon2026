@@ -432,3 +432,151 @@ create policy "contactos: admin cambia" on public.contactos_soporte
 drop policy if exists "contactos: admin borra" on public.contactos_soporte;
 create policy "contactos: admin borra" on public.contactos_soporte
   for delete to authenticated using ((select public.es_admin()));
+
+-- =====================================================================
+-- EarlyStock 2.2 · PLANES MENSUALES (Gratis, Pro y Max)
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 16) SUSCRIPCIONES Y LÍMITES DE CADA PLAN
+--     Gratis: hasta 1,000 productos y 3 ofertas activas.  Pro: hasta 10,000 productos.  Max: ilimitado.
+--     (Los mismos números están en src/logica/planes.js para los avisos de la página.)
+--     - Sin fila en suscripciones = plan Gratis.
+--     - "vence": último día pagado. Al pasar esa fecha la cuenta vuelve a Gratis sola (sus datos se conservan;
+--       solo no puede agregar más productos de los que permite Gratis).
+--     - El plan lo asigna el ADMINISTRADOR desde la app (función admin_asignar_plan) cuando recibe el pago.
+--       Nadie puede cambiarse el plan a sí mismo: la tabla no tiene permisos de escritura desde la app.
+--     - Los límites los aplica la BASE DE DATOS con triggers: aunque alguien modifique la página, no puede
+--       pasar del límite de su plan.
+-- ---------------------------------------------------------------------
+create table if not exists public.suscripciones (
+  user_id         uuid primary key references auth.users(id) on delete cascade,
+  plan            text not null default 'gratis' check (plan in ('gratis', 'pro', 'max')),
+  vence           date,
+  nota            text not null default '' check (char_length(nota) <= 200),
+  actualizado_por text not null default '',
+  updated_at      timestamptz not null default now()
+);
+alter table public.suscripciones enable row level security;
+revoke all on public.suscripciones from anon, authenticated;
+grant select on public.suscripciones to authenticated;
+drop policy if exists "suscripciones: ver la propia" on public.suscripciones;
+create policy "suscripciones: ver la propia" on public.suscripciones
+  for select to authenticated using (user_id = (select auth.uid()));
+
+-- Plan vigente de una cuenta (si ya venció, Gratis).
+create or replace function public.plan_de(uid uuid) returns text
+language sql stable security definer set search_path = '' as $$
+  select coalesce((select s.plan from public.suscripciones s
+                   where s.user_id = uid and (s.vence is null or s.vence >= current_date)), 'gratis');
+$$;
+-- Límites por plan (null = ilimitado).
+create or replace function public.limite_productos(plan text) returns integer
+language sql immutable set search_path = '' as $$
+  select case plan when 'gratis' then 1000 when 'pro' then 10000 else null end;
+$$;
+create or replace function public.limite_ofertas(plan text) returns integer
+language sql immutable set search_path = '' as $$
+  select case plan when 'gratis' then 3 else null end;
+$$;
+
+-- Trigger: después de agregar productos (uno o muchos, por ejemplo al importar Excel) revisa que la cuenta
+-- no pase de su límite. Si lo pasa, se cancela TODA la operación y la app muestra el mensaje.
+create or replace function public.revisar_limite_productos() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare r record; total integer; lim integer; pl text;
+begin
+  for r in select distinct user_id from nuevas loop
+    pl := public.plan_de(r.user_id);
+    lim := public.limite_productos(pl);
+    if lim is not null then
+      select count(*) into total from public.productos where user_id = r.user_id;
+      if total > lim then
+        raise exception 'LIMITE_PLAN: Tu plan % permite hasta % productos. Mejora tu plan para agregar más.', initcap(pl), lim
+          using errcode = 'P0001';
+      end if;
+    end if;
+  end loop;
+  return null;
+end $$;
+drop trigger if exists productos_limite_plan on public.productos;
+create trigger productos_limite_plan after insert on public.productos
+  referencing new table as nuevas for each statement execute function public.revisar_limite_productos();
+
+-- Trigger: límite de ofertas activas (vigentes) por plan.
+create or replace function public.revisar_limite_ofertas() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare lim integer; activas integer; pl text;
+begin
+  pl := public.plan_de(new.user_id);
+  lim := public.limite_ofertas(pl);
+  if lim is not null then
+    select count(*) into activas from public.ofertas
+      where user_id = new.user_id and (termina is null or termina >= current_date);
+    if activas >= lim then
+      raise exception 'LIMITE_PLAN: Tu plan % permite hasta % ofertas activas a la vez. Quita una o mejora tu plan.', initcap(pl), lim
+        using errcode = 'P0001';
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists ofertas_limite_plan on public.ofertas;
+create trigger ofertas_limite_plan before insert on public.ofertas
+  for each row execute function public.revisar_limite_ofertas();
+
+revoke execute on function public.revisar_limite_productos(), public.revisar_limite_ofertas() from public, anon, authenticated;
+revoke execute on function public.plan_de(uuid) from public, anon;
+grant execute on function public.plan_de(uuid) to authenticated;
+
+-- Mi plan: lo que la app muestra en "Tu plan" (plan vigente, vencimiento y uso).
+create or replace function public.mi_plan() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'plan', public.plan_de(auth.uid()),
+    'plan_contratado', coalesce((select plan from public.suscripciones where user_id = auth.uid()), 'gratis'),
+    'vence', (select vence from public.suscripciones where user_id = auth.uid()),
+    'productos', (select count(*) from public.productos where user_id = auth.uid())
+  );
+$$;
+revoke execute on function public.mi_plan() from public, anon;
+grant execute on function public.mi_plan() to authenticated;
+
+-- La bitácora acepta también "plan_cambiado".
+alter table public.eventos_seguridad drop constraint if exists eventos_seguridad_tipo_check;
+alter table public.eventos_seguridad add constraint eventos_seguridad_tipo_check check (tipo in (
+  'inicio_sesion','cierre_sesion','cierre_otros','cuenta_creada','contrasena_cambiada','llave_agregada','llave_borrada',
+  'importacion','exportacion','borrado','retiro','cambio_masivo','contactos_editados','plan_cambiado'));
+
+-- ADMINISTRADOR: asignar plan a una cuenta por su correo (cuando recibe el pago) y ver las suscripciones.
+create or replace function public.admin_asignar_plan(p_email text, p_plan text, p_vence date default null, p_nota text default '')
+returns void language plpgsql security definer set search_path = '' as $$
+declare uid uuid; quien text;
+begin
+  if not public.es_admin() then raise exception 'Solo el administrador puede asignar planes.'; end if;
+  if p_plan not in ('gratis', 'pro', 'max') then raise exception 'Plan no válido.'; end if;
+  select id into uid from auth.users where lower(email) = lower(btrim(p_email));
+  if uid is null then raise exception 'No hay ninguna cuenta con el correo %.', p_email; end if;
+  select email into quien from auth.users where id = auth.uid();
+  insert into public.suscripciones (user_id, plan, vence, nota, actualizado_por, updated_at)
+  values (uid, p_plan, p_vence, left(coalesce(p_nota, ''), 200), coalesce(quien, ''), now())
+  on conflict (user_id) do update set plan = excluded.plan, vence = excluded.vence, nota = excluded.nota,
+    actualizado_por = excluded.actualizado_por, updated_at = now();
+  insert into public.eventos_seguridad (user_id, tipo, detalle)
+  values (uid, 'plan_cambiado', 'Plan ' || initcap(p_plan) || coalesce(' hasta ' || to_char(p_vence, 'DD/MM/YYYY'), ''));
+end $$;
+revoke execute on function public.admin_asignar_plan(text, text, date, text) from public, anon;
+grant execute on function public.admin_asignar_plan(text, text, date, text) to authenticated;
+
+create or replace function public.admin_suscripciones()
+returns table (email text, plan text, plan_vigente text, vence date, productos bigint, nota text, updated_at timestamptz)
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  if not public.es_admin() then raise exception 'Solo el administrador puede ver las suscripciones.'; end if;
+  return query
+    select u.email::text, s.plan, public.plan_de(s.user_id), s.vence,
+           (select count(*) from public.productos p where p.user_id = s.user_id), s.nota, s.updated_at
+    from public.suscripciones s join auth.users u on u.id = s.user_id
+    order by s.updated_at desc limit 500;
+end $$;
+revoke execute on function public.admin_suscripciones() from public, anon;
+grant execute on function public.admin_suscripciones() to authenticated;

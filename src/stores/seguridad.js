@@ -25,7 +25,8 @@ export const EVENTOS = {
   borrado: { t: 'Productos eliminados', i: 'trash' },
   retiro: { t: 'Caducados retirados', i: 'clock' },
   cambio_masivo: { t: 'Cambio masivo de productos', i: 'layers' },
-  contactos_editados: { t: 'Contactos de soporte editados', i: 'shield' }
+  contactos_editados: { t: 'Contactos de soporte editados', i: 'shield' },
+  plan_cambiado: { t: 'Plan actualizado', i: 'star' }
 }
 
 export const useSeguridad = defineStore('seguridad', () => {

@@ -8,6 +8,25 @@
 
 EarlyStock avisa al dueño de un negocio **antes** de que se le acabe un producto o de que algo caduque, le **sugiere qué hacer** (pedir, retirar, hacer una oferta) y arma su lista de compras. Está hecha con **Vue 3 + Vite**, guarda los datos en **Supabase** y se publica sola en **GitHub Pages**.
 
+## Planes (2.2)
+| Plan | Precio (MXN, IVA incluido) | Productos | Ofertas activas | Soporte |
+| --- | --- | --- | --- | --- |
+| **Gratis** | $0 | hasta 1,000 | hasta 3 | correo (2 días hábiles) |
+| **Pro** | $149 al mes · $1,490 al año | hasta 10,000 | ilimitadas | WhatsApp y correo (1 día hábil) + ayuda con el primer Excel |
+| **Max** | $349 al mes · $3,490 al año | ilimitados | ilimitadas | prioritario (mismo día hábil) + alta de todo el inventario |
+
+Cada presentación o sabor cuenta como un producto. Los límites los aplica la **base de datos** (triggers en `schema.sql` §16): no se pueden saltar modificando la página.
+
+**¿Por qué esos precios?** Mantener el servicio cuesta aprox. **$835 MXN al mes**: Supabase Pro ~25 USD, Resend ~20 USD y un dominio ~$25 MXN; GitHub Pages es gratis. Con 6 clientes Pro, o 3 Max, se cubre. Los sistemas de inventario en la nube suelen costar de $300 a $1,000 MXN al mes, así que EarlyStock queda por debajo, pensado para tiendas pequeñas. Mientras haya pocos usuarios, el plan gratuito de Supabase (500 MB y 50,000 usuarios al mes) basta y el costo es casi $0.
+
+**Cómo se cobra (sin pasarela de pago integrada todavía):**
+1. El cliente toca *Mi plan → Contratar Pro/Max*. Se abre WhatsApp o el correo de soporte con el mensaje ya escrito.
+2. Se le mandan los datos de pago (transferencia, OXXO o un link de cobro de Mercado Pago).
+3. El administrador entra a **Admin → Planes de clientes**, escribe el correo del cliente, el plan y hasta qué día pagó.
+4. Al vencer, la cuenta vuelve sola a Gratis (no se borra nada).
+
+Siguiente paso recomendado: integrar Mercado Pago Suscripciones o Stripe para cobro automático. Requiere una cuenta del negocio y un servidor (Supabase Edge Function) para recibir la confirmación del pago.
+
 ## Novedades 2.1
 - **Presentaciones y sabores:** cada producto muestra en UNA tarjeta todas sus presentaciones (600 ml, 2 L, 1 kg…) y sabores, con el stock de cada una y el total del producto.
 - **Sin duplicados:** si agregas un producto que ya existe (mismo nombre, presentación y sabor, sin importar mayúsculas o acentos), se **suman** sus piezas al existente. Al importar Excel, los repetidos también se suman. La base de datos lo impide además con un índice único.

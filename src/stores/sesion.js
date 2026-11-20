@@ -15,7 +15,7 @@ import { dominioRecibeCorreo } from '../lib/correo.js'
 import { usePreferencias } from './preferencias.js'
 
 // Versión de los Términos y el Aviso de Privacidad. Si cambian, súbela: se pedirá aceptarlos otra vez.
-export const VERSION_POLITICAS = '2026-11'
+export const VERSION_POLITICAS = '2026-11b' // 2026-11b: se agregaron los planes y pagos a los Términos
 
 // Mensajes de Supabase (en inglés) -> mensajes claros en español.
 export function msgAuth (e) {

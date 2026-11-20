@@ -10,11 +10,12 @@ const SECCIONES = [
   { id: 'cuenta', t: '2. Tu cuenta' },
   { id: 'uso', t: '3. Uso permitido' },
   { id: 'datos', t: '4. Tu información' },
-  { id: 'calculos', t: '5. Alertas y sugerencias' },
-  { id: 'servicio', t: '6. Disponibilidad' },
-  { id: 'responsabilidad', t: '7. Responsabilidad' },
-  { id: 'baja', t: '8. Cancelación' },
-  { id: 'ley', t: '9. Ley aplicable y contacto' }
+  { id: 'planes', t: '5. Planes y pagos' },
+  { id: 'calculos', t: '6. Alertas y sugerencias' },
+  { id: 'servicio', t: '7. Disponibilidad' },
+  { id: 'responsabilidad', t: '8. Responsabilidad' },
+  { id: 'baja', t: '9. Cancelación' },
+  { id: 'ley', t: '10. Ley aplicable y contacto' }
 ]
 </script>
 
@@ -48,24 +49,34 @@ const SECCIONES = [
       <h2>4. Tu información</h2>
       <p>Lo que registras (productos, ventas, fotos) es tuyo. Nos das permiso solo para guardarlo y procesarlo con el fin de prestarte el servicio. Puedes exportarlo a Excel o borrarlo cuando quieras.</p>
     </section>
+    <section id="planes">
+      <h2>5. Planes y pagos</h2>
+      <ul>
+        <li><b>Gratis</b> ($0): hasta 1,000 productos y 3 ofertas activas. <b>Pro</b> ($149 MXN al mes o $1,490 al año): hasta 10,000 productos y ofertas ilimitadas. <b>Max</b> ($349 MXN al mes o $3,490 al año): productos y ofertas ilimitados. Precios con IVA incluido; cada presentación o sabor cuenta como un producto.</li>
+        <li>Los planes de pago se contratan escribiendo a soporte. El pago (transferencia, depósito en OXXO o tarjeta) se hace por adelantado y cubre el periodo indicado; el plan se activa a más tardar el siguiente día hábil después de recibirlo.</li>
+        <li>No hay plazos forzosos ni renovación automática: si no se renueva, al terminar el periodo la cuenta vuelve al plan Gratis. Tus datos se conservan; si tienes más productos de los que permite Gratis puedes verlos, venderlos y exportarlos, pero no agregar nuevos.</li>
+        <li>Podemos cambiar los precios avisando con al menos 30 días de anticipación; el periodo ya pagado se respeta.</li>
+        <li>Reembolsos: si cancelas en los primeros 7 días de tu primer pago, te devolvemos el total. Después, el periodo pagado sigue activo hasta su fin.</li>
+      </ul>
+    </section>
     <section id="calculos">
-      <h2>5. Alertas y sugerencias</h2>
+      <h2>6. Alertas y sugerencias</h2>
       <p>Los días que alcanza un producto, las alertas y las sugerencias de ofertas son <b>estimaciones</b> basadas en los datos que registras. Te ayudan a decidir, pero la decisión final (qué comprar, qué precio poner, qué retirar) es tuya. Revisa siempre físicamente la caducidad de los productos antes de venderlos.</p>
     </section>
     <section id="servicio">
-      <h2>6. Disponibilidad</h2>
+      <h2>7. Disponibilidad</h2>
       <p>Hacemos lo posible para que EarlyStock funcione siempre, pero puede haber interrupciones por mantenimiento, fallas de internet o de nuestros proveedores. Podemos mejorar o cambiar funciones; si un cambio afecta tus derechos te avisaremos.</p>
     </section>
     <section id="responsabilidad">
-      <h2>7. Responsabilidad</h2>
+      <h2>8. Responsabilidad</h2>
       <p>En la medida que lo permita la ley, no somos responsables por pérdidas indirectas (por ejemplo, ventas no realizadas) derivadas del uso del servicio o de estimaciones inexactas por datos incompletos. Te recomendamos exportar tu inventario periódicamente.</p>
     </section>
     <section id="baja">
-      <h2>8. Cancelación</h2>
+      <h2>9. Cancelación</h2>
       <p>Puedes eliminar tu cuenta en cualquier momento desde <i>Perfil → Seguridad</i>. Podemos suspender cuentas que incumplan estos Términos, avisándote cuando sea posible.</p>
     </section>
     <section id="ley">
-      <h2>9. Ley aplicable y contacto</h2>
+      <h2>10. Ley aplicable y contacto</h2>
       <p>Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia se resolverá ante los tribunales de <b>[ciudad y estado]</b>. Dudas: <b>[correo de contacto]</b>. Si los Términos cambian, te pediremos aceptarlos de nuevo.</p>
     </section>
   </PaginaLegal>

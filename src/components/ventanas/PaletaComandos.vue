@@ -40,6 +40,7 @@ function comandos () {
     { g: 'Acciones', i: 'gift', t: 'Ver ofertas activas', f: ir('ofertas') },
     { g: 'Acciones', i: 'layers', t: 'Ver stock por categoría', f: ir('categorias') },
     { g: 'Cuenta', i: 'chat', t: 'Contactar a soporte', f: () => ui.abrir('soporte') },
+    { g: 'Cuenta', i: 'star', t: 'Planes y precios', f: () => ui.abrir('planes') },
     { g: 'Acciones', i: 'trash', t: 'Retirar productos caducados', f: () => { ui.cerrar(); inv.retirarCaducados() } },
     { g: 'Acciones', i: 'spark', t: 'Cargar tienda de ejemplo', f: () => { ui.cerrar(); inv.cargarEjemplo() } },
     { g: 'Apariencia', i: 'table', t: 'Ver inventario como tabla', f: () => { ui.cerrar(); ps.cambiar('vista', 'tabla') } },

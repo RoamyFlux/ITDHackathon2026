@@ -3,7 +3,7 @@
  * Solo puede haber una ventana emergente a la vez. Cualquier parte de la app la abre con
  *   ui.abrir('producto', {producto})   ui.abrir('movimiento', {tipo:'venta', producto})   ui.cerrar()
  * App.vue dibuja la que corresponda. Tipos: producto, movimiento, perfil, seguridad, configuracion,
- * importar, contrasena, comandos, atajos, guia, oferta, soporte.
+ * importar, contrasena, comandos, atajos, guia, oferta, soporte, planes.
  * ===================================================================== */
 import { defineStore } from 'pinia'
 import { shallowRef, ref } from 'vue'
