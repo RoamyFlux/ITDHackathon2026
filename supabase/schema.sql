@@ -67,6 +67,9 @@ create index if not exists movimientos_prod_idx  on public.movimientos (producto
 -- ---------------------------------------------------------------------
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.productos, public.lotes, public.movimientos to authenticated;
+-- Proyectos creados antes de 2025 SÍ daban acceso automático a "anon": se le quita (RLS ya lo bloqueaba;
+-- esto es una segunda barrera).
+revoke all on public.productos, public.lotes, public.movimientos from anon;
 
 -- ---------------------------------------------------------------------
 -- 5) SEGURIDAD (RLS = Row Level Security)
@@ -144,7 +147,7 @@ create policy "avatars: borrar propias" on storage.objects
 --    - movimientos.tipo ahora acepta 'merma' (piezas retiradas por caducidad).
 -- ---------------------------------------------------------------------
 alter table public.movimientos drop constraint if exists movimientos_tipo_check;
-alter table public.movimientos add constraint movimientos_tipo_check check (tipo in ('entrada', 'salida', 'merma'));
+alter table public.movimientos add constraint movimientos_tipo_check check (tipo in ('entrada', 'salida', 'merma')) not valid;
 
 -- =====================================================================
 -- EarlyStock 2.0 · SEGURIDAD AUTOMÁTICA Y PROTECCIÓN DE DATOS
@@ -189,18 +192,21 @@ create table if not exists public.eventos_seguridad (
 create index if not exists eventos_user_idx on public.eventos_seguridad (user_id, created_at desc);
 
 grant select, insert on public.eventos_seguridad to authenticated;
+revoke all on public.eventos_seguridad from anon;
 alter table public.eventos_seguridad enable row level security;
 drop policy if exists "eventos: ver propios" on public.eventos_seguridad;
 create policy "eventos: ver propios" on public.eventos_seguridad
   for select to authenticated using (user_id = (select auth.uid()));
--- Desde la app solo se pueden anotar eventos "de la app"; los automáticos (borrado, retiro, cambio_masivo)
--- solo los escribe la base de datos (así nadie puede fingirlos ni ocultarlos).
+-- Desde la app solo se pueden anotar eventos "de la app". Los automáticos (borrado, retiro, cambio_masivo) y
+-- "plan_cambiado" solo los escribe la base de datos; "contactos_editados" solo lo puede anotar un administrador.
+-- Así nadie puede fingirlos. (La política se vuelve a crear más abajo, en §14, cuando ya existe es_admin().)
 drop policy if exists "eventos: anotar propios" on public.eventos_seguridad;
 create policy "eventos: anotar propios" on public.eventos_seguridad
   for insert to authenticated
-  with check (user_id = (select auth.uid()) and tipo not in ('borrado','retiro','cambio_masivo'));
+  with check (user_id = (select auth.uid()) and tipo not in ('borrado','retiro','cambio_masivo','plan_cambiado','contactos_editados'));
 
--- Limpieza automática: al anotar un evento se borran los de ese usuario con más de 90 días.
+-- Limpieza automática: cada vez que una cuenta anota un evento se borran SUS eventos con más de 90 días.
+-- (Una cuenta que ya no se usa conserva sus últimos eventos hasta que vuelva a entrar.)
 create or replace function public.limpiar_eventos_viejos() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
@@ -300,6 +306,7 @@ end $$;
 revoke execute on function public.hook_correos_reales(jsonb) from public, anon, authenticated;
 do $$ begin
   if exists (select 1 from pg_roles where rolname = 'supabase_auth_admin') then
+    grant usage on schema public to supabase_auth_admin; -- lo pide Supabase para los "hooks" de Auth
     grant execute on function public.hook_correos_reales(jsonb) to supabase_auth_admin;
   end if;
 end $$;
@@ -324,7 +331,7 @@ begin
     alter table public.productos add constraint productos_variante_limites
       check (char_length(presentacion) <= 30 and char_length(sabor) <= 30) not valid;
   end if;
-  if not exists (select 1 from pg_indexes where indexname = 'productos_sin_duplicados') then
+  if not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'productos_sin_duplicados') then
     if exists (
       select 1 from public.productos
       group by user_id, lower(btrim(nombre)), lower(btrim(presentacion)), lower(btrim(sabor)) having count(*) > 1
@@ -356,6 +363,7 @@ create table if not exists public.ofertas (
 create unique index if not exists ofertas_una_por_producto on public.ofertas (producto_id);
 create index if not exists ofertas_user_idx on public.ofertas (user_id);
 grant select, insert, update, delete on public.ofertas to authenticated;
+revoke all on public.ofertas from anon;
 alter table public.ofertas enable row level security;
 drop policy if exists "ofertas: solo el dueño" on public.ofertas;
 create policy "ofertas: solo el dueño" on public.ofertas
@@ -364,12 +372,6 @@ create policy "ofertas: solo el dueño" on public.ofertas
   with check (user_id = (select auth.uid())
               and exists (select 1 from public.productos p
                           where p.id = producto_id and p.user_id = (select auth.uid())));
-
--- La bitácora acepta también el evento "contactos_editados" (lo anota el administrador).
-alter table public.eventos_seguridad drop constraint if exists eventos_seguridad_tipo_check;
-alter table public.eventos_seguridad add constraint eventos_seguridad_tipo_check check (tipo in (
-  'inicio_sesion','cierre_sesion','cierre_otros','cuenta_creada','contrasena_cambiada','llave_agregada','llave_borrada',
-  'importacion','exportacion','borrado','retiro','cambio_masivo','contactos_editados'));
 
 -- ---------------------------------------------------------------------
 -- 14) ADMINISTRADORES
@@ -396,6 +398,14 @@ $$;
 revoke execute on function public.es_admin() from public;
 grant execute on function public.es_admin() to anon, authenticated;
 
+-- Bitácora: "contactos_editados" solo lo anota un administrador (ver §9).
+drop policy if exists "eventos: anotar propios" on public.eventos_seguridad;
+create policy "eventos: anotar propios" on public.eventos_seguridad
+  for insert to authenticated
+  with check (user_id = (select auth.uid())
+              and tipo not in ('borrado','retiro','cambio_masivo','plan_cambiado')
+              and (tipo <> 'contactos_editados' or (select public.es_admin())));
+
 -- ---------------------------------------------------------------------
 -- 15) CONTACTOS DE SOPORTE
 --     Los edita solo el administrador (varios, de distintas redes). Todos los ven (también sin sesión,
@@ -419,6 +429,7 @@ create table if not exists public.contactos_soporte (
 );
 grant select on public.contactos_soporte to anon, authenticated;
 grant insert, update, delete on public.contactos_soporte to authenticated;
+revoke insert, update, delete, truncate on public.contactos_soporte from anon;
 alter table public.contactos_soporte enable row level security;
 drop policy if exists "contactos: ver activos" on public.contactos_soporte;
 create policy "contactos: ver activos" on public.contactos_soporte
@@ -464,11 +475,19 @@ drop policy if exists "suscripciones: ver la propia" on public.suscripciones;
 create policy "suscripciones: ver la propia" on public.suscripciones
   for select to authenticated using (user_id = (select auth.uid()));
 
--- Plan vigente de una cuenta (si ya venció, Gratis).
+-- Hoy en México: el servidor de Supabase trabaja en hora UTC (6 horas adelante del centro de México).
+-- Así un plan "pagado hasta el 30" dura todo el 30 en México, no hasta las 6 de la tarde.
+create or replace function public.hoy_mx() returns date
+language sql stable set search_path = '' as $$
+  select (now() at time zone 'America/Mexico_City')::date;
+$$;
+
+-- Plan vigente de una cuenta (si ya venció, Gratis). Solo la usan los triggers y otras funciones de la base:
+-- desde la app no se puede llamar (así nadie consulta el plan de otra cuenta).
 create or replace function public.plan_de(uid uuid) returns text
 language sql stable security definer set search_path = '' as $$
   select coalesce((select s.plan from public.suscripciones s
-                   where s.user_id = uid and (s.vence is null or s.vence >= current_date)), 'gratis');
+                   where s.user_id = uid and (s.vence is null or s.vence >= public.hoy_mx())), 'gratis');
 $$;
 -- Límites por plan (null = ilimitado).
 create or replace function public.limite_productos(plan text) returns integer
@@ -492,7 +511,7 @@ begin
     if lim is not null then
       select count(*) into total from public.productos where user_id = r.user_id;
       if total > lim then
-        raise exception 'LIMITE_PLAN: Tu plan % permite hasta % productos. Mejora tu plan para agregar más.', initcap(pl), lim
+        raise exception 'LIMITE_PLAN: Tu plan % permite hasta % productos. Mejora tu plan para agregar más.', initcap(pl), to_char(lim, 'FM999,999,999')
           using errcode = 'P0001';
       end if;
     end if;
@@ -504,15 +523,19 @@ create trigger productos_limite_plan after insert on public.productos
   referencing new table as nuevas for each statement execute function public.revisar_limite_productos();
 
 -- Trigger: límite de ofertas activas (vigentes) por plan.
+-- Corre al crear una oferta Y al cambiar su fecha de fin (así no se puede crear una oferta ya vencida y luego
+-- "revivirla" quitándole la fecha). Solo cuenta si la oferta nueva o cambiada queda vigente.
 create or replace function public.revisar_limite_ofertas() returns trigger
 language plpgsql security definer set search_path = '' as $$
 declare lim integer; activas integer; pl text;
 begin
+  if new.termina is not null and new.termina < public.hoy_mx() then return new; end if; -- ya vencida: no cuenta
   pl := public.plan_de(new.user_id);
   lim := public.limite_ofertas(pl);
   if lim is not null then
     select count(*) into activas from public.ofertas
-      where user_id = new.user_id and (termina is null or termina >= current_date);
+      where user_id = new.user_id and id <> new.id and producto_id <> new.producto_id
+        and (termina is null or termina >= public.hoy_mx());
     if activas >= lim then
       raise exception 'LIMITE_PLAN: Tu plan % permite hasta % ofertas activas a la vez. Quita una o mejora tu plan.', initcap(pl), lim
         using errcode = 'P0001';
@@ -521,31 +544,19 @@ begin
   return new;
 end $$;
 drop trigger if exists ofertas_limite_plan on public.ofertas;
-create trigger ofertas_limite_plan before insert on public.ofertas
+create trigger ofertas_limite_plan before insert or update of termina on public.ofertas
   for each row execute function public.revisar_limite_ofertas();
 
+-- Estas funciones solo las usa la base (triggers y otras funciones): desde la app no se pueden llamar.
 revoke execute on function public.revisar_limite_productos(), public.revisar_limite_ofertas() from public, anon, authenticated;
-revoke execute on function public.plan_de(uuid) from public, anon;
-grant execute on function public.plan_de(uuid) to authenticated;
+revoke execute on function public.plan_de(uuid) from public, anon, authenticated;
+revoke execute on function public.limite_productos(text), public.limite_ofertas(text), public.hoy_mx() from public, anon, authenticated;
 
--- Mi plan: lo que la app muestra en "Tu plan" (plan vigente, vencimiento y uso).
-create or replace function public.mi_plan() returns jsonb
-language sql stable security definer set search_path = '' as $$
-  select jsonb_build_object(
-    'plan', public.plan_de(auth.uid()),
-    'plan_contratado', coalesce((select plan from public.suscripciones where user_id = auth.uid()), 'gratis'),
-    'vence', (select vence from public.suscripciones where user_id = auth.uid()),
-    'productos', (select count(*) from public.productos where user_id = auth.uid())
-  );
-$$;
-revoke execute on function public.mi_plan() from public, anon;
-grant execute on function public.mi_plan() to authenticated;
-
--- La bitácora acepta también "plan_cambiado".
+-- Tipos de evento que acepta la bitácora (lista completa; una sola definición).
 alter table public.eventos_seguridad drop constraint if exists eventos_seguridad_tipo_check;
 alter table public.eventos_seguridad add constraint eventos_seguridad_tipo_check check (tipo in (
   'inicio_sesion','cierre_sesion','cierre_otros','cuenta_creada','contrasena_cambiada','llave_agregada','llave_borrada',
-  'importacion','exportacion','borrado','retiro','cambio_masivo','contactos_editados','plan_cambiado'));
+  'importacion','exportacion','borrado','retiro','cambio_masivo','contactos_editados','plan_cambiado')) not valid;
 
 -- ADMINISTRADOR: asignar plan a una cuenta por su correo (cuando recibe el pago) y ver las suscripciones.
 create or replace function public.admin_asignar_plan(p_email text, p_plan text, p_vence date default null, p_nota text default '')
@@ -554,6 +565,7 @@ declare uid uuid; quien text;
 begin
   if not public.es_admin() then raise exception 'Solo el administrador puede asignar planes.'; end if;
   if p_plan not in ('gratis', 'pro', 'max') then raise exception 'Plan no válido.'; end if;
+  if p_vence is not null and p_vence < public.hoy_mx() then raise exception 'La fecha de vencimiento ya pasó: elige hoy o una fecha futura.'; end if;
   select id into uid from auth.users where lower(email) = lower(btrim(p_email));
   if uid is null then raise exception 'No hay ninguna cuenta con el correo %.', p_email; end if;
   select email into quien from auth.users where id = auth.uid();
@@ -567,19 +579,8 @@ end $$;
 revoke execute on function public.admin_asignar_plan(text, text, date, text) from public, anon;
 grant execute on function public.admin_asignar_plan(text, text, date, text) to authenticated;
 
-create or replace function public.admin_suscripciones()
-returns table (email text, plan text, plan_vigente text, vence date, productos bigint, nota text, updated_at timestamptz)
-language plpgsql stable security definer set search_path = '' as $$
-begin
-  if not public.es_admin() then raise exception 'Solo el administrador puede ver las suscripciones.'; end if;
-  return query
-    select u.email::text, s.plan, public.plan_de(s.user_id), s.vence,
-           (select count(*) from public.productos p where p.user_id = s.user_id), s.nota, s.updated_at
-    from public.suscripciones s join auth.users u on u.id = s.user_id
-    order by s.updated_at desc limit 500;
-end $$;
-revoke execute on function public.admin_suscripciones() from public, anon;
-grant execute on function public.admin_suscripciones() to authenticated;
+-- admin_suscripciones() existía en 2.2; la app ahora usa admin_usuarios(). Se borra para no dejar funciones de más.
+drop function if exists public.admin_suscripciones();
 
 -- ---------------------------------------------------------------------
 -- 17) ADMINISTRADOR: VER TODAS LAS CUENTAS (para asignarles el plan que quiera)
@@ -588,12 +589,16 @@ grant execute on function public.admin_suscripciones() to authenticated;
 --     No devuelve contraseñas ni datos del inventario, solo lo necesario para administrar planes.
 --     Mi plan también avisa si la cuenta es administradora (para mostrar la coronita).
 -- ---------------------------------------------------------------------
+drop function if exists public.admin_usuarios(text); -- "create or replace" no puede cambiar las columnas que regresa
 create or replace function public.admin_usuarios(p_buscar text default '')
 returns table (email text, negocio text, creado timestamptz, ultimo_acceso timestamptz, confirmado boolean,
                plan text, plan_vigente text, vence date, productos bigint, es_admin boolean)
 language plpgsql stable security definer set search_path = '' as $$
+declare patron text;
 begin
   if not public.es_admin() then raise exception 'Solo el administrador puede ver las cuentas.'; end if;
+  -- Búsqueda literal: % y _ escritos por el admin no funcionan como comodines.
+  patron := '%' || replace(replace(replace(coalesce(p_buscar, ''), '\', '\\'), '%', '\%'), '_', '\_') || '%';
   return query
     select u.email::text,
            coalesce(u.raw_user_meta_data->>'negocio', '')::text,
@@ -603,8 +608,8 @@ begin
            exists (select 1 from public.administradores a where a.email = lower(u.email))
     from auth.users u left join public.suscripciones s on s.user_id = u.id
     where coalesce(p_buscar, '') = ''
-       or u.email ilike '%' || p_buscar || '%'
-       or coalesce(u.raw_user_meta_data->>'negocio', '') ilike '%' || p_buscar || '%'
+       or u.email ilike patron
+       or coalesce(u.raw_user_meta_data->>'negocio', '') ilike patron
     order by u.created_at desc
     limit 1000;
 end $$;
@@ -621,3 +626,5 @@ language sql stable security definer set search_path = '' as $$
     'es_admin', public.es_admin()
   );
 $$;
+revoke execute on function public.mi_plan() from public, anon;
+grant execute on function public.mi_plan() to authenticated;
