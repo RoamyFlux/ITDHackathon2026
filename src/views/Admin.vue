@@ -8,6 +8,9 @@
 -->
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useSesion } from '../stores/sesion.js'
+import { usePlan } from '../stores/plan.js'
+import InsigniaPlan from '../components/InsigniaPlan.vue'
 import { useSoporte } from '../stores/soporte.js'
 import { useAvisos } from '../stores/avisos.js'
 import { REDES, validarContacto, enlaceContacto } from '../logica/soporte.js'
@@ -21,6 +24,8 @@ import Icono from '../components/Icono.vue'
 import IconoRed from '../components/IconoRed.vue'
 
 const soporte = useSoporte()
+const sesion = useSesion()
+const planStore = usePlan()
 const avisos = useAvisos()
 const revisando = ref(true)
 const vacio = () => ({ id: null, red: 'whatsapp', etiqueta: '', valor: '', activo: true })
@@ -29,23 +34,35 @@ const guardando = ref(false)
 onMounted(async () => { await soporte.revisarAdmin(); if (soporte.esAdmin) { await soporte.cargar(); await cargarSuscripciones() } revisando.value = false })
 
 /* ---- Planes de clientes ---- */
-const susc = ref([])
+// Todas las cuentas de la app (admin_usuarios), con buscador por correo o nombre del negocio.
+const usuarios = ref([])
 const errorSusc = ref('')
+const buscar = ref('')
 const formPlan = ref({ email: '', plan: 'pro', vence: fechaISO(Date.now() + 30 * DIA), nota: '' })
+let tBuscar = null
 async function cargarSuscripciones () {
   errorSusc.value = ''
-  const r = await sb.rpc('admin_suscripciones')
+  const r = await sb.rpc('admin_usuarios', { p_buscar: buscar.value.trim().slice(0, 100) })
   if (r.error) errorSusc.value = /function|schema cache/i.test(r.error.message) ? 'Falta actualizar la base de datos (ejecutar supabase/schema.sql).' : r.error.message
-  else susc.value = r.data || []
+  else usuarios.value = r.data || []
 }
+const alBuscar = () => { clearTimeout(tBuscar); tBuscar = setTimeout(cargarSuscripciones, 350) }
+const resumen = computed(() => ({ total: usuarios.value.length, pro: usuarios.value.filter(u => u.plan_vigente === 'pro').length, max: usuarios.value.filter(u => u.plan_vigente === 'max').length }))
 const asignarPlan = () => hacer(async () => {
   const f = formPlan.value
-  const r = await sb.rpc('admin_asignar_plan', { p_email: f.email.trim().toLowerCase(), p_plan: f.plan, p_vence: f.plan === 'gratis' ? null : (f.vence || null), p_nota: f.nota })
+  const r = await sb.rpc('admin_asignar_plan', { p_email: f.email.trim().toLowerCase(), p_plan: f.plan, p_vence: f.plan === 'gratis' || f.sinVence ? null : (f.vence || null), p_nota: f.nota })
   if (r.error) throw new Error(r.error.message)
+  // Si el administrador se asignó un plan a sí mismo, se actualiza su insignia.
+  if (f.email.trim().toLowerCase() === sesion.perfil.email.toLowerCase()) await planStore.cargar()
   await cargarSuscripciones()
   formPlan.value = { email: '', plan: 'pro', vence: fechaISO(Date.now() + 30 * DIA), nota: '' }
 }, `Plan asignado a ${formPlan.value.email}`)
-const renovar = s => { formPlan.value = { email: s.email, plan: s.plan, vence: fechaISO(Math.max(Date.now(), s.vence ? new Date(s.vence + 'T12:00:00').getTime() : 0) + 30 * DIA), nota: '' }; document.getElementById('form-plan').scrollIntoView({ behavior: 'smooth', block: 'center' }) }
+// Llenar el formulario con una cuenta de la lista (para asignar o renovar su plan).
+const elegirUsuario = u => {
+  const base = u.vence && u.plan_vigente !== 'gratis' ? new Date(u.vence + 'T12:00:00').getTime() : Date.now()
+  formPlan.value = { email: u.email, plan: u.plan_vigente === 'gratis' ? 'pro' : u.plan_vigente, vence: fechaISO(Math.max(Date.now(), base) + 30 * DIA), nota: '', sinVence: false }
+  document.getElementById('form-plan').scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
 const errorForm = computed(() => (form.value.valor ? validarContacto(form.value.red, form.value.valor) : ''))
 
 async function hacer (fn, ok) {
@@ -70,34 +87,40 @@ async function borrar (c) {
         <h1><Icono n="shield" />Administración</h1>
         <p>Los contactos que agregues aquí aparecen en "Ayuda y soporte" para todos los usuarios (y en la página de inicio).</p>
       </div>
-      <h2 class="admin-sub"><Icono n="star" />Planes de clientes</h2>
+      <h2 class="admin-sub"><Icono n="star" />Usuarios y planes</h2>
       <div class="admin-rejilla">
         <form id="form-plan" class="card admin-form" @submit.prevent="asignarPlan">
-          <h2>Asignar o renovar plan</h2>
-          <p class="hint">Cuando el cliente pague, escribe el correo de su cuenta, el plan y hasta qué día está pagado. Al pasar esa fecha vuelve solo a Gratis.</p>
+          <h2>Asignar plan</h2>
+          <p class="hint">Elige una cuenta de la lista (o escribe su correo), el plan y hasta qué día está pagado. Al pasar esa fecha vuelve sola a Gratis. Puedes dar planes de cortesía sin vencimiento.</p>
           <label>Correo de la cuenta del cliente<input v-model="formPlan.email" type="email" required maxlength="254" placeholder="cliente@correo.com"></label>
           <div class="campo"><span>Plan</span>
             <div class="seg">
               <button v-for="p in PLANES" :key="p.id" type="button" :aria-pressed="formPlan.plan === p.id" @click="formPlan.plan = p.id">{{ p.nombre }} · {{ precioTxt(p.precio) }}</button>
             </div>
           </div>
-          <label v-if="formPlan.plan !== 'gratis'">Pagado hasta<input v-model="formPlan.vence" type="date" required></label>
+          <label v-if="formPlan.plan !== 'gratis' && !formPlan.sinVence">Pagado hasta<input v-model="formPlan.vence" type="date" required></label>
+          <label v-if="formPlan.plan !== 'gratis'" class="check"><input v-model="formPlan.sinVence" type="checkbox"> <span>Sin fecha de vencimiento (cortesía, pruebas o cuenta propia)</span></label>
           <label>Nota <small>(opcional: forma de pago, folio…)</small><input v-model="formPlan.nota" maxlength="200" placeholder="Ej. Transferencia folio 1234"></label>
           <div class="dlg-acciones"><button type="submit" :disabled="guardando || !formPlan.email"><Icono n="check" sm />Guardar plan</button></div>
         </form>
-        <section class="card admin-lista">
-          <div class="sec-tit"><h2><Icono n="user" />Suscripciones</h2><span class="contador">{{ susc.length }}</span></div>
+        <section class="card admin-lista usuarios">
+          <div class="sec-tit"><h2><Icono n="user" />Usuarios de la app</h2><span class="contador">{{ resumen.total }}</span></div>
+          <p class="hint">{{ resumen.pro }} con Pro · {{ resumen.max }} con Max · el resto Gratis. Toca "Asignar plan" para cambiar el de cualquier cuenta (también la tuya).</p>
+          <div class="buscar"><Icono n="search" /><input v-model="buscar" type="search" maxlength="100" placeholder="Buscar por correo o negocio" aria-label="Buscar usuario" @input="alBuscar"></div>
           <p v-if="errorSusc" class="nota low">{{ errorSusc }}</p>
-          <ul v-else-if="susc.length" class="contactos">
-            <li v-for="x in susc" :key="x.email" :class="{ oculto: x.plan_vigente !== x.plan }">
+          <ul v-else-if="usuarios.length" class="contactos lista-usuarios">
+            <li v-for="u in usuarios" :key="u.email" :class="{ oculto: !u.confirmado }">
               <div class="contacto">
-                <span class="plan-chip" :class="'p-' + x.plan_vigente">{{ planPorId(x.plan_vigente).nombre }}</span>
-                <span><b>{{ x.email }}</b><small>{{ planPorId(x.plan).nombre }}{{ x.vence ? (x.plan_vigente !== x.plan ? ' · venció el ' : ' · hasta el ') + fechaCorta(x.vence) : '' }} · {{ x.productos }} productos{{ x.nota ? ' · ' + x.nota : '' }}</small></span>
-                <span class="admin-acc"><button type="button" class="ghost sm" @click="renovar(x)"><Icono n="refresh" sm />Renovar</button></span>
+                <span class="avatar-mini" :class="'aro-' + u.plan_vigente">{{ (u.negocio || u.email).slice(0, 2).toUpperCase() }}</span>
+                <span>
+                  <b>{{ u.negocio || u.email }} <InsigniaPlan :plan="u.plan_vigente" :admin="u.es_admin" /></b>
+                  <small>{{ u.negocio ? u.email + ' · ' : '' }}{{ planPorId(u.plan_vigente).nombre }}{{ u.vence && u.plan_vigente !== 'gratis' ? ' hasta el ' + fechaCorta(u.vence) : '' }}{{ u.plan !== u.plan_vigente ? ' (su ' + planPorId(u.plan).nombre + ' venció)' : '' }} · {{ u.productos }} productos{{ u.confirmado ? '' : ' · sin confirmar correo' }}{{ u.ultimo_acceso ? ' · último acceso ' + fechaCorta(String(u.ultimo_acceso).slice(0, 10)) : '' }}</small>
+                </span>
+                <span class="admin-acc"><button type="button" class="sec sm" @click="elegirUsuario(u)"><Icono n="star" sm />Asignar plan</button></span>
               </div>
             </li>
           </ul>
-          <p v-else class="hint">Aún no hay clientes con plan de pago.</p>
+          <p v-else class="hint">{{ buscar ? 'Ninguna cuenta coincide con la búsqueda.' : 'Aún no hay cuentas.' }}</p>
         </section>
       </div>
 

@@ -13,11 +13,16 @@ import { useSesion } from '../stores/sesion.js'
 import { useUI } from '../stores/ui.js'
 import { usePreferencias } from '../stores/preferencias.js'
 import Icono from './Icono.vue'
+import InsigniaPlan from './InsigniaPlan.vue'
+import { usePlan } from '../stores/plan.js'
+import { useSoporte } from '../stores/soporte.js'
 
 const inv = useInventario()
 const sesion = useSesion()
 const ui = useUI()
 const prefs = usePreferencias()
+const plan = usePlan()
+const soporte = useSoporte()
 const r = computed(() => inv.resumen)
 const total = computed(() => inv.productos.length)
 const fecha = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, c => c.toUpperCase())
@@ -66,9 +71,13 @@ function tocar (s) {
 
 <template>
   <section class="bento" aria-label="Resumen">
-    <div class="card saludo hero">
+    <div class="card saludo hero" :class="'banda-' + plan.planId">
+      <!-- Banda del plan: ninguna en Gratis, plata en Pro y oro brillante en Max. -->
+      <button v-if="plan.planId !== 'gratis'" type="button" class="banda-plan" :class="plan.planId" :title="'Plan ' + plan.plan.nombre" @click="ui.abrir('planes')">
+        <Icono :n="plan.planId === 'max' ? 'crown' : 'star'" sm />Plan {{ plan.plan.nombre }}
+      </button>
       <div>
-        <h1>Hola, <span>{{ sesion.perfil.negocio || 'bienvenido' }}</span></h1>
+        <h1>Hola, <span>{{ sesion.perfil.negocio || 'bienvenido' }}</span> <InsigniaPlan :plan="plan.planId" :admin="soporte.esAdmin || plan.esAdmin" grande /></h1>
         <p>{{ fecha }}</p>
       </div>
       <div class="saludo-der">
